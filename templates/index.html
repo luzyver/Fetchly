@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>StreamConvert - Professional M3U8 to MP4 Converter</title>
-    <meta name="description" content="Fast, secure, and free online M3U8 to MP4 converter.">
+    <title>StreamConvert - Ultimate M3U8 Downloader</title>
+    <meta name="description" content="Download and convert M3U8 streams to MP4 in seconds.">
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = {
@@ -12,223 +12,209 @@
             theme: {
                 extend: {
                     colors: {
-                        primary: {
-                            50: '#eff6ff',
-                            100: '#dbeafe',
-                            500: '#3b82f6',
-                            600: '#2563eb',
-                            700: '#1d4ed8',
-                        },
-                        slate: {
-                            850: '#151e2e',
-                            900: '#0f172a',
-                            950: '#020617',
-                        }
+                        background: '#030014', // Very deep purple/black
+                        surface: '#0F0728',
+                        primary: '#6366f1',   // Indigo
+                        secondary: '#ec4899', // Pink
+                        accent: '#8b5cf6',    // Violet
                     },
                     animation: {
-                        'gradient': 'gradient 8s linear infinite',
+                        'blob': 'blob 7s infinite',
+                        'shimmer': 'shimmer 2s linear infinite',
+                        'float': 'float 6s ease-in-out infinite',
                     },
                     keyframes: {
-                        gradient: {
-                            '0%, 100%': {
-                                'background-size': '200% 200%',
-                                'background-position': 'left center'
-                            },
-                            '50%': {
-                                'background-size': '200% 200%',
-                                'background-position': 'right center'
-                            },
+                        blob: {
+                            '0%': { transform: 'translate(0px, 0px) scale(1)' },
+                            '33%': { transform: 'translate(30px, -50px) scale(1.1)' },
+                            '66%': { transform: 'translate(-20px, 20px) scale(0.9)' },
+                            '100%': { transform: 'translate(0px, 0px) scale(1)' },
                         },
+                        shimmer: {
+                            '0%': { backgroundPosition: '0 0' },
+                            '100%': { backgroundPosition: '-200% 0' },
+                        },
+                        float: {
+                            '0%, 100%': { transform: 'translateY(0)' },
+                            '50%': { transform: 'translateY(-10px)' },
+                        }
                     },
                 }
             }
         }
     </script>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
-        body { font-family: 'Plus Jakarta Sans', sans-serif; }
-        /* Custom Scrollbar */
-        ::-webkit-scrollbar { width: 8px; }
-        ::-webkit-scrollbar-track { background: #0f172a; }
-        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
-        ::-webkit-scrollbar-thumb:hover { background: #475569; }
+        body { font-family: 'Outfit', sans-serif; }
+        .glass-card {
+            background: rgba(15, 7, 40, 0.6);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .text-glow {
+            text-shadow: 0 0 20px rgba(99, 102, 241, 0.5);
+        }
+        .input-glow:focus {
+            box-shadow: 0 0 15px rgba(139, 92, 246, 0.3);
+        }
     </style>
 </head>
-<body class="bg-slate-950 text-slate-200 min-h-screen flex flex-col selection:bg-primary-500/30 selection:text-primary-100">
+<body class="bg-background text-white min-h-screen flex flex-col relative overflow-x-hidden selection:bg-secondary selection:text-white">
+
+    <!-- Animated Background Blobs -->
+    <div class="fixed inset-0 pointer-events-none overflow-hidden -z-10">
+        <div class="absolute top-0 left-1/4 w-[500px] h-[500px] bg-primary/20 rounded-full mix-blend-screen filter blur-[100px] opacity-50 animate-blob"></div>
+        <div class="absolute top-0 right-1/4 w-[500px] h-[500px] bg-secondary/20 rounded-full mix-blend-screen filter blur-[100px] opacity-50 animate-blob animation-delay-2000"></div>
+        <div class="absolute -bottom-32 left-1/3 w-[500px] h-[500px] bg-accent/20 rounded-full mix-blend-screen filter blur-[100px] opacity-50 animate-blob animation-delay-4000"></div>
+        <div class="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20 brightness-100 contrast-150"></div>
+    </div>
 
     <!-- Navbar -->
-    <nav class="border-b border-white/5 bg-slate-900/50 backdrop-blur-md sticky top-0 z-50">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="flex items-center justify-between h-16">
-                <div class="flex items-center space-x-3">
-                    <div class="bg-gradient-to-tr from-primary-500 to-indigo-500 p-2 rounded-lg shadow-lg shadow-primary-500/20">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                        </svg>
-                    </div>
-                    <span class="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-white to-slate-400">
-                        StreamConvert
-                    </span>
-                </div>
-                <div class="hidden md:flex items-center space-x-8 text-sm font-medium text-slate-400">
-                    <a href="#features" class="hover:text-white transition-colors">Features</a>
-                    <a href="#faq" class="hover:text-white transition-colors">FAQ</a>
-                    <a href="https://github.com" target="_blank" class="hover:text-white transition-colors">GitHub</a>
-                </div>
+    <nav class="w-full py-6 px-4 sm:px-8 flex justify-between items-center z-50">
+        <div class="flex items-center gap-2">
+            <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-primary to-secondary flex items-center justify-center shadow-lg shadow-primary/25">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
             </div>
+            <span class="text-xl font-bold tracking-tight">Stream<span class="text-transparent bg-clip-text bg-gradient-to-r from-primary to-secondary">Convert</span></span>
         </div>
+        <a href="https://github.com" target="_blank" class="hidden sm:flex items-center gap-2 px-4 py-2 rounded-full border border-white/10 hover:bg-white/5 transition-colors text-sm font-medium text-gray-300 hover:text-white">
+            <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg>
+            <span>GitHub</span>
+        </a>
     </nav>
 
     <!-- Main Content -->
-    <main class="flex-grow flex flex-col items-center justify-center p-4 sm:p-8 relative overflow-hidden">
+    <main class="flex-grow flex flex-col items-center justify-center p-4 z-10 w-full max-w-7xl mx-auto">
         
-        <!-- Ambient Background -->
-        <div class="absolute top-0 left-1/2 -translate-x-1/2 w-full h-full max-w-7xl pointer-events-none -z-10">
-            <div class="absolute top-[10%] left-[20%] w-72 h-72 bg-primary-500/10 rounded-full blur-[100px] animate-pulse"></div>
-            <div class="absolute bottom-[10%] right-[20%] w-96 h-96 bg-indigo-500/10 rounded-full blur-[100px] animate-pulse" style="animation-delay: 2s;"></div>
+        <!-- Hero Section -->
+        <div class="text-center space-y-6 mb-12 animate-float">
+            <h1 class="text-5xl md:text-7xl font-extrabold tracking-tight leading-tight">
+                Download <span class="text-transparent bg-clip-text bg-gradient-to-r from-primary via-secondary to-accent text-glow">Any Stream</span>
+                <br>In Seconds.
+            </h1>
+            <p class="text-lg md:text-xl text-gray-400 max-w-2xl mx-auto font-light">
+                The most advanced M3U8 to MP4 converter. High speed, privacy-focused, and completely free.
+            </p>
         </div>
 
-        <div class="w-full max-w-2xl mx-auto space-y-8 z-10">
+        <!-- Converter Card -->
+        <div class="w-full max-w-3xl relative group">
+            <!-- Glow Effect behind card -->
+            <div class="absolute -inset-1 bg-gradient-to-r from-primary via-secondary to-accent rounded-2xl blur opacity-25 group-hover:opacity-50 transition duration-1000 group-hover:duration-200"></div>
             
-            <!-- Hero Text -->
-            <div class="text-center space-y-4">
-                <h1 class="text-4xl sm:text-5xl md:text-6xl font-bold tracking-tight text-white">
-                    Convert M3U8 <br class="hidden sm:block" /> to <span class="text-transparent bg-clip-text bg-gradient-to-r from-primary-400 to-indigo-400">MP4 Video</span>
-                </h1>
-                <p class="text-lg text-slate-400 max-w-lg mx-auto leading-relaxed">
-                    The professional tool to download and convert HTTP Live Streaming (HLS) videos directly to your device.
-                </p>
-            </div>
-
-            <!-- Converter Card -->
-            <div class="bg-slate-900/60 backdrop-blur-xl rounded-3xl border border-white/10 p-1 shadow-2xl ring-1 ring-white/5">
-                <div class="bg-slate-950/50 rounded-[22px] p-6 sm:p-8 space-y-6">
-                    
-                    <div class="space-y-4">
-                        <!-- URL Input -->
-                        <div class="group">
-                            <label for="url" class="block text-sm font-medium text-slate-400 mb-2 ml-1 group-focus-within:text-primary-400 transition-colors">Stream URL (.m3u8)</label>
-                            <div class="relative">
-                                <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                                    <svg class="h-5 w-5 text-slate-500 group-focus-within:text-primary-500 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/>
-                                    </svg>
-                                </div>
-                                <input type="text" id="url" 
-                                    class="block w-full pl-11 pr-4 py-4 bg-slate-900/80 border border-slate-800 rounded-xl text-slate-200 placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-primary-500/50 focus:border-primary-500 transition-all text-sm sm:text-base font-mono"
-                                    placeholder="https://example.com/playlist.m3u8">
-                            </div>
-                        </div>
-
-                        <!-- Referer Input -->
-                        <div class="group">
-                            <label for="referer" class="block text-sm font-medium text-slate-400 mb-2 ml-1 group-focus-within:text-primary-400 transition-colors flex justify-between">
-                                <span>Referer URL</span>
-                                <span class="text-xs text-slate-600 font-normal uppercase tracking-wider">Optional</span>
-                            </label>
-                            <div class="relative">
-                                <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                                    <svg class="h-5 w-5 text-slate-500 group-focus-within:text-primary-500 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9"/>
-                                    </svg>
-                                </div>
-                                <input type="text" id="referer" 
-                                    class="block w-full pl-11 pr-4 py-4 bg-slate-900/80 border border-slate-800 rounded-xl text-slate-200 placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-primary-500/50 focus:border-primary-500 transition-all text-sm sm:text-base font-mono"
-                                    placeholder="https://source-website.com">
+            <div class="glass-card rounded-2xl p-6 sm:p-10 relative">
+                
+                <div class="space-y-6">
+                    <!-- URL Input -->
+                    <div class="space-y-2">
+                        <label for="url" class="text-sm font-semibold text-gray-300 ml-1">Stream URL</label>
+                        <div class="relative group/input">
+                            <input type="text" id="url" 
+                                class="w-full bg-surface/50 border border-white/10 rounded-xl px-5 py-4 pl-12 text-white placeholder-gray-500 outline-none focus:border-primary/50 input-glow transition-all duration-300 font-mono text-sm"
+                                placeholder="https://example.com/playlist.m3u8">
+                            <div class="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 group-focus-within/input:text-primary transition-colors">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"></path></svg>
                             </div>
                         </div>
                     </div>
 
-                    <!-- Action Button -->
+                    <!-- Referer Input -->
+                    <div class="space-y-2">
+                         <div class="flex justify-between items-center ml-1">
+                            <label for="referer" class="text-sm font-semibold text-gray-300">Referer URL</label>
+                            <span class="text-xs px-2 py-0.5 rounded bg-white/5 text-gray-400 border border-white/5">Optional</span>
+                        </div>
+                        <div class="relative group/input">
+                            <input type="text" id="referer" 
+                                class="w-full bg-surface/50 border border-white/10 rounded-xl px-5 py-4 pl-12 text-white placeholder-gray-500 outline-none focus:border-secondary/50 input-glow transition-all duration-300 font-mono text-sm"
+                                placeholder="https://source-site.com">
+                            <div class="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 group-focus-within/input:text-secondary transition-colors">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9"></path></svg>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- CTA Button -->
                     <button id="convertBtn" onclick="startConvert()" 
-                        class="w-full relative group overflow-hidden rounded-xl bg-gradient-to-r from-primary-600 to-indigo-600 p-[1px] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 focus:ring-offset-slate-900">
-                        <span class="absolute inset-0 w-full h-full bg-gradient-to-r from-primary-600 to-indigo-600 opacity-0 group-hover:opacity-100 transition-opacity duration-300 ease-out"></span>
-                        <div class="relative bg-slate-950/50 group-hover:bg-transparent rounded-[11px] px-6 py-4 flex items-center justify-center transition-colors duration-300">
-                            <div id="btnContent" class="flex items-center space-x-2">
-                                <span class="font-semibold text-white tracking-wide">Start Conversion</span>
-                                <svg class="w-5 h-5 text-primary-200 group-hover:text-white transition-transform group-hover:translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"/>
-                                </svg>
-                            </div>
-                            <!-- Loader -->
-                            <div id="btnLoader" class="hidden flex items-center space-x-2">
-                                <svg class="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                                </svg>
-                                <span class="font-semibold text-white">Processing...</span>
-                            </div>
+                        class="w-full relative overflow-hidden rounded-xl group/btn py-4 bg-gradient-to-r from-primary to-secondary text-white font-bold text-lg shadow-lg shadow-primary/25 hover:shadow-primary/40 transform hover:-translate-y-0.5 transition-all duration-300">
+                        <div class="absolute inset-0 bg-white/20 group-hover/btn:translate-x-full transition-transform duration-500 ease-out -translate-x-full skew-x-12"></div>
+                        <span id="btnContent" class="relative flex items-center justify-center gap-2">
+                            <span>Start Conversion</span>
+                            <svg class="w-5 h-5 group-hover/btn:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"></path></svg>
+                        </span>
+                         <!-- Loader -->
+                         <div id="btnLoader" class="hidden flex items-center justify-center space-x-2 relative">
+                            <svg class="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                            <span>Processing...</span>
                         </div>
                     </button>
 
                     <!-- Status Panel -->
-                    <div id="statusCard" class="hidden rounded-xl bg-slate-900 border border-slate-800 p-5 animate-fade-in-up">
-                        <div class="flex items-start space-x-4">
-                            <div id="statusIcon" class="flex-shrink-0 mt-1"></div>
-                            <div class="flex-1 min-w-0 space-y-1">
-                                <p id="statusTitle" class="text-sm font-semibold text-white"></p>
-                                <p id="statusMessage" class="text-sm text-slate-400 leading-relaxed"></p>
-                                
-                                <!-- Progress Bar -->
-                                <div id="progressBarContainer" class="hidden mt-3 h-1.5 w-full bg-slate-800 rounded-full overflow-hidden">
-                                    <div class="h-full bg-primary-500 animate-pulse w-2/3 rounded-full"></div>
-                                </div>
-
-                                <!-- Action Buttons -->
-                                <div id="actionArea" class="hidden mt-4 pt-2 border-t border-slate-800">
-                                    <a href="#" id="downloadBtn" class="inline-flex w-full items-center justify-center px-4 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-medium rounded-lg transition-all shadow-lg shadow-emerald-900/20 hover:shadow-emerald-900/40">
-                                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
-                                        Download MP4
-                                    </a>
-                                </div>
-                                
-                                <!-- Error Display -->
-                                <div id="errorArea" class="hidden mt-3">
-                                    <div class="rounded-lg bg-red-500/10 border border-red-500/20 p-3">
-                                        <p id="errorDetails" class="text-xs font-mono text-red-400 break-all"></p>
-                                    </div>
-                                </div>
+                    <div id="statusCard" class="hidden mt-6 bg-surface/80 rounded-xl border border-white/5 p-5 animate-fade-in transition-all">
+                        <div class="flex items-center gap-4">
+                            <div id="statusIcon" class="flex-shrink-0"></div>
+                            <div class="flex-1 min-w-0">
+                                <h4 id="statusTitle" class="text-white font-semibold">Processing Video</h4>
+                                <p id="statusMessage" class="text-sm text-gray-400">Please wait...</p>
                             </div>
+                        </div>
+                         <!-- Progress Bar -->
+                         <div id="progressBarContainer" class="hidden mt-4 h-1.5 w-full bg-gray-800 rounded-full overflow-hidden">
+                            <div class="h-full bg-gradient-to-r from-primary to-secondary animate-shimmer w-[200%]"></div>
+                        </div>
+                        
+                         <!-- Error Area -->
+                         <div id="errorArea" class="hidden mt-3 p-3 bg-red-500/10 border border-red-500/20 rounded-lg">
+                            <p id="errorDetails" class="text-xs font-mono text-red-400 break-all"></p>
+                        </div>
+
+                        <!-- Download Action -->
+                        <div id="actionArea" class="hidden mt-4">
+                            <a href="#" id="downloadBtn" class="flex items-center justify-center w-full px-4 py-3 bg-emerald-500 hover:bg-emerald-600 text-white font-semibold rounded-lg shadow-lg shadow-emerald-500/20 transition-all transform hover:scale-[1.02]">
+                                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                                Download MP4
+                            </a>
                         </div>
                     </div>
                 </div>
             </div>
-            
-            <!-- Features Grid -->
-            <div id="features" class="grid grid-cols-1 md:grid-cols-3 gap-6 pt-8">
-                <div class="p-6 rounded-2xl bg-slate-900/30 border border-white/5 hover:bg-slate-900/50 transition-colors">
-                    <div class="w-10 h-10 rounded-lg bg-blue-500/10 flex items-center justify-center mb-4">
-                        <svg class="w-6 h-6 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
-                    </div>
-                    <h3 class="text-white font-semibold mb-2">High Speed</h3>
-                    <p class="text-slate-400 text-sm">Optimized conversion engine to process your videos as fast as possible.</p>
-                </div>
-                <div class="p-6 rounded-2xl bg-slate-900/30 border border-white/5 hover:bg-slate-900/50 transition-colors">
-                    <div class="w-10 h-10 rounded-lg bg-purple-500/10 flex items-center justify-center mb-4">
-                        <svg class="w-6 h-6 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
-                    </div>
-                    <h3 class="text-white font-semibold mb-2">Secure & Private</h3>
-                    <p class="text-slate-400 text-sm">Files are automatically deleted after 24 hours. Your data is never shared.</p>
-                </div>
-                <div class="p-6 rounded-2xl bg-slate-900/30 border border-white/5 hover:bg-slate-900/50 transition-colors">
-                    <div class="w-10 h-10 rounded-lg bg-emerald-500/10 flex items-center justify-center mb-4">
-                        <svg class="w-6 h-6 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"></path></svg>
-                    </div>
-                    <h3 class="text-white font-semibold mb-2">Mobile Friendly</h3>
-                    <p class="text-slate-400 text-sm">Fully responsive design that works perfectly on all your devices.</p>
-                </div>
-            </div>
+        </div>
 
+        <!-- Features Grid -->
+        <div class="mt-20 grid grid-cols-1 md:grid-cols-3 gap-6 max-w-5xl w-full">
+            <div class="p-6 rounded-2xl bg-white/5 border border-white/5 backdrop-blur-sm hover:bg-white/10 transition-colors">
+                <div class="w-12 h-12 rounded-lg bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center mb-4 shadow-lg shadow-blue-500/20">
+                    <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+                </div>
+                <h3 class="text-xl font-bold mb-2">Blazing Fast</h3>
+                <p class="text-gray-400 text-sm leading-relaxed">Optimized conversion engine that utilizes multiple threads for maximum speed.</p>
+            </div>
+            <div class="p-6 rounded-2xl bg-white/5 border border-white/5 backdrop-blur-sm hover:bg-white/10 transition-colors">
+                <div class="w-12 h-12 rounded-lg bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center mb-4 shadow-lg shadow-purple-500/20">
+                    <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
+                </div>
+                <h3 class="text-xl font-bold mb-2">Secure & Private</h3>
+                <p class="text-gray-400 text-sm leading-relaxed">No logs. Files are automatically permanently deleted after 24 hours.</p>
+            </div>
+            <div class="p-6 rounded-2xl bg-white/5 border border-white/5 backdrop-blur-sm hover:bg-white/10 transition-colors">
+                <div class="w-12 h-12 rounded-lg bg-gradient-to-br from-emerald-500 to-lime-500 flex items-center justify-center mb-4 shadow-lg shadow-emerald-500/20">
+                    <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"></path></svg>
+                </div>
+                <h3 class="text-xl font-bold mb-2">Universal Support</h3>
+                <p class="text-gray-400 text-sm leading-relaxed">Works on all modern devices. No software installation required.</p>
+            </div>
         </div>
     </main>
 
-    <!-- Footer -->
-    <footer class="border-t border-white/5 bg-slate-950 py-8">
-        <div class="max-w-7xl mx-auto px-4 text-center">
-            <p class="text-slate-500 text-sm">
-                &copy; <script>document.write(new Date().getFullYear())</script> StreamConvert. All rights reserved.
-            </p>
-        </div>
+    <footer class="py-8 text-center text-gray-500 text-sm relative z-10">
+        <p>&copy; <script>document.write(new Date().getFullYear())</script> StreamConvert. Crafted with <span class="text-red-500">❤</span> for creators.</p>
     </footer>
 
     <script>
@@ -251,9 +237,9 @@
         };
 
         const ICONS = {
-            processing: `<div class="relative flex h-10 w-10 items-center justify-center rounded-full bg-blue-500/20 text-blue-500 ring-1 ring-blue-500/30"><svg class="h-5 w-5 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg></div>`,
-            completed: `<div class="flex h-10 w-10 items-center justify-center rounded-full bg-emerald-500/20 text-emerald-500 ring-1 ring-emerald-500/30"><svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg></div>`,
-            failed: `<div class="flex h-10 w-10 items-center justify-center rounded-full bg-red-500/20 text-red-500 ring-1 ring-red-500/30"><svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg></div>`
+            processing: `<div class="relative flex h-10 w-10 items-center justify-center rounded-full bg-indigo-500/20 text-indigo-400 ring-1 ring-indigo-500/50 shadow-[0_0_15px_rgba(99,102,241,0.3)]"><svg class="h-5 w-5 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg></div>`,
+            completed: `<div class="flex h-10 w-10 items-center justify-center rounded-full bg-emerald-500/20 text-emerald-400 ring-1 ring-emerald-500/50 shadow-[0_0_15px_rgba(16,185,129,0.3)]"><svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg></div>`,
+            failed: `<div class="flex h-10 w-10 items-center justify-center rounded-full bg-red-500/20 text-red-400 ring-1 ring-red-500/50 shadow-[0_0_15px_rgba(239,68,68,0.3)]"><svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg></div>`
         };
 
         function setLoading(isLoading) {
@@ -261,11 +247,11 @@
             if (isLoading) {
                 UI.btnContent.classList.add('hidden');
                 UI.btnLoader.classList.remove('hidden');
-                UI.btn.classList.add('opacity-75', 'cursor-not-allowed');
+                UI.btn.classList.add('opacity-80', 'cursor-not-allowed');
             } else {
                 UI.btnContent.classList.remove('hidden');
                 UI.btnLoader.classList.add('hidden');
-                UI.btn.classList.remove('opacity-75', 'cursor-not-allowed');
+                UI.btn.classList.remove('opacity-80', 'cursor-not-allowed');
             }
         }
 
@@ -274,6 +260,7 @@
             const referer = document.getElementById('referer').value.trim();
 
             if (!url) {
+                // Shake animation or toast could go here
                 alert('Please enter a valid M3U8 URL');
                 return;
             }
@@ -326,8 +313,6 @@
                     updateStatusUI('failed', data.error);
                     setLoading(false);
                 }
-                // 'processing' is default state
-
             } catch (error) {
                 console.error('Polling error:', error);
             }
@@ -338,20 +323,20 @@
             
             if (status === 'processing') {
                 UI.statusTitle.textContent = 'Processing Video...';
-                UI.statusMessage.textContent = 'We are downloading and converting your stream. Please keep this page open.';
+                UI.statusMessage.textContent = 'We are downloading and converting your stream.';
                 UI.progressBar.classList.remove('hidden');
                 UI.actionArea.classList.add('hidden');
                 UI.errorArea.classList.add('hidden');
             } else if (status === 'completed') {
-                UI.statusTitle.textContent = 'Conversion Successful';
-                UI.statusMessage.textContent = 'Your video has been successfully converted and is ready for download.';
+                UI.statusTitle.textContent = 'Conversion Successful!';
+                UI.statusMessage.textContent = 'Your video is ready.';
                 UI.progressBar.classList.add('hidden');
                 UI.actionArea.classList.remove('hidden');
                 UI.errorArea.classList.add('hidden');
                 UI.downloadBtn.href = `/download/${currentTaskId}`;
             } else if (status === 'failed') {
                 UI.statusTitle.textContent = 'Conversion Failed';
-                UI.statusMessage.textContent = 'We encountered an error while processing your request.';
+                UI.statusMessage.textContent = 'Error occurred during processing.';
                 UI.progressBar.classList.add('hidden');
                 UI.actionArea.classList.add('hidden');
                 UI.errorArea.classList.remove('hidden');
