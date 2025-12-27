@@ -1,3 +1,4 @@
+import shutil
 from flask import Flask, render_template, request, jsonify, send_file
 import subprocess
 import os
@@ -9,30 +10,52 @@ import logging
 import re
 from datetime import datetime, timedelta
 from concurrent.futures import ThreadPoolExecutor
-from contextlib import closing
+from contextlib import closing, contextmanager
+from urllib.parse import urlparse, urljoin
 
 # Configure Logging
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+logging.basicConfig(
+    level=logging.INFO, 
+    format='%(asctime)s - [%(levelname)s] - %(message)s',
+    datefmt='%Y-%m-%d %H:%M:%S'
+)
 logger = logging.getLogger(__name__)
 
 app = Flask(__name__)
 
-# Configuration
-DOWNLOAD_FOLDER = 'downloads'
-DB_PATH = os.path.join(DOWNLOAD_FOLDER, 'tasks.db')
-MAX_WORKERS = 4  # Limit concurrent conversions
-UA_DESKTOP = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
-UA_MOBILE = 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36'
+# --- Configuration ---
+CONFIG = {
+    'DOWNLOAD_FOLDER': 'downloads',
+    'DB_PATH': os.path.join('downloads', 'tasks.db'),
+    'MAX_WORKERS': 4,
+    'CLEANUP_INTERVAL': 86400, # 24 hours
+    'RETENTION_PERIOD': 86400, # 24 hours
+}
 
-os.makedirs(DOWNLOAD_FOLDER, exist_ok=True)
+# User Agents
+USER_AGENTS = {
+    'DESKTOP': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+    'MOBILE': 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36'
+}
 
-# Thread Pool for background tasks
-executor = ThreadPoolExecutor(max_workers=MAX_WORKERS)
+os.makedirs(CONFIG['DOWNLOAD_FOLDER'], exist_ok=True)
+
+# Thread Pool
+executor = ThreadPoolExecutor(max_workers=CONFIG['MAX_WORKERS'])
+
+# --- Database Management ---
+@contextmanager
+def get_db():
+    conn = sqlite3.connect(CONFIG['DB_PATH'])
+    conn.row_factory = sqlite3.Row
+    try:
+        yield conn
+    finally:
+        conn.close()
 
 def init_db():
-    with closing(sqlite3.connect(DB_PATH)) as conn:
-        c = conn.cursor()
-        c.execute('''
+    with get_db() as conn:
+        conn.execute('''
             CREATE TABLE IF NOT EXISTS tasks (
                 id TEXT PRIMARY KEY,
                 url TEXT,
@@ -46,15 +69,9 @@ def init_db():
 
 init_db()
 
-def get_db_connection():
-    conn = sqlite3.connect(DB_PATH)
-    conn.row_factory = sqlite3.Row
-    return conn
-
 def update_task_status(task_id, status, file=None, error=None):
     try:
-        with closing(get_db_connection()) as conn:
-            c = conn.cursor()
+        with get_db() as conn:
             update_fields = ["status = ?"]
             params = [status]
             
@@ -66,63 +83,48 @@ def update_task_status(task_id, status, file=None, error=None):
                 params.append(error)
                 
             params.append(task_id)
-            
             query = f"UPDATE tasks SET {', '.join(update_fields)} WHERE id = ?"
-            c.execute(query, params)
+            conn.execute(query, params)
             conn.commit()
     except Exception as e:
-        logger.error(f"Failed to update task status {task_id}: {e}")
+        logger.error(f"Failed to update task {task_id}: {e}")
+
+# --- Core Logic ---
 
 def convert_m3u8(task_id, url, output_path, referer=None, cookies=None):
-    """Convert M3U8 to MP4 using yt-dlp with Smart Retry (Desktop then Mobile UA)"""
-    logger.info(f"Starting conversion for task {task_id}")
+    """Convert M3U8 to MP4 using yt-dlp with Smart Retry."""
+    logger.info(f"Task {task_id}: Starting conversion for {url}")
     try:
         update_task_status(task_id, 'processing')
         
-        # User Agents to try
-        user_agents = [
-            # Desktop (Default)
-            'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-            # Mobile (Fallback)
-            'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36'
-        ]
-        
-        # Parse domain for default referer
-        from urllib.parse import urlparse
         parsed_url = urlparse(url)
         domain = f"{parsed_url.scheme}://{parsed_url.netloc}/"
         current_referer = referer if referer else domain
         
+        agents_to_try = [USER_AGENTS['DESKTOP'], USER_AGENTS['MOBILE']]
         success = False
         last_error = None
 
-        for i, ua in enumerate(user_agents):
+        for i, ua in enumerate(agents_to_try):
             try:
-                # Build yt-dlp command
                 cmd = [
                     'yt-dlp',
                     '--user-agent', ua,
                     '--add-header', f'Referer: {current_referer}',
                     '--add-header', f'Origin: {domain}',
                     '--no-check-certificate',
-                    '--no-playlist',     # Just download the single video
-                    '-o', output_path,   # Output file
+                    '--no-playlist',
+                    '--concurrent-fragments', '4', # Optimization: Download fragments in parallel
+                    '-o', output_path,
                     url
                 ]
                 
-                # Pass Cookies if available
                 if cookies:
                     cmd.extend(['--add-header', f'Cookie: {cookies}'])
                 
-                logger.info(f"Task {task_id}: Running yt-dlp (Attempt {i+1}) with Referer: {current_referer} and UA: {'Mobile' if 'Mobile' in ua else 'Desktop'}")
+                logger.info(f"Task {task_id}: Attempt {i+1}/{len(agents_to_try)} (UA: {'Mobile' if 'Mobile' in ua else 'Desktop'})")
                 
-                 # Run yt-dlp
-                process = subprocess.Popen(
-                    cmd,
-                    stdout=subprocess.PIPE,
-                    stderr=subprocess.PIPE
-                )
-                
+                process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
                 stdout, stderr = process.communicate()
                 
                 if process.returncode == 0:
@@ -131,36 +133,35 @@ def convert_m3u8(task_id, url, output_path, referer=None, cookies=None):
                     success = True
                     break
                 else:
-                    error_msg = stderr.decode()
-                    logger.warning(f"Task {task_id}: Attempt {i+1} failed. Error: {error_msg[-200:]}")
-                    last_error = error_msg[-200:]
-                    continue
+                    error_msg = stderr.decode().strip()
+                    last_error = error_msg[-300:] # Keep last 300 chars
+                    logger.warning(f"Task {task_id}: Attempt {i+1} failed. Error: {last_error}")
                     
             except Exception as e:
-                logger.error(f"Task {task_id}: Attempt {i+1} error: {e}")
+                logger.error(f"Task {task_id}: Attempt {i+1} exception: {e}")
                 last_error = str(e)
-                continue
-        
+
         if not success:
             logger.error(f"Task {task_id}: All attempts failed")
-            update_task_status(task_id, 'failed', error=f"Download failed after {len(user_agents)} attempts: {last_error}")
+            update_task_status(task_id, 'failed', error=f"Failed: {last_error}")
             
     except Exception as e:
-        logger.error(f"Task {task_id}: Critical error: {e}")
+        logger.critical(f"Task {task_id}: Critical error: {e}")
         update_task_status(task_id, 'failed', error=str(e))
 
 def cleanup_old_files():
-    """Background task to clean up old files and DB entries"""
+    """Background task to clean up old files and DB entries."""
     while True:
         try:
-            time.sleep(86400)  # Check every 24 hours
-            logger.info("Running cleanup task")
+            time.sleep(CONFIG['CLEANUP_INTERVAL'])
+            logger.info("Running cleanup task...")
             
-            # 1. Delete physical files older than 24 hours
-            cutoff_time = time.time() - 86400
-            for filename in os.listdir(DOWNLOAD_FOLDER):
+            cutoff_time = time.time() - CONFIG['RETENTION_PERIOD']
+            
+            # Clean files
+            for filename in os.listdir(CONFIG['DOWNLOAD_FOLDER']):
                 if filename.endswith('.mp4'):
-                    filepath = os.path.join(DOWNLOAD_FOLDER, filename)
+                    filepath = os.path.join(CONFIG['DOWNLOAD_FOLDER'], filename)
                     if os.path.getmtime(filepath) < cutoff_time:
                         try:
                             os.remove(filepath)
@@ -168,31 +169,36 @@ def cleanup_old_files():
                         except OSError as e:
                             logger.warning(f"Error deleting {filename}: {e}")
 
-            # 2. Delete DB entries older than 24 hours
-            with closing(get_db_connection()) as conn:
+            # Clean DB
+            with get_db() as conn:
                 conn.execute("DELETE FROM tasks WHERE created_at < datetime('now', '-1 day')")
                 conn.commit()
                 
         except Exception as e:
             logger.error(f"Cleanup loop error: {e}")
 
-# Start cleanup in background
 executor.submit(cleanup_old_files)
 
-@app.route('/')
-def index():
-    return render_template('index.html')
-
-# ... imports ...
+# --- Selenium Resolver ---
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.common.by import By
 
-# ... existing code ...
+def get_chromedriver_path():
+    """Dynamically resolve chromedriver path."""
+    # 1. Check specific Docker path
+    if os.path.exists("/usr/bin/chromedriver"):
+        return "/usr/bin/chromedriver"
+    # 2. Check system PATH
+    path = shutil.which("chromedriver")
+    if path:
+        return path
+    # 3. Fallback (Let Selenium Manager handle it if installed, or fail)
+    return None
 
 def resolve_source_url(url):
-    """Resolve m3u8 URL from a source page using Headless Chrome (Generic)"""
+    """Resolve m3u8 URL using optimized Headless Chrome."""
     logger.info(f"Resolving source URL: {url}")
     
     chrome_options = Options()
@@ -201,128 +207,126 @@ def resolve_source_url(url):
     chrome_options.add_argument("--disable-dev-shm-usage")
     chrome_options.add_argument("--disable-gpu")
     chrome_options.add_argument("--window-size=1920,1080")
-    chrome_options.add_argument("user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
+    # Optimization: Block images/css to load faster
+    chrome_options.add_argument("--blink-settings=imagesEnabled=false") 
+    chrome_options.add_argument(f"user-agent={USER_AGENTS['DESKTOP']}")
     
-    # Explicitly set path for ARM64/System installed driver
-    service = Service("/usr/bin/chromedriver")
+    driver_path = get_chromedriver_path()
+    service = Service(driver_path) if driver_path else None
+    
+    # If service is None, Selenium >= 4.6 will try to download/find driver automatically
     driver = webdriver.Chrome(service=service, options=chrome_options)
     
     try:
+        driver.set_page_load_timeout(30) # Prevent hanging
         driver.get(url)
-        time.sleep(5)  # Wait for initial load
+        time.sleep(3) # Reduced wait time due to blocked images
         
-        # 1. Search for potential embed iframes if no M3U8 found in top source
+        # 1. Direct Regex Search
         page_source = driver.page_source
         m3u8_matches = re.findall(r'(https?://[^"\']+\.m3u8)', page_source)
         
+        def extract_cookies(drv):
+            return "; ".join([f"{c['name']}={c['value']}" for c in drv.get_cookies()])
+
         if m3u8_matches:
-            found_url = m3u8_matches[0]
-            cookies = driver.get_cookies()
-            cookies_str = "; ".join([f"{c['name']}={c['value']}" for c in cookies])
-            logger.info(f"Resolved m3u8: {found_url}")
-            return found_url, cookies_str
+            return m3u8_matches[0], extract_cookies(driver)
             
-        # If not found, look for likely video iframes (generic)
-        target_src = url
+        # 2. Iframe Search (Recursive-ish)
         iframes = driver.find_elements(By.TAG_NAME, "iframe")
+        target_src = None
+        
         for iframe in iframes:
             src = iframe.get_attribute("src")
-            # Heuristic: iframes with 'embed', 'video', 'stream', or 'player' in URL
             if src and any(k in src.lower() for k in ['embed', 'video', 'stream', 'player', 'id']):
                 target_src = src
-                logger.info(f"Found candidate iframe: {target_src}")
                 break
         
-        if target_src != url:
+        if target_src and target_src != url:
+            logger.info(f"Checking iframe: {target_src}")
             driver.get(target_src)
-            time.sleep(5)
+            time.sleep(3)
             
-            # Re-check for M3U8 in the iframe
-            page_source = driver.page_source
-            m3u8_matches = re.findall(r'(https?://[^"\']+\.m3u8)', page_source)
+            m3u8_matches = re.findall(r'(https?://[^"\']+\.m3u8)', driver.page_source)
             if m3u8_matches:
-                found_url = m3u8_matches[0]
-                cookies = driver.get_cookies()
-                cookies_str = "; ".join([f"{c['name']}={c['value']}" for c in cookies])
-                logger.info(f"Resolved m3u8 in iframe: {found_url}")
-                return found_url, cookies_str
+                return m3u8_matches[0], extract_cookies(driver)
 
-        # 3. JWPlayer fallback (generic)
+        # 3. JWPlayer / Global JS Objects Fallback
         try:
-             jw_url = driver.execute_script("return jwplayer().getPlaylist()[0].file")
+             jw_url = driver.execute_script("return (window.jwplayer && window.jwplayer().getPlaylist) ? window.jwplayer().getPlaylist()[0].file : null")
              if jw_url:
-                 # Handle relative URLs
                  if not jw_url.startswith('http'):
-                     from urllib.parse import urljoin
-                     jw_url = urljoin(target_src, jw_url)
-                 
-                 # Capture cookies
-                 cookies = driver.get_cookies()
-                 cookies_str = "; ".join([f"{c['name']}={c['value']}" for c in cookies])
-                 
-                 logger.info(f"Resolved via JWPlayer: {jw_url}")
-                 return jw_url, cookies_str
-        except:
+                     jw_url = urljoin(driver.current_url, jw_url)
+                 return jw_url, extract_cookies(driver)
+        except Exception:
              pass
              
-        raise Exception("No m3u8 found on the page")
+        raise Exception("No usable M3U8 stream found.")
         
     except Exception as e:
-        logger.error(f"Resolution failed: {e}")
+        logger.error(f"Resolution failed for {url}: {e}")
         raise
     finally:
-        driver.quit()
+        try:
+            driver.quit()
+        except:
+            pass
+
+# --- Routes ---
+
+@app.route('/')
+def index():
+    return render_template('index.html')
 
 @app.route('/convert', methods=['POST'])
 def convert():
     data = request.json
     url = data.get('url', '').strip()
-    # Referer is now strictly the source URL, we assume generic behavior
     
     if not url:
-        return jsonify({'error': 'URL tidak boleh kosong'}), 400
+        return jsonify({'error': 'URL is required'}), 400
     
-    # Auto-resolve if not m3u8
+    # Basic URL validation
+    if not url.startswith(('http://', 'https://')):
+        return jsonify({'error': 'Invalid URL format'}), 400
+
     resolved_url = url
     cookies = None
+    referer = url 
     
-    # Use the input URL as the referer for the conversion process
-    referer = url
-    
-    if not (url.lower().endswith('.m3u8') or '.m3u8' in url.lower()):
+    # Auto-resolve if not M3U8
+    if '.m3u8' not in url.lower():
         try:
             resolved_url, cookies = resolve_source_url(url)
+            logger.info(f"Resolved to: {resolved_url}")
         except Exception as e:
-            return jsonify({'error': f'Gagal mengambil video dari URL: {str(e)}'}), 400
+            return jsonify({'error': f'Could not fetch video: {str(e)}'}), 400
     
     task_id = str(uuid.uuid4())
     filename = f"{task_id}.mp4"
-    output_path = os.path.join(DOWNLOAD_FOLDER, filename)
+    output_path = os.path.join(CONFIG['DOWNLOAD_FOLDER'], filename)
     
     try:
-        with closing(get_db_connection()) as conn:
+        with get_db() as conn:
             conn.execute('INSERT INTO tasks (id, url, status) VALUES (?, ?, ?)',
                          (task_id, resolved_url, 'queued'))
             conn.commit()
             
-        # Submit to thread pool
-        # We use the original 'url' as the referer since that's the page the user visited
         executor.submit(convert_m3u8, task_id, resolved_url, output_path, referer, cookies)
-        
         return jsonify({'task_id': task_id})
+        
     except Exception as e:
-        logger.error(f"Failed to submit task: {e}")
-        return jsonify({'error': 'Internal server error'}), 500
+        logger.error(f"Submission error: {e}")
+        return jsonify({'error': 'Server Error'}), 500
 
 @app.route('/status/<task_id>')
 def status(task_id):
     try:
-        with closing(get_db_connection()) as conn:
+        with get_db() as conn:
             task = conn.execute('SELECT * FROM tasks WHERE id = ?', (task_id,)).fetchone()
         
-        if task is None:
-            return jsonify({'error': 'Task tidak ditemukan'}), 404
-        
+        if not task:
+            return jsonify({'error': 'Task not found'}), 404
         return jsonify(dict(task))
     except Exception:
         return jsonify({'error': 'Database error'}), 500
@@ -330,17 +334,17 @@ def status(task_id):
 @app.route('/download/<task_id>')
 def download(task_id):
     try:
-        with closing(get_db_connection()) as conn:
+        with get_db() as conn:
             task = conn.execute('SELECT * FROM tasks WHERE id = ?', (task_id,)).fetchone()
         
-        if task is None:
-            return jsonify({'error': 'Task tidak ditemukan'}), 404
+        if not task:
+            return jsonify({'error': 'Task not found'}), 404
         
         if task['status'] != 'completed':
-            return jsonify({'error': 'File belum siap'}), 400
+            return jsonify({'error': 'File not ready'}), 400
         
-        if not os.path.exists(task['file']):
-             return jsonify({'error': 'File telah kadaluarsa atau dihapus'}), 404
+        if not task['file'] or not os.path.exists(task['file']):
+             return jsonify({'error': 'File expired or removed'}), 404
 
         return send_file(
             task['file'],
@@ -348,41 +352,38 @@ def download(task_id):
             download_name=f"video_{task_id[:8]}.mp4"
         )
     except Exception as e:
-        logger.error(f"Download error: {e}")
-        return jsonify({'error': 'Gagal mengunduh file'}), 500
+        logger.error(f"Download failed: {e}")
+        return jsonify({'error': 'Download failed'}), 500
 
 @app.route('/admin/tasks')
 def admin_tasks():
     try:
-        with closing(get_db_connection()) as conn:
-            tasks = conn.execute('SELECT * FROM tasks ORDER BY created_at DESC').fetchall()
+        with get_db() as conn:
+            tasks = conn.execute('SELECT * FROM tasks ORDER BY created_at DESC LIMIT 100').fetchall()
         return render_template('admin_tasks.html', tasks=tasks)
     except Exception as e:
-        logger.error(f"Admin view error: {e}")
-        return "Database error", 500
+        logger.error(f"Admin error: {e}")
+        return "Server Error", 500
 
 @app.route('/admin/delete_task/<task_id>', methods=['DELETE'])
 def delete_task(task_id):
     try:
-        with closing(get_db_connection()) as conn:
-            # Get file path first
+        with get_db() as conn:
             task = conn.execute('SELECT file FROM tasks WHERE id = ?', (task_id,)).fetchone()
             
             if task and task['file'] and os.path.exists(task['file']):
                 try:
                     os.remove(task['file'])
-                    logger.info(f"Deleted file for task {task_id}")
-                except OSError as e:
-                    logger.warning(f"Failed to delete file for task {task_id}: {e}")
+                except OSError:
+                    pass
 
-            # Delete DB entry
             conn.execute('DELETE FROM tasks WHERE id = ?', (task_id,))
             conn.commit()
             
         return jsonify({'status': 'success'})
     except Exception as e:
-        logger.error(f"Delete task error: {e}")
         return jsonify({'error': str(e)}), 500
 
 if __name__ == '__main__':
+    # Optimization: Use 0.0.0.0 to be accessible in container/network
     app.run(debug=False, host='0.0.0.0', port=5050)

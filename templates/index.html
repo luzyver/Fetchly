@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>StreamConvert - Professional Media Tools</title>
+    <title>StreamConvert - Professional HLS Downloader</title>
     <meta name="description" content="Secure, fast, and professional M3U8 to MP4 conversion service.">
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
@@ -16,9 +16,9 @@
                         brand: {
                             50: '#f0f9ff',
                             100: '#e0f2fe',
-                            500: '#0ea5e9', // Sky blue
+                            400: '#38bdf8',
+                            500: '#0ea5e9',
                             600: '#0284c7',
-                            700: '#0369a1',
                             900: '#0c4a6e',
                         },
                         slate: {
@@ -30,8 +30,8 @@
                     fontFamily: {
                         sans: ['Plus Jakarta Sans', 'Inter', 'sans-serif'],
                     },
-                    backgroundImage: {
-                        'grid-white': "url(\"data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32' width='32' height='32' fill='none' stroke='rgba(255,255,255,0.05)'%3e%3cpath d='M0 .5H31.5V32'/%3e%3c/svg%3e\")",
+                    animation: {
+                        'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
                     }
                 }
             }
@@ -45,332 +45,369 @@
         }
 
         .glass-panel {
-            background: rgba(15, 23, 42, 0.6);
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
+            background: rgba(15, 23, 42, 0.7);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
             border: 1px solid rgba(255, 255, 255, 0.08);
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+        }
+
+        .input-gradient:focus-within {
+            box-shadow: 0 0 0 2px rgba(14, 165, 233, 0.5), 0 0 20px rgba(14, 165, 233, 0.2);
         }
     </style>
 </head>
 
-<body class="bg-slate-950 text-slate-200 min-h-screen flex flex-col selection:bg-brand-500/30 selection:text-white">
+<body class="bg-slate-950 text-slate-200 min-h-screen flex flex-col selection:bg-brand-500/30 selection:text-white overflow-x-hidden">
 
-    <!-- Background Pattern -->
-    <div
-        class="absolute inset-0 bg-grid-white/[0.05] bg-[bottom_1px_center] [mask-image:linear-gradient(to_bottom,transparent,black)] pointer-events-none -z-10">
-    </div>
-    <div
-        class="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/80 to-transparent pointer-events-none -z-10">
-    </div>
-    <!-- Subtle glow -->
-    <div
-        class="absolute top-0 left-1/2 -translate-x-1/2 w-full h-[500px] bg-brand-500/10 blur-[120px] rounded-full pointer-events-none -z-10">
+    <!-- Ambient Background -->
+    <div class="fixed inset-0 z-0 pointer-events-none">
+        <div class="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-brand-600/20 rounded-full blur-[120px] animate-pulse-slow"></div>
+        <div class="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-purple-600/10 rounded-full blur-[120px] animate-pulse-slow" style="animation-delay: 1.5s"></div>
+        <div class="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAiIGhlaWdodD0iMjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGNpcmNsZSBjeD0iMSIgY3k9IjEiIHI9IjEiIGZpbGw9InJnYmEoMjU1LDI1NSwyNTUsMC4wNSkiLz48L3N2Zz4=')] opacity-30"></div>
     </div>
 
-    <!--Navbar -->
+    <!-- Navbar -->
     <nav class="border-b border-white/5 bg-slate-950/50 backdrop-blur-md sticky top-0 z-50">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex items-center justify-between h-16">
-                <div class="flex items-center space-x-3">
-                    <div
-                        class="w-8 h-8 rounded bg-gradient-to-br from-brand-500 to-blue-600 flex items-center justify-center shadow-lg shadow-brand-500/20">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-white" fill="none"
-                            viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M13 10V3L4 14h7v7l9-11h-7z" />
+                <div class="flex items-center gap-3">
+                    <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-brand-400 to-brand-600 flex items-center justify-center shadow-lg shadow-brand-500/20">
+                        <svg class="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M13 10V3L4 14h7v7l9-11h-7z" />
                         </svg>
                     </div>
-                    <span class="text-lg font-bold text-white tracking-tight">
-                        StreamConvert
-                    </span>
+                    <span class="text-lg font-bold text-white tracking-tight">StreamConvert</span>
                 </div>
+                <a href="/admin/tasks" class="text-xs font-medium text-slate-400 hover:text-white transition-colors uppercase tracking-wider">
+                    Tasks
+                </a>
             </div>
         </div>
     </nav>
 
     <!-- Main Content -->
-    <main class="flex-grow flex flex-col items-center justify-center p-4 sm:p-8 relative">
+    <main class="flex-grow flex flex-col items-center justify-center p-4 sm:p-8 relative z-10">
 
-        <div class="w-full max-w-2xl mx-auto space-y-10 z-10">
+        <div class="w-full max-w-2xl mx-auto space-y-8">
 
-            <!-- Hero Text -->
-            <div class="text-center space-y-4">
-                <h1 class="text-4xl sm:text-5xl md:text-6xl font-bold tracking-tight text-white">
-                    Convert M3U8 Streams <br class="hidden sm:block" />
-                    <span class="text-slate-400">to MP4 Format</span>
+            <!-- Hero Section -->
+            <div class="text-center space-y-4 pt-8">
+                <h1 class="text-4xl sm:text-5xl md:text-6xl font-bold tracking-tight text-white drop-shadow-sm">
+                    Convert M3U8 <br class="hidden sm:block" />
+                    <span class="text-transparent bg-clip-text bg-gradient-to-r from-brand-400 to-blue-500">Fast & Securely</span>
                 </h1>
                 <p class="text-lg text-slate-400 max-w-xl mx-auto leading-relaxed">
-                    Securely download and convert HLS streams directly from your browser. High processing speed and
-                    reliability.
+                    Download HLS streams and save them as MP4 directly to your device.
                 </p>
             </div>
 
-            <!-- Converter Card -->
-            <div class="glass-panel rounded-2xl p-1 shadow-2xl shadow-black/50">
-                <div class="bg-slate-900/50 rounded-xl p-6 sm:p-8 space-y-6">
+            <!-- Main Interface -->
+            <div class="glass-panel rounded-2xl p-1">
+                <div class="bg-slate-900/40 rounded-xl p-6 sm:p-8 space-y-6">
 
-                    <div class="space-y-5">
-                        <!-- URL Input -->
-                        <div class="group">
-                            <label for="url" class="block text-sm font-medium text-slate-300 mb-2 ml-1">Stream
-                                URL</label>
-                            <div class="relative">
-                                <input type="text" id="url"
-                                    class="block w-full px-4 py-3.5 bg-slate-800/50 border border-slate-700 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-brand-500/50 focus:border-brand-500 transition-all font-mono text-sm shadow-sm"
-                                    placeholder="https://example.com/playlist.m3u8">
+                    <!-- Input Area -->
+                    <div class="space-y-2">
+                        <label for="url" class="block text-xs font-semibold text-slate-400 uppercase tracking-wider ml-1">Source URL</label>
+                        <div class="relative group input-gradient rounded-lg transition-all duration-300">
+                            <input type="text" id="url"
+                                class="block w-full pl-4 pr-24 py-4 bg-slate-800/80 border border-slate-700/50 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:bg-slate-800 transition-colors font-mono text-sm"
+                                placeholder="https://site.com/video.m3u8">
+                            
+                            <!-- Right Actions -->
+                            <div class="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-2">
+                                <button type="button" id="pasteBtn" class="p-2 text-slate-400 hover:text-white hover:bg-slate-700/50 rounded-md transition-all" title="Paste from Clipboard">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+                                </button>
+                                <button type="button" id="clearBtn" class="hidden p-2 text-slate-400 hover:text-red-400 hover:bg-red-500/10 rounded-md transition-all" title="Clear">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                                </button>
                             </div>
                         </div>
-
                     </div>
-                </div>
 
-                <!-- Action Button -->
-                <button id="convertBtn" onclick="startConvert()"
-                    class="w-full relative group overflow-hidden rounded-lg bg-brand-500 hover:bg-brand-400 text-white font-bold py-4 transition-all duration-200 shadow-[0_0_20px_rgba(14,165,233,0.3)] hover:shadow-[0_0_25px_rgba(14,165,233,0.5)] active:scale-[0.98]">
-                    <div id="btnContent" class="flex items-center justify-center space-x-2">
-                        <span class="uppercase tracking-wider">Start Conversion</span>
-                        <svg class="w-5 h-5 group-hover:translate-x-1 transition-transform" fill="none"
-                            stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"
-                                d="M14 5l7 7m0 0l-7 7m7-7H3"></path>
-                        </svg>
-                    </div>
-                    <!-- Loader -->
-                    <div id="btnLoader" class="hidden flex items-center justify-center space-x-2">
-                        <svg class="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none"
-                            viewBox="0 0 24 24">
-                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4">
-                            </circle>
-                            <path class="opacity-75" fill="currentColor"
-                                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z">
-                            </path>
-                        </svg>
-                        <span class="font-bold uppercase tracking-wider">Processing...</span>
-                    </div>
-                </button>
+                    <!-- Main Button -->
+                    <button id="convertBtn" onclick="App.startConversion()"
+                        class="w-full relative group overflow-hidden rounded-lg bg-gradient-to-r from-brand-600 to-brand-500 hover:from-brand-500 hover:to-brand-400 text-white font-bold py-4 transition-all duration-300 shadow-lg shadow-brand-500/20 hover:shadow-brand-500/40 transform active:scale-[0.99] disabled:opacity-70 disabled:cursor-not-allowed">
+                        <div class="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300"></div>
+                        
+                        <div id="btnContent" class="relative flex items-center justify-center space-x-2">
+                            <span class="uppercase tracking-widest text-sm">Start Conversion</span>
+                            <svg class="w-5 h-5 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
+                        </div>
+                        
+                        <!-- Loader State -->
+                        <div id="btnLoader" class="hidden relative flex items-center justify-center space-x-3">
+                            <svg class="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                            <span class="font-bold uppercase tracking-widest text-sm">Processing...</span>
+                        </div>
+                    </button>
 
-                <!-- Status Panel -->
-                <div id="statusCard"
-                    class="hidden rounded-lg bg-slate-800/30 border border-slate-700/50 p-4 transition-all animate-fade-in-up">
-                    <div class="flex items-start space-x-4">
-                        <div id="statusIcon" class="flex-shrink-0 mt-0.5"></div>
-                        <div class="flex-1 min-w-0 space-y-1">
-                            <p id="statusTitle" class="text-sm font-semibold text-white"></p>
-                            <p id="statusMessage" class="text-sm text-slate-400 leading-relaxed"></p>
+                    <!-- Status Panel -->
+                    <div id="statusCard" class="hidden animate-fade-in">
+                        <div class="rounded-lg bg-slate-800/50 border border-slate-700/50 p-5 backdrop-blur-sm">
+                            <div class="flex items-start gap-4">
+                                <div id="statusIcon" class="flex-shrink-0 mt-1"></div>
+                                <div class="flex-1 min-w-0 space-y-1">
+                                    <h3 id="statusTitle" class="text-sm font-semibold text-white"></h3>
+                                    <p id="statusMessage" class="text-sm text-slate-400 leading-relaxed"></p>
 
-                            <!-- Progress Indicator -->
-                            <div id="progressBarContainer"
-                                class="hidden mt-3 h-1 w-full bg-slate-700 rounded-full overflow-hidden">
-                                <div class="h-full bg-brand-500 animate-pulse w-1/3 rounded-full loading-bar-anim">
+                                    <!-- Progress Bar -->
+                                    <div id="progressBar" class="hidden mt-4 h-1.5 w-full bg-slate-700/50 rounded-full overflow-hidden">
+                                        <div class="h-full bg-brand-500 animate-loading-bar w-1/3 rounded-full relative overflow-hidden">
+                                            <div class="absolute inset-0 bg-white/20 animate-pulse"></div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Download Action -->
+                                    <div id="actionArea" class="hidden mt-4">
+                                        <a href="#" id="downloadBtn" class="inline-flex items-center justify-center w-full sm:w-auto px-6 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold rounded-lg transition-all shadow-lg shadow-emerald-500/20 text-sm gap-2">
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                                            Download Video
+                                        </a>
+                                    </div>
+
+                                    <!-- Error Details -->
+                                    <div id="errorArea" class="hidden mt-3 p-3 bg-red-500/10 border border-red-500/20 rounded-md">
+                                        <code id="errorDetails" class="text-xs font-mono text-red-400 break-all block"></code>
+                                    </div>
                                 </div>
                             </div>
-                            <style>
-                                .loading-bar-anim {
-                                    animation: loading 1.5s infinite ease-in-out;
-                                }
-
-                                @keyframes loading {
-                                    0% {
-                                        transform: translateX(-100%);
-                                        width: 20%;
-                                    }
-
-                                    100% {
-                                        transform: translateX(400%);
-                                        width: 20%;
-                                    }
-                                }
-                            </style>
-
-                            <!-- Action Buttons -->
-                            <div id="actionArea" class="hidden mt-3">
-                                <a href="#" id="downloadBtn"
-                                    class="inline-flex items-center justify-center w-full px-4 py-3 bg-emerald-500 hover:bg-emerald-400 text-white font-bold rounded-lg transition-colors shadow-lg shadow-emerald-500/20 uppercase text-xs tracking-widest">
-                                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"
-                                            d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4">
-                                        </path>
-                                    </svg>
-                                    Download Video
-                                </a>
-                            </div>
-
-                            <!-- Error Display -->
-                            <div id="errorArea" class="hidden mt-2">
-                                <p id="errorDetails" class="text-xs font-mono text-red-400 break-all"></p>
-                            </div>
                         </div>
                     </div>
+
                 </div>
             </div>
-        </div>
 
-        <!-- Trust Indicators -->
-        <div class="grid grid-cols-1 sm:grid-cols-3 gap-6 pt-4 border-t border-white/5">
-            <div
-                class="flex flex-col sm:flex-row items-center justify-center sm:justify-start space-y-2 sm:space-y-0 sm:space-x-3 text-slate-400">
-                <svg class="w-5 h-5 text-brand-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                        d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                </svg>
-                <span class="text-sm font-medium">Fast Processing</span>
+            <!-- Features Grid -->
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-6 pt-6 border-t border-white/5">
+                <div class="text-center sm:text-left space-y-2">
+                    <div class="flex items-center justify-center sm:justify-start gap-2 text-slate-300 font-medium">
+                        <svg class="w-5 h-5 text-brand-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+                        <span>Fast Engine</span>
+                    </div>
+                    <p class="text-xs text-slate-500">Optimized for speed with parallel processing.</p>
+                </div>
+                <div class="text-center sm:text-left space-y-2">
+                    <div class="flex items-center justify-center sm:justify-start gap-2 text-slate-300 font-medium">
+                        <svg class="w-5 h-5 text-brand-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
+                        <span>Secure</span>
+                    </div>
+                    <p class="text-xs text-slate-500">Files are auto-deleted after 24 hours.</p>
+                </div>
+                <div class="text-center sm:text-left space-y-2">
+                    <div class="flex items-center justify-center sm:justify-start gap-2 text-slate-300 font-medium">
+                        <svg class="w-5 h-5 text-brand-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"></path></svg>
+                        <span>Mobile Ready</span>
+                    </div>
+                    <p class="text-xs text-slate-500">Works perfectly on all your devices.</p>
+                </div>
             </div>
-            <div
-                class="flex flex-col sm:flex-row items-center justify-center sm:justify-start space-y-2 sm:space-y-0 sm:space-x-3 text-slate-400">
-                <svg class="w-5 h-5 text-brand-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                        d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z">
-                    </path>
-                </svg>
-                <span class="text-sm font-medium">Auto-Deletion</span>
-            </div>
-            <div
-                class="flex flex-col sm:flex-row items-center justify-center sm:justify-start space-y-2 sm:space-y-0 sm:space-x-3 text-slate-400">
-                <svg class="w-5 h-5 text-brand-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                        d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"></path>
-                </svg>
-                <span class="text-sm font-medium">Mobile Optimized</span>
-            </div>
-        </div>
 
         </div>
     </main>
 
-    <footer class="py-8 text-center border-t border-white/5 mt-auto">
-        <p class="text-slate-600 text-sm">
-            &copy;
-            <script>document.write(new Date().getFullYear())</script> StreamConvert.
+    <footer class="py-6 text-center border-t border-white/5 mt-auto relative z-10 bg-slate-950">
+        <p class="text-slate-600 text-xs">
+            &copy; <script>document.write(new Date().getFullYear())</script> StreamConvert.
         </p>
     </footer>
 
-    <script>
-        let currentTaskId = null;
-        let pollInterval = null;
-
-        const UI = {
-            btn: document.getElementById('convertBtn'),
-            btnContent: document.getElementById('btnContent'),
-            btnLoader: document.getElementById('btnLoader'),
-            statusCard: document.getElementById('statusCard'),
-            statusIcon: document.getElementById('statusIcon'),
-            statusTitle: document.getElementById('statusTitle'),
-            statusMessage: document.getElementById('statusMessage'),
-            progressBar: document.getElementById('progressBarContainer'),
-            actionArea: document.getElementById('actionArea'),
-            downloadBtn: document.getElementById('downloadBtn'),
-            errorArea: document.getElementById('errorArea'),
-            errorDetails: document.getElementById('errorDetails')
-        };
-
-        const ICONS = {
-            processing: `<div class="rounded-full bg-brand-500/10 p-2"><svg class="h-5 w-5 text-brand-500 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg></div>`,
-            completed: `<div class="rounded-full bg-emerald-500/10 p-2"><svg class="h-5 w-5 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg></div>`,
-            failed: `<div class="rounded-full bg-red-500/10 p-2"><svg class="h-5 w-5 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg></div>`
-        };
-
-        function setLoading(isLoading) {
-            UI.btn.disabled = isLoading;
-            if (isLoading) {
-                UI.btnContent.classList.add('hidden');
-                UI.btnLoader.classList.remove('hidden');
-                UI.btn.classList.add('opacity-80', 'cursor-not-allowed');
-            } else {
-                UI.btnContent.classList.remove('hidden');
-                UI.btnLoader.classList.add('hidden');
-                UI.btn.classList.remove('opacity-80', 'cursor-not-allowed');
-            }
+    <style>
+        @keyframes loading-bar {
+            0% { transform: translateX(-100%); width: 20%; }
+            50% { width: 40%; }
+            100% { transform: translateX(300%); width: 20%; }
         }
+        .animate-loading-bar {
+            animation: loading-bar 2s infinite cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        @keyframes fade-in {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-fade-in {
+            animation: fade-in 0.3s ease-out forwards;
+        }
+    </style>
 
-        async function startConvert() {
-            const url = document.getElementById('url').value.trim();
-            // Referer is now handled automatically by the server
-            const referer = '';
+    <script>
+        const App = {
+            state: {
+                currentTaskId: null,
+                pollInterval: null,
+                isProcessing: false
+            },
+            
+            elements: {
+                input: document.getElementById('url'),
+                pasteBtn: document.getElementById('pasteBtn'),
+                clearBtn: document.getElementById('clearBtn'),
+                convertBtn: document.getElementById('convertBtn'),
+                btnContent: document.getElementById('btnContent'),
+                btnLoader: document.getElementById('btnLoader'),
+                statusCard: document.getElementById('statusCard'),
+                statusIcon: document.getElementById('statusIcon'),
+                statusTitle: document.getElementById('statusTitle'),
+                statusMessage: document.getElementById('statusMessage'),
+                progressBar: document.getElementById('progressBar'),
+                actionArea: document.getElementById('actionArea'),
+                downloadBtn: document.getElementById('downloadBtn'),
+                errorArea: document.getElementById('errorArea'),
+                errorDetails: document.getElementById('errorDetails')
+            },
 
-            if (!url) {
-                alert('Please enter a valid M3U8 URL');
-                return;
-            }
+            init() {
+                this.bindEvents();
+                this.checkInputState();
+            },
 
-            setLoading(true);
-            UI.statusCard.classList.add('hidden');
-            UI.errorArea.classList.add('hidden');
-
-            try {
-                const response = await fetch('/convert', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ url, referer })
+            bindEvents() {
+                this.elements.input.addEventListener('input', () => this.checkInputState());
+                
+                this.elements.pasteBtn.addEventListener('click', async () => {
+                    try {
+                        const text = await navigator.clipboard.readText();
+                        this.elements.input.value = text;
+                        this.checkInputState();
+                    } catch (err) {
+                        console.error('Failed to read clipboard', err);
+                    }
                 });
 
-                const data = await response.json();
+                this.elements.clearBtn.addEventListener('click', () => {
+                    this.elements.input.value = '';
+                    this.checkInputState();
+                    this.elements.input.focus();
+                });
+            },
 
-                if (!response.ok) throw new Error(data.error || 'Conversion failed to start');
+            checkInputState() {
+                const hasValue = this.elements.input.value.trim().length > 0;
+                this.elements.clearBtn.classList.toggle('hidden', !hasValue);
+                this.elements.pasteBtn.classList.toggle('hidden', hasValue);
+            },
 
-                currentTaskId = data.task_id;
-
-                UI.statusCard.classList.remove('hidden');
-                updateStatusUI('processing');
-
-                if (pollInterval) clearInterval(pollInterval);
-                pollInterval = setInterval(checkStatus, 3000);
-
-            } catch (error) {
-                setLoading(false);
-                UI.statusCard.classList.remove('hidden');
-                updateStatusUI('failed', error.message);
-            }
-        }
-
-        async function checkStatus() {
-            if (!currentTaskId) return;
-
-            try {
-                const response = await fetch(`/status/${currentTaskId}`);
-                if (!response.ok) throw new Error('Network response was not ok');
-
-                const data = await response.json();
-
-                if (data.status === 'completed') {
-                    clearInterval(pollInterval);
-                    updateStatusUI('completed');
-                    setLoading(false);
-                } else if (data.status === 'failed') {
-                    clearInterval(pollInterval);
-                    updateStatusUI('failed', data.error);
-                    setLoading(false);
+            setLoading(isLoading) {
+                this.state.isProcessing = isLoading;
+                this.elements.convertBtn.disabled = isLoading;
+                this.elements.input.disabled = isLoading;
+                
+                if (isLoading) {
+                    this.elements.btnContent.classList.add('hidden');
+                    this.elements.btnLoader.classList.remove('hidden');
+                } else {
+                    this.elements.btnContent.classList.remove('hidden');
+                    this.elements.btnLoader.classList.add('hidden');
+                    this.elements.input.disabled = false;
                 }
-            } catch (error) {
-                console.error('Polling error:', error);
-            }
-        }
+            },
 
-        function updateStatusUI(status, message = '') {
-            UI.statusIcon.innerHTML = ICONS[status] || ICONS.processing;
+            async startConversion() {
+                const url = this.elements.input.value.trim();
+                
+                if (!url) {
+                    alert('Please enter a URL');
+                    return;
+                }
 
-            if (status === 'processing') {
-                UI.statusTitle.textContent = 'Processing Video...';
-                UI.statusMessage.textContent = 'We are downloading and converting your stream.';
-                UI.progressBar.classList.remove('hidden');
-                UI.actionArea.classList.add('hidden');
-                UI.errorArea.classList.add('hidden');
-            } else if (status === 'completed') {
-                UI.statusTitle.textContent = 'Conversion Successful';
-                UI.statusMessage.textContent = 'Your video is ready for download.';
-                UI.progressBar.classList.add('hidden');
-                UI.actionArea.classList.remove('hidden');
-                UI.errorArea.classList.add('hidden');
-                UI.downloadBtn.href = `/download/${currentTaskId}`;
-            } else if (status === 'failed') {
-                UI.statusTitle.textContent = 'Conversion Failed';
-                UI.statusMessage.textContent = 'Error occurred during processing.';
-                UI.progressBar.classList.add('hidden');
-                UI.actionArea.classList.add('hidden');
-                UI.errorArea.classList.remove('hidden');
-                UI.errorDetails.textContent = message || 'Unknown error occurred.';
+                this.setLoading(true);
+                this.elements.statusCard.classList.add('hidden');
+                this.elements.errorArea.classList.add('hidden');
+
+                try {
+                    const response = await fetch('/convert', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ url })
+                    });
+
+                    const data = await response.json();
+
+                    if (!response.ok) throw new Error(data.error || 'Failed to start');
+
+                    this.state.currentTaskId = data.task_id;
+                    this.elements.statusCard.classList.remove('hidden');
+                    this.updateStatusUI('processing');
+
+                    if (this.state.pollInterval) clearInterval(this.state.pollInterval);
+                    this.state.pollInterval = setInterval(() => this.checkStatus(), 2000);
+
+                } catch (error) {
+                    this.setLoading(false);
+                    this.elements.statusCard.classList.remove('hidden');
+                    this.updateStatusUI('failed', error.message);
+                }
+            },
+
+            async checkStatus() {
+                if (!this.state.currentTaskId) return;
+
+                try {
+                    const response = await fetch(`/status/${this.state.currentTaskId}`);
+                    if (!response.ok) throw new Error('Network error');
+
+                    const data = await response.json();
+
+                    if (data.status === 'completed') {
+                        this.stopPolling();
+                        this.updateStatusUI('completed');
+                        this.setLoading(false);
+                    } else if (data.status === 'failed') {
+                        this.stopPolling();
+                        this.updateStatusUI('failed', data.error);
+                        this.setLoading(false);
+                    }
+                } catch (error) {
+                    console.error('Poll error:', error);
+                }
+            },
+
+            stopPolling() {
+                if (this.state.pollInterval) {
+                    clearInterval(this.state.pollInterval);
+                    this.state.pollInterval = null;
+                }
+            },
+
+            updateStatusUI(status, message = '') {
+                const icons = {
+                    processing: `<div class="rounded-full bg-brand-500/10 p-2 ring-1 ring-brand-500/20"><svg class="h-6 w-6 text-brand-500 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg></div>`,
+                    completed: `<div class="rounded-full bg-emerald-500/10 p-2 ring-1 ring-emerald-500/20"><svg class="h-6 w-6 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg></div>`,
+                    failed: `<div class="rounded-full bg-red-500/10 p-2 ring-1 ring-red-500/20"><svg class="h-6 w-6 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg></div>`
+                };
+
+                this.elements.statusIcon.innerHTML = icons[status] || icons.processing;
+
+                if (status === 'processing') {
+                    this.elements.statusTitle.textContent = 'Processing Stream...';
+                    this.elements.statusMessage.textContent = 'Analyzing source, downloading segments, and converting to MP4.';
+                    this.elements.progressBar.classList.remove('hidden');
+                    this.elements.actionArea.classList.add('hidden');
+                    this.elements.errorArea.classList.add('hidden');
+                } else if (status === 'completed') {
+                    this.elements.statusTitle.textContent = 'Ready for Download';
+                    this.elements.statusMessage.textContent = 'Conversion finished successfully.';
+                    this.elements.progressBar.classList.add('hidden');
+                    this.elements.actionArea.classList.remove('hidden');
+                    this.elements.errorArea.classList.add('hidden');
+                    this.elements.downloadBtn.href = `/download/${this.state.currentTaskId}`;
+                } else if (status === 'failed') {
+                    this.elements.statusTitle.textContent = 'Conversion Failed';
+                    this.elements.statusMessage.textContent = 'We encountered an error processing this URL.';
+                    this.elements.progressBar.classList.add('hidden');
+                    this.elements.actionArea.classList.add('hidden');
+                    this.elements.errorArea.classList.remove('hidden');
+                    this.elements.errorDetails.textContent = message || 'Unknown server error.';
+                }
             }
-        }
+        };
+
+        // Initialize App
+        document.addEventListener('DOMContentLoaded', () => App.init());
     </script>
 </body>
-
 </html>
