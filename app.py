@@ -141,11 +141,11 @@ def cleanup_old_files():
     """Background task to clean up old files and DB entries"""
     while True:
         try:
-            time.sleep(3600)  # Check every hour
+            time.sleep(86400)  # Check every 24 hours
             logger.info("Running cleanup task")
             
-            # 1. Delete physical files older than 1 hour
-            cutoff_time = time.time() - 3600
+            # 1. Delete physical files older than 24 hours
+            cutoff_time = time.time() - 86400
             for filename in os.listdir(DOWNLOAD_FOLDER):
                 if filename.endswith('.mp4'):
                     filepath = os.path.join(DOWNLOAD_FOLDER, filename)
@@ -156,9 +156,9 @@ def cleanup_old_files():
                         except OSError as e:
                             logger.warning(f"Error deleting {filename}: {e}")
 
-            # 2. Delete DB entries older than 1 hour
+            # 2. Delete DB entries older than 24 hours
             with closing(get_db_connection()) as conn:
-                conn.execute("DELETE FROM tasks WHERE created_at < datetime('now', '-1 hour')")
+                conn.execute("DELETE FROM tasks WHERE created_at < datetime('now', '-1 day')")
                 conn.commit()
                 
         except Exception as e:
