@@ -254,6 +254,14 @@ def resolve_source_url(url):
 def index():
     return render_template('index.html')
 
+@app.errorhandler(404)
+def page_not_found(e):
+    return render_template('404.html'), 404
+
+@app.errorhandler(405)
+def method_not_allowed(e):
+    return render_template('405.html'), 405
+
 @app.route('/convert', methods=['POST'])
 def convert():
     data = request.json
