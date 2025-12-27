@@ -1,6 +1,3 @@
-/**
- * Modern Toast Notification System
- */
 const Toast = {
     container: null,
     
@@ -45,7 +42,6 @@ const Toast = {
         
         this.container.appendChild(toast);
         
-        // Auto dismiss
         if (duration > 0) {
             setTimeout(() => this.dismiss(toast), duration);
         }
@@ -78,7 +74,6 @@ const Toast = {
         return this.show(message, 'warning', duration);
     },
 
-    // Clear all toasts
     clear() {
         if (this.container) {
             this.container.innerHTML = '';
@@ -86,5 +81,4 @@ const Toast = {
     }
 };
 
-// Make it globally available
 window.Toast = Toast;

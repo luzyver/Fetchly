@@ -7,18 +7,15 @@
     <meta name="description" content="Secure, fast, and professional M3U8 to MP4 conversion service.">
     <meta name="theme-color" content="#020617">
     
-    <!-- CSS -->
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
     
-    <!-- Scripts -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="{{ url_for('static', filename='js/tailwind_config.js') }}"></script>
 </head>
 
 <body class="bg-slate-950 text-slate-200 min-h-screen flex flex-col selection:bg-brand-500/30 selection:text-white overflow-x-hidden">
 
-    <!-- Background Effects -->
     <div class="fixed inset-0 z-0 pointer-events-none">
         <div class="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-brand-600/20 rounded-full blur-[120px] animate-pulse-slow"></div>
         <div class="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-purple-600/10 rounded-full blur-[120px] animate-pulse-slow" style="animation-delay: 1.5s"></div>
@@ -26,7 +23,6 @@
         <div class="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAiIGhlaWdodD0iMjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGNpcmNsZSBjeD0iMSIgY3k9IjEiIHI9IjEiIGZpbGw9InJnYmEoMjU1LDI1NSwyNTUsMC4wMykiLz48L3N2Zz4=')] opacity-50"></div>
     </div>
 
-    <!-- Navigation -->
     <nav class="border-b border-white/5 bg-slate-950/50 backdrop-blur-md sticky top-0 z-50">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex items-center justify-between h-16">
@@ -42,11 +38,9 @@
         </div>
     </nav>
 
-    <!-- Main Content -->
     <main class="flex-grow flex flex-col items-center justify-center p-4 sm:p-8 relative z-10">
         <div class="w-full max-w-2xl mx-auto space-y-8">
 
-            <!-- Hero Section -->
             <div class="text-center space-y-4 pt-4 sm:pt-8 animate-fade-in">
                 <h1 class="text-4xl sm:text-5xl md:text-6xl font-bold tracking-tight text-white drop-shadow-sm leading-tight">
                     Convert M3U8 <br class="hidden sm:block" />
@@ -57,11 +51,9 @@
                 </p>
             </div>
 
-            <!-- Converter Card -->
             <div class="glass-panel rounded-2xl p-1 animate-scale-in" style="animation-delay: 0.1s">
                 <div class="bg-slate-900/40 rounded-xl p-5 sm:p-8 space-y-6">
 
-                    <!-- URL Input -->
                     <div class="space-y-2">
                         <label for="url" class="block text-xs font-semibold text-slate-400 uppercase tracking-wider ml-1">Source URL</label>
                         <div class="relative group input-gradient rounded-xl transition-all duration-300">
@@ -80,7 +72,6 @@
                         </div>
                     </div>
 
-                    <!-- Convert Button -->
                     <button id="convertBtn" onclick="App.startConversion()"
                         class="btn-primary w-full relative group overflow-hidden rounded-xl bg-gradient-to-r from-brand-600 to-brand-500 hover:from-brand-500 hover:to-brand-400 text-white font-bold py-4 transition-all duration-300 shadow-lg shadow-brand-500/20 hover:shadow-brand-500/40 hover:scale-[1.02] active:scale-[0.98] disabled:opacity-70 disabled:cursor-not-allowed disabled:hover:scale-100">
                         <div class="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300"></div>
@@ -99,7 +90,6 @@
                         </div>
                     </button>
 
-                    <!-- Status Card -->
                     <div id="statusCard" class="hidden">
                         <div class="rounded-xl bg-slate-800/50 border border-slate-700/50 p-5 backdrop-blur-sm">
                             <div class="flex items-start gap-4">
@@ -108,7 +98,6 @@
                                     <h3 id="statusTitle" class="text-sm font-semibold text-white"></h3>
                                     <p id="statusMessage" class="text-sm text-slate-400 leading-relaxed"></p>
 
-                                    <!-- Progress Bar with Percentage -->
                                     <div id="progressContainer" class="hidden mt-4 space-y-2">
                                         <div class="flex items-center justify-between text-xs">
                                             <span class="text-slate-400 font-medium">Converting...</span>
@@ -119,7 +108,6 @@
                                         </div>
                                     </div>
 
-                                    <!-- Download Button -->
                                     <div id="actionArea" class="hidden mt-4">
                                         <a href="#" id="downloadBtn" class="btn-primary inline-flex items-center justify-center w-full sm:w-auto px-6 py-3.5 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold rounded-xl transition-all shadow-lg shadow-emerald-500/20 hover:shadow-emerald-500/40 text-sm gap-2 hover:scale-[1.02] active:scale-[0.98]">
                                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
@@ -127,7 +115,6 @@
                                         </a>
                                     </div>
 
-                                    <!-- Error Area -->
                                     <div id="errorArea" class="hidden mt-3 p-3 bg-red-500/10 border border-red-500/20 rounded-lg">
                                         <code id="errorDetails" class="text-xs font-mono text-red-400 break-all block"></code>
                                     </div>
@@ -139,7 +126,6 @@
                 </div>
             </div>
 
-            <!-- Feature Cards -->
             <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6 pt-6 border-t border-white/5 pb-6">
                 <div class="feature-card bg-slate-900/30 rounded-xl p-5 text-center sm:text-left space-y-3 border border-white/5">
                     <div class="flex items-center justify-center sm:justify-start gap-3">
@@ -173,14 +159,12 @@
         </div>
     </main>
 
-    <!-- Footer -->
     <footer class="py-6 text-center border-t border-white/5 mt-auto relative z-10 bg-slate-950/50 backdrop-blur-sm">
         <p class="text-slate-600 text-xs">
             &copy; <span id="year"></span> StreamConvert. All rights reserved.
         </p>
     </footer>
 
-    <!-- Scripts -->
     <script>document.getElementById('year').textContent = new Date().getFullYear();</script>
     <script src="{{ url_for('static', filename='js/toast.js') }}"></script>
     <script src="{{ url_for('static', filename='js/app.js') }}"></script>

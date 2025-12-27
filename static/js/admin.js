@@ -6,12 +6,11 @@ document.addEventListener('DOMContentLoaded', () => {
     updateToggleUI(isAutoRefresh);
     if(isAutoRefresh) startRefresh();
     
-    // Add table row animations
     animateTableRows();
 });
 
 function animateTableRows() {
-    const rows = document.querySelectorAll('tbody tr, .md\\:hidden > div');
+    const rows = document.querySelectorAll('tbody tr, .md\:hidden > div');
     rows.forEach((row, index) => {
         row.style.opacity = '0';
         row.style.transform = 'translateY(10px)';
@@ -63,7 +62,6 @@ function stopRefresh() {
 }
 
 async function deleteTask(taskId) {
-    // Create custom confirm modal
     const confirmed = await showConfirmModal(
         'Delete Task',
         'Are you sure you want to permanently delete this task and its file?'
@@ -77,9 +75,8 @@ async function deleteTask(taskId) {
         const response = await fetch(`/admin/delete_task/${taskId}`, { method: 'DELETE' });
         if (response.ok) {
             Toast.success('Task deleted successfully');
-            // Animate row removal
             const row = document.querySelector(`[data-task-id="${taskId}"]`) || 
-                        event.target.closest('tr, .md\\:hidden > div');
+                        event.target.closest('tr, .md\:hidden > div');
             if (row) {
                 row.style.transition = 'all 0.3s ease';
                 row.style.opacity = '0';
@@ -97,7 +94,6 @@ async function deleteTask(taskId) {
     }
 }
 
-// Custom confirm modal
 function showConfirmModal(title, message) {
     return new Promise((resolve) => {
         const overlay = document.createElement('div');
@@ -139,7 +135,6 @@ function showConfirmModal(title, message) {
     });
 }
 
-// Loading skeleton for async content
 function showLoadingSkeleton(container, count = 3) {
     container.innerHTML = Array(count).fill(`
         <div class="p-4 space-y-3 animate-pulse">

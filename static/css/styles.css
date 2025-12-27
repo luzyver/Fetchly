@@ -3,7 +3,6 @@ body {
     -webkit-tap-highlight-color: transparent;
 }
 
-/* ===== GLASSMORPHISM ===== */
 .glass-panel {
     background: rgba(15, 23, 42, 0.7);
     backdrop-filter: blur(20px);
@@ -22,7 +21,6 @@ body {
     box-shadow: 0 0 0 2px rgba(14, 165, 233, 0.5), 0 0 20px rgba(14, 165, 233, 0.2);
 }
 
-/* ===== BUTTON EFFECTS ===== */
 .btn-primary {
     position: relative;
     overflow: hidden;
@@ -59,7 +57,6 @@ body {
     transform: translateY(0) scale(0.98);
 }
 
-/* ===== ANIMATIONS ===== */
 @keyframes slide-up {
     from { 
         transform: translateY(100%); 
@@ -132,7 +129,6 @@ body {
 .animate-scale-in { animation: scale-in 0.3s cubic-bezier(0.16, 1, 0.3, 1); }
 .animate-bounce-in { animation: bounce-in 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55); }
 
-/* ===== LOADING SKELETON ===== */
 .skeleton {
     background: linear-gradient(
         90deg,
@@ -161,7 +157,6 @@ body {
     border-radius: 0.5rem;
 }
 
-/* ===== PROGRESS BAR ===== */
 .progress-container {
     position: relative;
     height: 8px;
@@ -197,7 +192,6 @@ body {
     animation: progress-indeterminate 1.5s ease-in-out infinite;
 }
 
-/* ===== TOAST NOTIFICATIONS ===== */
 .toast-container {
     position: fixed;
     bottom: 1.5rem;
@@ -273,7 +267,6 @@ body {
     animation: fade-out 0.3s ease-out forwards;
 }
 
-/* ===== CARD HOVER EFFECTS ===== */
 .feature-card {
     transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
     position: relative;
@@ -303,7 +296,6 @@ body {
     opacity: 1;
 }
 
-/* ===== TABLE ROW EFFECTS ===== */
 .table-row {
     transition: all 0.2s ease;
     position: relative;
@@ -329,7 +321,6 @@ body {
     background: rgba(14, 165, 233, 0.05);
 }
 
-/* ===== STATUS BADGES ===== */
 .status-badge {
     position: relative;
     overflow: hidden;
@@ -352,7 +343,6 @@ body {
     animation: shimmer 0.6s ease;
 }
 
-/* ===== INPUT FOCUS EFFECTS ===== */
 .input-modern {
     transition: all 0.3s ease;
     position: relative;
@@ -363,7 +353,6 @@ body {
     border-color: rgba(14, 165, 233, 0.5);
 }
 
-/* ===== FLOATING LABEL ===== */
 .floating-label {
     position: relative;
 }
@@ -387,7 +376,6 @@ body {
     color: #0ea5e9;
 }
 
-/* ===== GLOW EFFECTS ===== */
 .glow-brand {
     box-shadow: 0 0 20px rgba(14, 165, 233, 0.3);
 }
@@ -400,7 +388,6 @@ body {
     box-shadow: 0 0 20px rgba(239, 68, 68, 0.3);
 }
 
-/* ===== RESPONSIVE ADJUSTMENTS ===== */
 @media (max-width: 640px) {
     .toast-container {
         left: 1rem;
@@ -417,7 +404,6 @@ body {
     }
 }
 
-/* ===== SCROLLBAR ===== */
 ::-webkit-scrollbar {
     width: 8px;
     height: 8px;
@@ -436,7 +422,6 @@ body {
     background: rgba(100, 116, 139, 0.5);
 }
 
-/* ===== SELECTION ===== */
 ::selection {
     background: rgba(14, 165, 233, 0.3);
     color: white;

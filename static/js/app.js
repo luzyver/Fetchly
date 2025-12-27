@@ -91,7 +91,6 @@ const App = {
             return;
         }
 
-        // Basic URL validation
         if (!url.includes('.m3u8') && !url.startsWith('http')) {
             Toast.warning('Please enter a valid M3U8 URL');
             return;
@@ -140,11 +139,9 @@ const App = {
 
             const data = await response.json();
 
-            // Update progress if available
             if (data.progress !== undefined) {
                 this.updateProgress(data.progress);
             } else {
-                // Simulate progress for better UX
                 this.simulateProgress();
             }
 
@@ -166,7 +163,6 @@ const App = {
     },
 
     simulateProgress() {
-        // Gradually increase progress for better UX
         if (this.state.progress < 90) {
             const increment = Math.random() * 5 + 1;
             this.state.progress = Math.min(90, this.state.progress + increment);
