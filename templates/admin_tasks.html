@@ -116,64 +116,63 @@
         <div class="glass-panel rounded-2xl overflow-hidden shadow-2xl">
             
             <div class="hidden md:block overflow-x-auto">
-                <table class="w-full text-sm text-left text-slate-400">
+                <table class="w-full text-sm text-left text-slate-400 table-fixed">
                     <thead class="text-xs uppercase bg-slate-900/80 text-slate-500 font-semibold border-b border-white/5">
                         <tr>
-                            <th scope="col" class="px-6 py-4">Task</th>
-                            <th scope="col" class="px-6 py-4">Created At</th>
-                            <th scope="col" class="px-6 py-4 text-right">Actions</th>
+                            <th scope="col" class="px-6 py-4 w-28">Status</th>
+                            <th scope="col" class="px-6 py-4">URL</th>
+                            <th scope="col" class="px-6 py-4 w-44">Created At</th>
+                            <th scope="col" class="px-6 py-4 w-28 text-right">Actions</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-white/5">
                         {% for task in tasks %}
                         <tr class="table-row hover:bg-white/[0.02] transition-colors group" data-task-id="{{ task.id }}">
                             <td class="px-6 py-4">
-                                <div class="flex items-start gap-4">
-                                    <div class="flex-shrink-0 pt-0.5">
-                                        {% if task.status == 'completed' %}
-                                        <span class="status-badge inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-bold uppercase tracking-wider bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-                                            <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
-                                            Completed
-                                        </span>
-                                        {% elif task.status == 'failed' %}
-                                        <span class="status-badge inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-bold uppercase tracking-wider bg-red-500/10 text-red-400 border border-red-500/20">
-                                            <span class="w-2 h-2 rounded-full bg-red-500"></span>
-                                            Failed
-                                        </span>
-                                        {% elif task.status == 'processing' %}
-                                        <span class="status-badge inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-bold uppercase tracking-wider bg-brand-500/10 text-brand-400 border border-brand-500/20">
-                                            <span class="w-2 h-2 rounded-full bg-brand-500 animate-pulse"></span>
-                                            Processing
-                                        </span>
-                                        {% else %}
-                                        <span class="status-badge inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-bold uppercase tracking-wider bg-slate-700/30 text-slate-400 border border-slate-600/30">
-                                            <span class="w-2 h-2 rounded-full bg-slate-500"></span>
-                                            Queued
-                                        </span>
-                                        {% endif %}
-                                    </div>
-                                    <div class="flex flex-col min-w-0 flex-1">
-                                        <span class="text-slate-200 font-medium truncate font-mono text-xs" title="{{ task.url }}">{{ task.url }}</span>
-                                        <span class="text-[10px] font-mono text-slate-500 mt-1">ID: {{ task.id }}</span>
-                                        {% if task.error %}
-                                        <span class="text-xs text-red-400 mt-2 truncate bg-red-900/20 px-2 py-1 rounded-lg border border-red-900/30 w-fit max-w-md" title="{{ task.error }}">{{ task.error }}</span>
-                                        {% endif %}
-                                    </div>
+                                {% if task.status == 'completed' %}
+                                <span class="status-badge inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                                    Completed
+                                </span>
+                                {% elif task.status == 'failed' %}
+                                <span class="status-badge inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider bg-red-500/10 text-red-400 border border-red-500/20">
+                                    <span class="w-1.5 h-1.5 rounded-full bg-red-500"></span>
+                                    Failed
+                                </span>
+                                {% elif task.status == 'processing' %}
+                                <span class="status-badge inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider bg-brand-500/10 text-brand-400 border border-brand-500/20">
+                                    <span class="w-1.5 h-1.5 rounded-full bg-brand-500 animate-pulse"></span>
+                                    Processing
+                                </span>
+                                {% else %}
+                                <span class="status-badge inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider bg-slate-700/30 text-slate-400 border border-slate-600/30">
+                                    <span class="w-1.5 h-1.5 rounded-full bg-slate-500"></span>
+                                    Queued
+                                </span>
+                                {% endif %}
+                            </td>
+                            <td class="px-6 py-4">
+                                <div class="flex flex-col min-w-0">
+                                    <span class="text-slate-200 font-medium truncate font-mono text-xs max-w-[400px]" title="{{ task.url }}">{{ task.url[:80] }}{% if task.url|length > 80 %}...{% endif %}</span>
+                                    <span class="text-[10px] font-mono text-slate-600 mt-1">ID: {{ task.id[:20] }}...</span>
+                                    {% if task.error %}
+                                    <span class="text-[10px] text-red-400 mt-1.5 truncate bg-red-900/20 px-2 py-0.5 rounded border border-red-900/30 w-fit max-w-[300px]" title="{{ task.error }}">{{ task.error[:50] }}{% if task.error|length > 50 %}...{% endif %}</span>
+                                    {% endif %}
                                 </div>
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap text-slate-500 text-xs font-mono">
                                 {{ task.created_at }}
                             </td>
                             <td class="px-6 py-4 text-right whitespace-nowrap">
-                                <div class="flex items-center justify-end space-x-2 opacity-60 group-hover:opacity-100 transition-opacity">
+                                <div class="flex items-center justify-end space-x-1">
                                     {% if task.status == 'completed' %}
-                                    <a href="/download/{{ task.id }}" class="btn-secondary p-2.5 text-slate-400 hover:text-emerald-400 hover:bg-emerald-500/10 rounded-lg transition-all" title="Download">
+                                    <a href="/download/{{ task.id }}" class="p-2 text-slate-400 hover:text-emerald-400 hover:bg-emerald-500/10 rounded-lg transition-all" title="Download">
                                         <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
                                         </svg>
                                     </a>
                                     {% endif %}
-                                    <button onclick="deleteTask('{{ task.id }}')" class="btn-secondary p-2.5 text-slate-400 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-all" title="Delete">
+                                    <button onclick="deleteTask('{{ task.id }}')" class="p-2 text-slate-400 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-all" title="Delete">
                                         <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                                         </svg>
