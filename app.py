@@ -156,9 +156,9 @@ def cleanup_old_files():
                         except OSError as e:
                             logger.warning(f"Error deleting {filename}: {e}")
 
-            # 2. Delete DB entries older than 24 hours
+            # 2. Delete DB entries older than 1 hour
             with closing(get_db_connection()) as conn:
-                conn.execute("DELETE FROM tasks WHERE created_at < datetime('now', '-1 day')")
+                conn.execute("DELETE FROM tasks WHERE created_at < datetime('now', '-1 hour')")
                 conn.commit()
                 
         except Exception as e:
@@ -238,6 +238,39 @@ def download(task_id):
     except Exception as e:
         logger.error(f"Download error: {e}")
         return jsonify({'error': 'Gagal mengunduh file'}), 500
+
+@app.route('/admin/tasks')
+def admin_tasks():
+    try:
+        with closing(get_db_connection()) as conn:
+            tasks = conn.execute('SELECT * FROM tasks ORDER BY created_at DESC').fetchall()
+        return render_template('admin_tasks.html', tasks=tasks)
+    except Exception as e:
+        logger.error(f"Admin view error: {e}")
+        return "Database error", 500
+
+@app.route('/admin/delete_task/<task_id>', methods=['DELETE'])
+def delete_task(task_id):
+    try:
+        with closing(get_db_connection()) as conn:
+            # Get file path first
+            task = conn.execute('SELECT file FROM tasks WHERE id = ?', (task_id,)).fetchone()
+            
+            if task and task['file'] and os.path.exists(task['file']):
+                try:
+                    os.remove(task['file'])
+                    logger.info(f"Deleted file for task {task_id}")
+                except OSError as e:
+                    logger.warning(f"Failed to delete file for task {task_id}: {e}")
+
+            # Delete DB entry
+            conn.execute('DELETE FROM tasks WHERE id = ?', (task_id,))
+            conn.commit()
+            
+        return jsonify({'status': 'success'})
+    except Exception as e:
+        logger.error(f"Delete task error: {e}")
+        return jsonify({'error': str(e)}), 500
 
 if __name__ == '__main__':
     app.run(debug=False, host='0.0.0.0', port=5050)
