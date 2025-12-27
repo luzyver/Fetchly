@@ -11,18 +11,22 @@
             theme: {
                 extend: {
                     colors: {
-                        primary: {
-                            50: '#eff6ff',
-                            100: '#dbeafe',
-                            500: '#3b82f6',
-                            600: '#2563eb',
-                            700: '#1d4ed8',
+                        brand: {
+                            50: '#f0f9ff',
+                            100: '#e0f2fe',
+                            500: '#0ea5e9',
+                            600: '#0284c7',
+                            700: '#0369a1',
+                            900: '#0c4a6e',
                         },
                         slate: {
                             850: '#151e2e',
                             900: '#0f172a',
                             950: '#020617',
                         }
+                    },
+                    fontFamily: {
+                        sans: ['Plus Jakarta Sans', 'Inter', 'sans-serif'],
                     }
                 }
             }
@@ -31,105 +35,93 @@
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
         body { font-family: 'Plus Jakarta Sans', sans-serif; }
+        .glass-panel {
+            background: rgba(15, 23, 42, 0.6);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
     </style>
 </head>
-<body class="bg-slate-950 text-slate-200 min-h-screen">
+<body class="bg-slate-950 text-slate-200 min-h-screen flex flex-col">
 
     <!-- Navbar -->
-    <nav class="border-b border-white/5 bg-slate-900/50 backdrop-blur-md sticky top-0 z-50">
+    <nav class="border-b border-white/5 bg-slate-950/50 backdrop-blur-md sticky top-0 z-50">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex items-center justify-between h-16">
                 <div class="flex items-center space-x-3">
-                    <div class="bg-gradient-to-tr from-primary-500 to-indigo-500 p-2 rounded-lg shadow-lg shadow-primary-500/20">
+                    <div class="w-8 h-8 rounded bg-gradient-to-br from-brand-500 to-blue-600 flex items-center justify-center shadow-lg shadow-brand-500/20">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
                         </svg>
                     </div>
-                    <span class="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-white to-slate-400">
-                        Task Manager
-                    </span>
+                    <span class="text-lg font-bold text-white tracking-tight">Task Manager</span>
                 </div>
-                <div>
-                    <a href="/" class="text-slate-400 hover:text-white transition-colors flex items-center text-sm font-medium">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-1.5" viewBox="0 0 20 20" fill="currentColor">
-                            <path fill-rule="evenodd" d="M9.707 16.707a1 1 0 01-1.414 0l-6-6a1 1 0 010-1.414l6-6a1 1 0 011.414 1.414L5.414 9H17a1 1 0 110 2H5.414l4.293 4.293a1 1 0 010 1.414z" clip-rule="evenodd" />
-                        </svg>
-                        Back to Home
-                    </a>
-                </div>
+                <a href="/" class="text-slate-400 hover:text-white transition-colors flex items-center text-sm font-medium">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1.5" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M9.707 16.707a1 1 0 01-1.414 0l-6-6a1 1 0 010-1.414l6-6a1 1 0 011.414 1.414L5.414 9H17a1 1 0 110 2H5.414l4.293 4.293a1 1 0 010 1.414z" clip-rule="evenodd" />
+                    </svg>
+                    Back to Home
+                </a>
             </div>
         </div>
     </nav>
 
-    <div class="max-w-7xl mx-auto p-4 sm:p-6 lg:p-8">
-        
-        <!-- Header -->
-        <div class="mb-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-            <div>
-                <h1 class="text-2xl sm:text-3xl font-bold text-white">All Tasks</h1>
-                <p class="text-slate-400 mt-1">Manage and monitor all video conversion tasks.</p>
-            </div>
-            <!-- Refresh Button could go here -->
+    <main class="max-w-7xl mx-auto p-4 sm:p-6 lg:p-8 w-full">
+        <div class="mb-8">
+            <h1 class="text-2xl font-bold text-white">Conversion Tasks</h1>
+            <p class="text-slate-400 text-sm mt-1">Monitor and manage all active and historical tasks.</p>
         </div>
 
-        <!-- Task List (Cards on Mobile, Table on Desktop) -->
-        <div class="bg-slate-900/60 backdrop-blur-xl rounded-2xl border border-white/10 shadow-xl overflow-hidden">
+        <div class="glass-panel rounded-xl overflow-hidden shadow-2xl">
             
-            <!-- Desktop Table View -->
+            <!-- Desktop Table -->
             <div class="hidden md:block overflow-x-auto">
                 <table class="w-full text-sm text-left text-slate-400">
-                    <thead class="text-xs uppercase bg-slate-950/50 text-slate-500 font-semibold border-b border-white/5">
+                    <thead class="text-xs uppercase bg-slate-900/80 text-slate-500 font-semibold border-b border-white/5">
                         <tr>
                             <th scope="col" class="px-6 py-4">Status</th>
-                            <th scope="col" class="px-6 py-4">Details</th>
+                            <th scope="col" class="px-6 py-4">Task Details</th>
                             <th scope="col" class="px-6 py-4">Created At</th>
                             <th scope="col" class="px-6 py-4 text-right">Actions</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-white/5">
                         {% for task in tasks %}
-                        <tr class="hover:bg-white/5 transition-colors">
+                        <tr class="hover:bg-white/[0.02] transition-colors">
                             <td class="px-6 py-4 whitespace-nowrap">
                                 {% if task.status == 'completed' %}
-                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-                                        Completed
-                                    </span>
+                                    <span class="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-bold uppercase tracking-wider bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">Completed</span>
                                 {% elif task.status == 'failed' %}
-                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-500/10 text-red-400 border border-red-500/20">
-                                        Failed
-                                    </span>
+                                    <span class="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-bold uppercase tracking-wider bg-red-500/10 text-red-400 border border-red-500/20">Failed</span>
                                 {% elif task.status == 'processing' %}
-                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-500/10 text-blue-400 border border-blue-500/20">
-                                        Processing
-                                    </span>
+                                    <span class="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-bold uppercase tracking-wider bg-brand-500/10 text-brand-400 border border-brand-500/20">Processing</span>
                                 {% else %}
-                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-slate-700/50 text-slate-400 border border-slate-600/50">
-                                        Queued
-                                    </span>
+                                    <span class="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-bold uppercase tracking-wider bg-slate-700/50 text-slate-400 border border-slate-600/50">Queued</span>
                                 {% endif %}
                             </td>
                             <td class="px-6 py-4">
                                 <div class="flex flex-col max-w-md">
-                                    <span class="text-white font-medium truncate mb-1" title="{{ task.url }}">{{ task.url }}</span>
-                                    <span class="text-xs font-mono text-slate-500 truncate" title="ID: {{ task.id }}">ID: {{ task.id }}</span>
+                                    <span class="text-slate-200 font-medium truncate" title="{{ task.url }}">{{ task.url }}</span>
+                                    <span class="text-[10px] font-mono text-slate-500 mt-0.5">ID: {{ task.id }}</span>
                                     {% if task.error %}
                                     <span class="text-xs text-red-400 mt-1 truncate" title="{{ task.error }}">{{ task.error }}</span>
                                     {% endif %}
                                 </div>
                             </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-slate-400 text-xs">
+                            <td class="px-6 py-4 whitespace-nowrap text-slate-500 text-xs">
                                 {{ task.created_at }}
                             </td>
                             <td class="px-6 py-4 text-right whitespace-nowrap">
-                                <div class="flex items-center justify-end space-x-3">
+                                <div class="flex items-center justify-end space-x-2">
                                     {% if task.status == 'completed' %}
-                                    <a href="/download/{{ task.id }}" class="p-2 text-emerald-400 hover:text-white bg-emerald-500/10 hover:bg-emerald-500 rounded-lg transition-all" title="Download">
+                                    <a href="/download/{{ task.id }}" class="p-2 text-slate-400 hover:text-emerald-400 hover:bg-emerald-500/10 rounded-lg transition-all" title="Download">
                                         <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
                                         </svg>
                                     </a>
                                     {% endif %}
-                                    <button onclick="deleteTask('{{ task.id }}')" class="p-2 text-red-400 hover:text-white bg-red-500/10 hover:bg-red-500 rounded-lg transition-all" title="Delete">
+                                    <button onclick="deleteTask('{{ task.id }}')" class="p-2 text-slate-400 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-all" title="Delete">
                                         <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                                         </svg>
@@ -142,94 +134,59 @@
                 </table>
             </div>
 
-            <!-- Mobile Card View -->
-            <div class="md:hidden space-y-4 p-4">
+            <!-- Mobile View -->
+            <div class="md:hidden divide-y divide-white/5">
                 {% for task in tasks %}
-                <div class="bg-slate-950/50 rounded-xl p-4 border border-white/5 space-y-3">
+                <div class="p-4 space-y-3">
                     <div class="flex justify-between items-start">
                         <div class="flex-1 min-w-0 pr-4">
-                            <p class="text-sm font-medium text-white truncate mb-1">{{ task.url }}</p>
-                            <p class="text-xs font-mono text-slate-500 truncate">ID: {{ task.id }}</p>
+                            <p class="text-sm font-medium text-slate-200 truncate">{{ task.url }}</p>
+                            <p class="text-[10px] font-mono text-slate-500 mt-1">ID: {{ task.id }}</p>
                         </div>
                         {% if task.status == 'completed' %}
-                            <span class="flex-shrink-0 inline-block w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
-                        {% elif task.status == 'failed' %}
-                            <span class="flex-shrink-0 inline-block w-2.5 h-2.5 rounded-full bg-red-500"></span>
+                            <div class="w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]"></div>
                         {% elif task.status == 'processing' %}
-                            <span class="flex-shrink-0 inline-block w-2.5 h-2.5 rounded-full bg-blue-500 animate-pulse"></span>
+                            <div class="w-2 h-2 rounded-full bg-brand-500 animate-pulse shadow-[0_0_8px_rgba(14,165,233,0.5)]"></div>
+                        {% elif task.status == 'failed' %}
+                            <div class="w-2 h-2 rounded-full bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.5)]"></div>
                         {% else %}
-                            <span class="flex-shrink-0 inline-block w-2.5 h-2.5 rounded-full bg-slate-500"></span>
+                            <div class="w-2 h-2 rounded-full bg-slate-600"></div>
                         {% endif %}
                     </div>
-                    
-                    <div class="flex items-center justify-between text-xs text-slate-400">
+                    <div class="flex items-center justify-between text-[11px] text-slate-500">
                         <span>{{ task.created_at }}</span>
-                        <span class="capitalize">{{ task.status }}</span>
+                        <span class="uppercase font-bold text-slate-400">{{ task.status }}</span>
                     </div>
-
-                    {% if task.error %}
-                    <div class="text-xs text-red-400 bg-red-500/10 p-2 rounded border border-red-500/20 break-all">
-                        {{ task.error }}
-                    </div>
-                    {% endif %}
-
-                    <div class="flex items-center space-x-2 pt-2 border-t border-white/5">
+                    <div class="flex gap-2 pt-1">
                         {% if task.status == 'completed' %}
-                        <a href="/download/{{ task.id }}" class="flex-1 flex items-center justify-center py-2 text-sm font-medium text-emerald-400 bg-emerald-500/10 rounded-lg hover:bg-emerald-500 hover:text-white transition-colors">
-                            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                        <a href="/download/{{ task.id }}" class="flex-1 flex items-center justify-center py-2 bg-emerald-600/10 text-emerald-400 rounded-lg text-xs font-semibold">
                             Download
                         </a>
                         {% endif %}
-                        <button onclick="deleteTask('{{ task.id }}')" class="flex-1 flex items-center justify-center py-2 text-sm font-medium text-red-400 bg-red-500/10 rounded-lg hover:bg-red-500 hover:text-white transition-colors">
-                            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                        <button onclick="deleteTask('{{ task.id }}')" class="flex-1 flex items-center justify-center py-2 bg-red-600/10 text-red-400 rounded-lg text-xs font-semibold">
                             Delete
                         </button>
                     </div>
                 </div>
                 {% endfor %}
-                
-                {% if not tasks %}
-                <div class="text-center py-8 text-slate-500">
-                    No tasks found.
-                </div>
-                {% endif %}
             </div>
 
-            <!-- Empty State for Desktop -->
             {% if not tasks %}
-            <div class="hidden md:block p-12 text-center">
-                <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-slate-800/50 mb-4">
-                    <svg class="w-8 h-8 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path></svg>
-                </div>
-                <h3 class="text-lg font-medium text-white">No tasks yet</h3>
-                <p class="text-slate-400 mt-1">Start converting videos to see them listed here.</p>
+            <div class="p-12 text-center text-slate-500">
+                <p>No tasks found in the database.</p>
             </div>
             {% endif %}
-
         </div>
-    </div>
+    </main>
 
     <script>
         async function deleteTask(taskId) {
-            if (!confirm('Are you sure you want to delete this task? Associated file will also be deleted.')) {
-                return;
-            }
-
+            if (!confirm('Are you sure you want to delete this task?')) return;
             try {
-                const response = await fetch(`/admin/delete_task/${taskId}`, {
-                    method: 'DELETE'
-                });
-                
-                if (response.ok) {
-                    window.location.reload();
-                } else {
-                    const data = await response.json();
-                    alert('Failed to delete: ' + (data.error || 'Unknown error'));
-                }
-            } catch (error) {
-                console.error('Error:', error);
-                alert('An error occurred while deleting the task.');
-            }
+                const response = await fetch(`/admin/delete_task/${taskId}`, { method: 'DELETE' });
+                if (response.ok) window.location.reload();
+                else alert('Failed to delete');
+            } catch (e) { console.error(e); }
         }
     </script>
 </body>
