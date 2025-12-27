@@ -13,7 +13,6 @@ from concurrent.futures import ThreadPoolExecutor
 from contextlib import closing, contextmanager
 from urllib.parse import urlparse, urljoin
 
-# Configure Logging
 logging.basicConfig(
     level=logging.INFO, 
     format='%(asctime)s - [%(levelname)s] - %(message)s',
@@ -23,16 +22,14 @@ logger = logging.getLogger(__name__)
 
 app = Flask(__name__)
 
-# --- Configuration ---
 CONFIG = {
     'DOWNLOAD_FOLDER': 'downloads',
     'DB_PATH': os.path.join('downloads', 'tasks.db'),
     'MAX_WORKERS': 4,
-    'CLEANUP_INTERVAL': 86400, # 24 hours
-    'RETENTION_PERIOD': 86400, # 24 hours
+    'CLEANUP_INTERVAL': 86400,
+    'RETENTION_PERIOD': 86400,
 }
 
-# User Agents
 USER_AGENTS = {
     'DESKTOP': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
     'MOBILE': 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36'
@@ -40,10 +37,8 @@ USER_AGENTS = {
 
 os.makedirs(CONFIG['DOWNLOAD_FOLDER'], exist_ok=True)
 
-# Thread Pool
 executor = ThreadPoolExecutor(max_workers=CONFIG['MAX_WORKERS'])
 
-# --- Database Management ---
 @contextmanager
 def get_db():
     conn = sqlite3.connect(CONFIG['DB_PATH'])
@@ -89,10 +84,7 @@ def update_task_status(task_id, status, file=None, error=None):
     except Exception as e:
         logger.error(f"Failed to update task {task_id}: {e}")
 
-# --- Core Logic ---
-
 def convert_m3u8(task_id, url, output_path, referer=None, cookies=None):
-    """Convert M3U8 to MP4 using yt-dlp with Smart Retry."""
     logger.info(f"Task {task_id}: Starting conversion for {url}")
     try:
         update_task_status(task_id, 'processing')
@@ -114,7 +106,7 @@ def convert_m3u8(task_id, url, output_path, referer=None, cookies=None):
                     '--add-header', f'Origin: {domain}',
                     '--no-check-certificate',
                     '--no-playlist',
-                    '--concurrent-fragments', '4', # Optimization: Download fragments in parallel
+                    '--concurrent-fragments', '4',
                     '-o', output_path,
                     url
                 ]
@@ -134,7 +126,7 @@ def convert_m3u8(task_id, url, output_path, referer=None, cookies=None):
                     break
                 else:
                     error_msg = stderr.decode().strip()
-                    last_error = error_msg[-300:] # Keep last 300 chars
+                    last_error = error_msg[-300:]
                     logger.warning(f"Task {task_id}: Attempt {i+1} failed. Error: {last_error}")
                     
             except Exception as e:
@@ -150,7 +142,6 @@ def convert_m3u8(task_id, url, output_path, referer=None, cookies=None):
         update_task_status(task_id, 'failed', error=str(e))
 
 def cleanup_old_files():
-    """Background task to clean up old files and DB entries."""
     while True:
         try:
             time.sleep(CONFIG['CLEANUP_INTERVAL'])
@@ -158,7 +149,6 @@ def cleanup_old_files():
             
             cutoff_time = time.time() - CONFIG['RETENTION_PERIOD']
             
-            # Clean files
             for filename in os.listdir(CONFIG['DOWNLOAD_FOLDER']):
                 if filename.endswith('.mp4'):
                     filepath = os.path.join(CONFIG['DOWNLOAD_FOLDER'], filename)
@@ -169,7 +159,6 @@ def cleanup_old_files():
                         except OSError as e:
                             logger.warning(f"Error deleting {filename}: {e}")
 
-            # Clean DB
             with get_db() as conn:
                 conn.execute("DELETE FROM tasks WHERE created_at < datetime('now', '-1 day')")
                 conn.commit()
@@ -179,26 +168,20 @@ def cleanup_old_files():
 
 executor.submit(cleanup_old_files)
 
-# --- Selenium Resolver ---
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.common.by import By
 
 def get_chromedriver_path():
-    """Dynamically resolve chromedriver path."""
-    # 1. Check specific Docker path
     if os.path.exists("/usr/bin/chromedriver"):
         return "/usr/bin/chromedriver"
-    # 2. Check system PATH
     path = shutil.which("chromedriver")
     if path:
         return path
-    # 3. Fallback (Let Selenium Manager handle it if installed, or fail)
     return None
 
 def resolve_source_url(url):
-    """Resolve m3u8 URL using optimized Headless Chrome."""
     logger.info(f"Resolving source URL: {url}")
     
     chrome_options = Options()
@@ -207,24 +190,21 @@ def resolve_source_url(url):
     chrome_options.add_argument("--disable-dev-shm-usage")
     chrome_options.add_argument("--disable-gpu")
     chrome_options.add_argument("--window-size=1920,1080")
-    # Optimization: Block images/css to load faster
     chrome_options.add_argument("--blink-settings=imagesEnabled=false") 
     chrome_options.add_argument(f"user-agent={USER_AGENTS['DESKTOP']}")
     
     driver_path = get_chromedriver_path()
     service = Service(driver_path) if driver_path else None
     
-    # If service is None, Selenium >= 4.6 will try to download/find driver automatically
     driver = webdriver.Chrome(service=service, options=chrome_options)
     
     try:
-        driver.set_page_load_timeout(30) # Prevent hanging
+        driver.set_page_load_timeout(30)
         driver.get(url)
-        time.sleep(3) # Reduced wait time due to blocked images
+        time.sleep(3)
         
-        # 1. Direct Regex Search
         page_source = driver.page_source
-        m3u8_matches = re.findall(r'(https?://[^"\']+\.m3u8)', page_source)
+        m3u8_matches = re.findall(r'(https?://[^"\\]+\.m3u8)', page_source)
         
         def extract_cookies(drv):
             return "; ".join([f"{c['name']}={c['value']}" for c in drv.get_cookies()])
@@ -232,7 +212,6 @@ def resolve_source_url(url):
         if m3u8_matches:
             return m3u8_matches[0], extract_cookies(driver)
             
-        # 2. Iframe Search (Recursive-ish)
         iframes = driver.find_elements(By.TAG_NAME, "iframe")
         target_src = None
         
@@ -247,11 +226,10 @@ def resolve_source_url(url):
             driver.get(target_src)
             time.sleep(3)
             
-            m3u8_matches = re.findall(r'(https?://[^"\']+\.m3u8)', driver.page_source)
+            m3u8_matches = re.findall(r'(https?://[^"\\]+\.m3u8)', driver.page_source)
             if m3u8_matches:
                 return m3u8_matches[0], extract_cookies(driver)
 
-        # 3. JWPlayer / Global JS Objects Fallback
         try:
              jw_url = driver.execute_script("return (window.jwplayer && window.jwplayer().getPlaylist) ? window.jwplayer().getPlaylist()[0].file : null")
              if jw_url:
@@ -272,8 +250,6 @@ def resolve_source_url(url):
         except:
             pass
 
-# --- Routes ---
-
 @app.route('/')
 def index():
     return render_template('index.html')
@@ -286,7 +262,6 @@ def convert():
     if not url:
         return jsonify({'error': 'URL is required'}), 400
     
-    # Basic URL validation
     if not url.startswith(('http://', 'https://')):
         return jsonify({'error': 'Invalid URL format'}), 400
 
@@ -294,7 +269,6 @@ def convert():
     cookies = None
     referer = url 
     
-    # Auto-resolve if not M3U8
     if '.m3u8' not in url.lower():
         try:
             resolved_url, cookies = resolve_source_url(url)
@@ -385,5 +359,4 @@ def delete_task(task_id):
         return jsonify({'error': str(e)}), 500
 
 if __name__ == '__main__':
-    # Optimization: Use 0.0.0.0 to be accessible in container/network
     app.run(debug=False, host='0.0.0.0', port=5050)
