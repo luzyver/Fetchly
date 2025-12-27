@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>M3U8 to MP4 Converter</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 40px;
+            width: 100%;
+            max-width: 500px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+
+        h1 {
+            color: #fff;
+            text-align: center;
+            margin-bottom: 10px;
+            font-size: 1.8rem;
+        }
+
+        .subtitle {
+            color: #a0a0a0;
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 0.9rem;
+        }
+
+        .input-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            color: #fff;
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+        }
+
+        input[type="text"] {
+            width: 100%;
+            padding: 15px;
+            border: 2px solid rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            background: rgba(255, 255, 255, 0.05);
+            color: #fff;
+            font-size: 1rem;
+            transition: border-color 0.3s;
+        }
+
+        input[type="text"]:focus {
+            outline: none;
+            border-color: #4facfe;
+        }
+
+        input[type="text"]::placeholder {
+            color: #666;
+        }
+
+        .btn {
+            width: 100%;
+            padding: 15px;
+            border: none;
+            border-radius: 10px;
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: #fff;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(79, 172, 254, 0.4);
+        }
+
+        .btn:disabled {
+            background: #555;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .status-box {
+            margin-top: 20px;
+            padding: 20px;
+            border-radius: 10px;
+            display: none;
+        }
+
+        .status-box.show {
+            display: block;
+        }
+
+        .status-box.processing {
+            background: rgba(255, 193, 7, 0.2);
+            border: 1px solid #ffc107;
+        }
+
+        .status-box.completed {
+            background: rgba(40, 167, 69, 0.2);
+            border: 1px solid #28a745;
+        }
+
+        .status-box.failed {
+            background: rgba(220, 53, 69, 0.2);
+            border: 1px solid #dc3545;
+        }
+
+        .status-text {
+            color: #fff;
+            text-align: center;
+            margin-bottom: 15px;
+        }
+
+        .download-btn {
+            display: block;
+            width: 100%;
+            padding: 12px;
+            background: #28a745;
+            color: #fff;
+            text-align: center;
+            text-decoration: none;
+            border-radius: 8px;
+            font-weight: 600;
+        }
+
+        .download-btn:hover {
+            background: #218838;
+        }
+
+        .loader {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255, 255, 255, .3);
+            border-radius: 50%;
+            border-top-color: #fff;
+            animation: spin 1s ease-in-out infinite;
+            margin-right: 10px;
+            vertical-align: middle;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        .error-text {
+            color: #dc3545;
+            font-size: 0.85rem;
+            margin-top: 10px;
+            word-break: break-all;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1>🎬 M3U8 to MP4</h1>
+        <p class="subtitle">Convert streaming video ke file MP4</p>
+
+        <div class="input-group">
+            <label for="url">URL M3U8</label>
+            <input type="text" id="url" placeholder="https://example.com/video.m3u8">
+        </div>
+
+        <div class="input-group">
+            <label for="referer">Referer (opsional)</label>
+            <input type="text" id="referer" placeholder="https://website-asal.com">
+            <small style="color: #888; font-size: 0.8rem;">Isi dengan URL website tempat video diputar</small>
+        </div>
+
+        <button class="btn" id="convertBtn" onclick="startConvert()">
+            Convert to MP4
+        </button>
+
+        <div class="status-box" id="statusBox">
+            <p class="status-text" id="statusText"></p>
+            <a href="#" class="download-btn" id="downloadBtn" style="display:none;">
+                ⬇️ Download MP4
+            </a>
+            <p class="error-text" id="errorText" style="display:none;"></p>
+        </div>
+    </div>
+
+    <script>
+        let currentTaskId = null;
+        let checkInterval = null;
+
+        async function startConvert() {
+            const url = document.getElementById('url').value.trim();
+            const referer = document.getElementById('referer').value.trim();
+            const btn = document.getElementById('convertBtn');
+            const statusBox = document.getElementById('statusBox');
+            const statusText = document.getElementById('statusText');
+            const downloadBtn = document.getElementById('downloadBtn');
+            const errorText = document.getElementById('errorText');
+
+            if (!url) {
+                alert('Masukkan URL M3U8!');
+                return;
+            }
+
+            // Reset UI
+            btn.disabled = true;
+            btn.innerHTML = '<span class="loader"></span> Processing...';
+            statusBox.className = 'status-box show processing';
+            statusText.innerHTML = '<span class="loader"></span> Sedang mengkonversi...';
+            downloadBtn.style.display = 'none';
+            errorText.style.display = 'none';
+
+            try {
+                const response = await fetch('/convert', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ url, referer })
+                });
+
+                const data = await response.json();
+
+                if (data.error) {
+                    throw new Error(data.error);
+                }
+
+                currentTaskId = data.task_id;
+                checkStatus();
+                checkInterval = setInterval(checkStatus, 2000);
+
+            } catch (error) {
+                showError(error.message);
+            }
+        }
+
+        async function checkStatus() {
+            if (!currentTaskId) return;
+
+            try {
+                const response = await fetch(`/status/${currentTaskId}`);
+                const data = await response.json();
+
+                const statusBox = document.getElementById('statusBox');
+                const statusText = document.getElementById('statusText');
+                const downloadBtn = document.getElementById('downloadBtn');
+                const btn = document.getElementById('convertBtn');
+
+                if (data.status === 'completed') {
+                    clearInterval(checkInterval);
+                    statusBox.className = 'status-box show completed';
+                    statusText.textContent = '✅ Konversi selesai!';
+                    downloadBtn.href = `/download/${currentTaskId}`;
+                    downloadBtn.style.display = 'block';
+                    btn.disabled = false;
+                    btn.textContent = 'Convert to MP4';
+                } else if (data.status === 'failed') {
+                    clearInterval(checkInterval);
+                    showError(data.error || 'Konversi gagal');
+                }
+
+            } catch (error) {
+                clearInterval(checkInterval);
+                showError('Gagal mengecek status');
+            }
+        }
+
+        function showError(message) {
+            const statusBox = document.getElementById('statusBox');
+            const statusText = document.getElementById('statusText');
+            const errorText = document.getElementById('errorText');
+            const btn = document.getElementById('convertBtn');
+            const downloadBtn = document.getElementById('downloadBtn');
+
+            statusBox.className = 'status-box show failed';
+            statusText.textContent = '❌ Konversi gagal';
+            errorText.textContent = message;
+            errorText.style.display = 'block';
+            downloadBtn.style.display = 'none';
+            btn.disabled = false;
+            btn.textContent = 'Convert to MP4';
+        }
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,17 @@
+services:
+  2mp4:
+    build: .
+    container_name: 2mp4
+    restart: unless-stopped
+    expose:
+      - "5050"
+    environment:
+      - FLASK_ENV=production
+    volumes:
+      - ./downloads:/app/downloads
+    networks:
+      - nginx_default
+
+networks:
+  nginx_default:
+    external: true
