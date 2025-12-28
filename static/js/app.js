@@ -11,7 +11,7 @@ const App = {
         referer: null,
         videoTitle: null
     },
-    
+
     elements: {},
 
     init() {
@@ -45,10 +45,9 @@ const App = {
             console.error('App: URL input not found');
             return;
         }
-        
+
         this.bindEvents();
         this.checkInputState();
-        console.log('App initialized');
     },
 
     bindEvents() {
@@ -56,7 +55,7 @@ const App = {
             this.checkInputState();
             this.resetFormatSelection();
         });
-        
+
         this.elements.input.addEventListener('keypress', (e) => {
             if (e.key === 'Enter' && !this.state.isProcessing) {
                 if (this.state.formats.length > 0) {
@@ -66,7 +65,7 @@ const App = {
                 }
             }
         });
-        
+
         if (this.elements.pasteBtn) {
             this.elements.pasteBtn.addEventListener('click', async () => {
                 try {
@@ -91,7 +90,9 @@ const App = {
         }
 
         if (this.elements.fetchBtn) {
-            this.elements.fetchBtn.addEventListener('click', () => this.fetchFormats());
+            this.elements.fetchBtn.addEventListener('click', () => {
+                this.fetchFormats();
+            });
         }
 
         if (this.elements.convertBtn) {
@@ -116,7 +117,7 @@ const App = {
         this.state.cookies = null;
         this.state.referer = null;
         this.state.videoTitle = null;
-        
+
         if (this.elements.formatSection) {
             this.elements.formatSection.classList.add('hidden');
         }
@@ -133,10 +134,10 @@ const App = {
 
     setFetchLoading(isLoading) {
         if (!this.elements.fetchBtn) return;
-        
+
         this.elements.fetchBtn.disabled = isLoading;
         if (this.elements.input) this.elements.input.disabled = isLoading;
-        
+
         if (this.elements.fetchContent && this.elements.fetchLoader) {
             if (isLoading) {
                 this.elements.fetchContent.classList.add('hidden');
@@ -151,10 +152,10 @@ const App = {
     setConvertLoading(isLoading) {
         this.state.isProcessing = isLoading;
         if (!this.elements.convertBtn) return;
-        
+
         this.elements.convertBtn.disabled = isLoading;
         if (this.elements.input) this.elements.input.disabled = isLoading;
-        
+
         if (this.elements.btnContent && this.elements.btnLoader) {
             if (isLoading) {
                 this.elements.btnContent.classList.add('hidden');
@@ -168,7 +169,7 @@ const App = {
 
     async fetchFormats() {
         const url = this.elements.input?.value.trim();
-        
+
         if (!url) {
             Toast.warning('Please enter a URL first');
             this.elements.input?.focus();
@@ -224,7 +225,7 @@ const App = {
 
         this.elements.formatSection.classList.remove('hidden');
         this.elements.formatSection.classList.add('animate-scale-in');
-        
+
         if (this.elements.fetchBtn) this.elements.fetchBtn.classList.add('hidden');
         if (this.elements.convertBtn) this.elements.convertBtn.classList.remove('hidden');
 
@@ -237,7 +238,7 @@ const App = {
         this.state.formats.forEach((fmt, index) => {
             const isSelected = index === 0;
             const isBest = fmt.format_id === 'best';
-            
+
             html += `
                 <label class="format-option flex items-center gap-3 p-3 rounded-lg cursor-pointer transition-all border ${isSelected ? 'bg-brand-500/10 border-brand-500/30' : 'bg-slate-800/30 border-slate-700/30 hover:bg-slate-800/50'}">
                     <input type="radio" name="format" value="${fmt.format_id}" ${isSelected ? 'checked' : ''}
@@ -275,7 +276,7 @@ const App = {
 
     async startConversion() {
         const url = this.elements.input?.value.trim();
-        
+
         if (!url) {
             Toast.warning('Please enter a URL first');
             return;

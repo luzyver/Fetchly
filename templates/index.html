@@ -1,29 +1,40 @@
 <!DOCTYPE html>
 <html lang="en" class="dark">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>StreamConvert - Professional HLS Downloader</title>
     <meta name="description" content="Secure, fast, and professional M3U8 to MP4 conversion service.">
     <meta name="theme-color" content="#020617">
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}?v=debug">
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="{{ url_for('static', filename='js/tailwind_config.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/tailwind_config.js') }}?v=debug"></script>
 </head>
-<body class="bg-slate-950 text-slate-200 min-h-screen flex flex-col selection:bg-brand-500/30 selection:text-white overflow-x-hidden">
+
+<body
+    class="bg-slate-950 text-slate-200 min-h-screen flex flex-col selection:bg-brand-500/30 selection:text-white overflow-x-hidden">
     <div class="fixed inset-0 z-0 pointer-events-none">
-        <div class="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-brand-600/20 rounded-full blur-[120px] animate-pulse-slow"></div>
-        <div class="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-purple-600/10 rounded-full blur-[120px] animate-pulse-slow" style="animation-delay: 1.5s"></div>
-        <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[60%] h-[60%] bg-blue-600/5 rounded-full blur-[150px]"></div>
+        <div
+            class="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-brand-600/20 rounded-full blur-[120px] animate-pulse-slow">
+        </div>
+        <div class="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-purple-600/10 rounded-full blur-[120px] animate-pulse-slow"
+            style="animation-delay: 1.5s"></div>
+        <div
+            class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[60%] h-[60%] bg-blue-600/5 rounded-full blur-[150px]">
+        </div>
     </div>
     <nav class="border-b border-white/5 bg-slate-950/50 backdrop-blur-md sticky top-0 z-50">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex items-center justify-between h-16">
                 <div class="flex items-center gap-3 group cursor-pointer">
-                    <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-brand-400 to-brand-600 flex items-center justify-center shadow-lg shadow-brand-500/25 group-hover:shadow-brand-500/40 transition-all group-hover:scale-105">
+                    <div
+                        class="w-9 h-9 rounded-xl bg-gradient-to-br from-brand-400 to-brand-600 flex items-center justify-center shadow-lg shadow-brand-500/25 group-hover:shadow-brand-500/40 transition-all group-hover:scale-105">
                         <svg class="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"
+                                d="M13 10V3L4 14h7v7l9-11h-7z" />
                         </svg>
                     </div>
                     <span class="text-lg font-bold text-white tracking-tight">StreamConvert</span>
@@ -35,8 +46,10 @@
         <div class="w-full max-w-2xl mx-auto space-y-6">
             <div class="text-center space-y-3 pt-4 sm:pt-6">
                 <h1 class="text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight text-white leading-tight">
-                    Convert M3U8 
-                    <span class="text-transparent bg-clip-text bg-gradient-to-r from-brand-400 via-blue-400 to-purple-400">Fast & Securely</span>
+                    Convert M3U8
+                    <span
+                        class="text-transparent bg-clip-text bg-gradient-to-r from-brand-400 via-blue-400 to-purple-400">Fast
+                        & Securely</span>
                 </h1>
                 <p class="text-sm sm:text-base text-slate-400 max-w-xl mx-auto">
                     Download HLS streams in your preferred quality.
@@ -45,31 +58,49 @@
             <div class="glass-panel rounded-2xl p-1">
                 <div class="bg-slate-900/40 rounded-xl p-5 sm:p-6 space-y-5">
                     <div class="space-y-2">
-                        <label for="url" class="block text-xs font-semibold text-slate-400 uppercase tracking-wider ml-1">Video URL</label>
+                        <label for="url"
+                            class="block text-xs font-semibold text-slate-400 uppercase tracking-wider ml-1">Video
+                            URL</label>
                         <div class="relative group input-gradient rounded-xl transition-all duration-300">
                             <input type="text" id="url"
                                 class="input-modern block w-full pl-4 pr-24 py-4 bg-slate-800/80 border border-slate-700/50 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:bg-slate-800 focus:border-brand-500/50 transition-all font-mono text-sm"
                                 placeholder="https://example.com/video.m3u8">
                             <div class="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
-                                <button type="button" id="pasteBtn" class="p-2.5 text-slate-400 hover:text-white hover:bg-slate-700/50 rounded-lg transition-all" title="Paste">
-                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+                                <button type="button" id="pasteBtn"
+                                    class="p-2.5 text-slate-400 hover:text-white hover:bg-slate-700/50 rounded-lg transition-all"
+                                    title="Paste">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                                    </svg>
                                 </button>
-                                <button type="button" id="clearBtn" class="hidden p-2.5 text-slate-400 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-all" title="Clear">
-                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                                <button type="button" id="clearBtn"
+                                    class="hidden p-2.5 text-slate-400 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-all"
+                                    title="Clear">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M6 18L18 6M6 6l12 12" />
+                                    </svg>
                                 </button>
                             </div>
                         </div>
                     </div>
                     <button id="fetchBtn" type="button"
-                        class="w-full relative group overflow-hidden rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-semibold py-3.5 transition-all border border-slate-700/50 hover:border-slate-600 disabled:opacity-50 disabled:cursor-not-allowed">
+                        class="w-full relative z-10 cursor-pointer group overflow-hidden rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-semibold py-3.5 transition-all border border-slate-700/50 hover:border-slate-600 disabled:opacity-50 disabled:cursor-not-allowed">
                         <div id="fetchContent" class="relative flex items-center justify-center gap-2">
-                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                            </svg>
                             <span class="text-sm">Check Available Formats</span>
                         </div>
                         <div id="fetchLoader" class="hidden relative flex items-center justify-center gap-3">
                             <svg class="animate-spin h-5 w-5 text-white" fill="none" viewBox="0 0 24 24">
-                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor"
+                                    stroke-width="4"></circle>
+                                <path class="opacity-75" fill="currentColor"
+                                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z">
+                                </path>
                             </svg>
                             <span class="text-sm">Fetching formats...</span>
                         </div>
@@ -77,7 +108,12 @@
                     <div id="formatSection" class="hidden space-y-4">
                         <div class="flex items-center justify-between">
                             <div class="flex items-center gap-2">
-                                <svg class="w-5 h-5 text-brand-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
+                                <svg class="w-5 h-5 text-brand-500" fill="none" stroke="currentColor"
+                                    viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z">
+                                    </path>
+                                </svg>
                                 <span class="text-sm font-semibold text-white">Select Quality</span>
                             </div>
                             <p id="videoTitle" class="text-xs text-slate-500 truncate max-w-[200px]" title=""></p>
@@ -89,12 +125,19 @@
                         class="hidden w-full relative group overflow-hidden rounded-xl bg-gradient-to-r from-brand-600 to-brand-500 hover:from-brand-500 hover:to-brand-400 text-white font-bold py-4 transition-all shadow-lg shadow-brand-500/20 hover:shadow-brand-500/40 disabled:opacity-50 disabled:cursor-not-allowed">
                         <div id="btnContent" class="relative flex items-center justify-center gap-2">
                             <span class="uppercase tracking-widest text-sm">Start Conversion</span>
-                            <svg class="w-5 h-5 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
+                            <svg class="w-5 h-5 group-hover:translate-x-1 transition-transform" fill="none"
+                                stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M14 5l7 7m0 0l-7 7m7-7H3"></path>
+                            </svg>
                         </div>
                         <div id="btnLoader" class="hidden relative flex items-center justify-center gap-3">
                             <svg class="animate-spin h-5 w-5 text-white" fill="none" viewBox="0 0 24 24">
-                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor"
+                                    stroke-width="4"></circle>
+                                <path class="opacity-75" fill="currentColor"
+                                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z">
+                                </path>
                             </svg>
                             <span class="font-bold uppercase tracking-widest text-sm">Converting...</span>
                         </div>
@@ -116,13 +159,20 @@
                                         </div>
                                     </div>
                                     <div id="actionArea" class="hidden mt-4">
-                                        <a href="#" id="downloadBtn" class="inline-flex items-center justify-center w-full sm:w-auto px-6 py-3 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold rounded-xl transition-all shadow-lg shadow-emerald-500/20 text-sm gap-2">
-                                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                                        <a href="#" id="downloadBtn"
+                                            class="inline-flex items-center justify-center w-full sm:w-auto px-6 py-3 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold rounded-xl transition-all shadow-lg shadow-emerald-500/20 text-sm gap-2">
+                                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                    d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4">
+                                                </path>
+                                            </svg>
                                             Download Video
                                         </a>
                                     </div>
-                                    <div id="errorArea" class="hidden mt-3 p-3 bg-red-500/10 border border-red-500/20 rounded-lg">
-                                        <code id="errorDetails" class="text-xs font-mono text-red-400 break-all block"></code>
+                                    <div id="errorArea"
+                                        class="hidden mt-3 p-3 bg-red-500/10 border border-red-500/20 rounded-lg">
+                                        <code id="errorDetails"
+                                            class="text-xs font-mono text-red-400 break-all block"></code>
                                     </div>
                                 </div>
                             </div>
@@ -133,19 +183,30 @@
             <div class="grid grid-cols-3 gap-3 pt-4 border-t border-white/5">
                 <div class="text-center p-3">
                     <div class="w-10 h-10 mx-auto rounded-lg bg-brand-500/10 flex items-center justify-center mb-2">
-                        <svg class="w-5 h-5 text-brand-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+                        <svg class="w-5 h-5 text-brand-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+                        </svg>
                     </div>
                     <p class="text-xs text-slate-400">Fast Engine</p>
                 </div>
                 <div class="text-center p-3">
                     <div class="w-10 h-10 mx-auto rounded-lg bg-emerald-500/10 flex items-center justify-center mb-2">
-                        <svg class="w-5 h-5 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path></svg>
+                        <svg class="w-5 h-5 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z">
+                            </path>
+                        </svg>
                     </div>
                     <p class="text-xs text-slate-400">Secure</p>
                 </div>
                 <div class="text-center p-3">
                     <div class="w-10 h-10 mx-auto rounded-lg bg-purple-500/10 flex items-center justify-center mb-2">
-                        <svg class="w-5 h-5 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                        <svg class="w-5 h-5 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z">
+                            </path>
+                        </svg>
                     </div>
                     <p class="text-xs text-slate-400">HD Quality</p>
                 </div>
@@ -156,7 +217,8 @@
         <p class="text-slate-600 text-xs">&copy; <span id="year"></span> StreamConvert</p>
     </footer>
     <script>document.getElementById('year').textContent = new Date().getFullYear();</script>
-    <script src="{{ url_for('static', filename='js/toast.js') }}"></script>
-    <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/toast.js') }}?v=debug"></script>
+    <script src="{{ url_for('static', filename='js/app.js') }}?v=debug"></script>
 </body>
+
 </html>
