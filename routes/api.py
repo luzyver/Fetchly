@@ -33,8 +33,22 @@ def fetch_formats():
     resolved_url = url
     cookies = None
     referer = url
+    is_direct_supported = False
     
-    if '.m3u8' not in url.lower():
+    direct_supported_domains = [
+        'youtube.com', 'youtu.be', 'youtube-nocookie.com',
+        'vimeo.com', 'dailymotion.com', 'twitch.tv',
+        'facebook.com', 'fb.watch', 'twitter.com', 'x.com',
+        'tiktok.com', 'instagram.com', 'bilibili.com'
+    ]
+    
+    parsed = urlparse(url)
+    for domain in direct_supported_domains:
+        if domain in parsed.netloc:
+            is_direct_supported = True
+            break
+    
+    if not is_direct_supported and '.m3u8' not in url.lower():
         try:
             resolved_url, cookies = resolve_source_url(url)
             logger.info(f"Resolved to: {resolved_url}")

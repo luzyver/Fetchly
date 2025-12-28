@@ -6,6 +6,20 @@ from core.database import update_task_status
 
 logger = logging.getLogger(__name__)
 
+DIRECT_SUPPORTED_DOMAINS = [
+    'youtube.com', 'youtu.be', 'youtube-nocookie.com',
+    'vimeo.com', 'dailymotion.com', 'twitch.tv',
+    'facebook.com', 'fb.watch', 'twitter.com', 'x.com',
+    'tiktok.com', 'instagram.com', 'bilibili.com'
+]
+
+def is_direct_supported(url):
+    parsed = urlparse(url)
+    for domain in DIRECT_SUPPORTED_DOMAINS:
+        if domain in parsed.netloc:
+            return True
+    return False
+
 def convert_m3u8(task_id, url, output_path, referer=None, cookies=None, format_id=None):
     logger.info(f"Task {task_id}: Starting conversion for {url} (format: {format_id or 'best'})")
     try:
@@ -14,6 +28,7 @@ def convert_m3u8(task_id, url, output_path, referer=None, cookies=None, format_i
         parsed_url = urlparse(url)
         domain = f"{parsed_url.scheme}://{parsed_url.netloc}/"
         current_referer = referer if referer else domain
+        direct_supported = is_direct_supported(url)
         
         agents_to_try = [USER_AGENTS['DESKTOP'], USER_AGENTS['MOBILE']]
         success = False
@@ -24,21 +39,29 @@ def convert_m3u8(task_id, url, output_path, referer=None, cookies=None, format_i
                 cmd = [
                     'yt-dlp',
                     '--user-agent', ua,
-                    '--add-header', f'Referer: {current_referer}',
-                    '--add-header', f'Origin: {domain}',
                     '--no-check-certificate',
                     '--no-playlist',
-                    '--concurrent-fragments', '4',
                     '-o', output_path,
                 ]
                 
-                if format_id and format_id != 'best':
-                    cmd.extend(['-f', format_id])
+                if direct_supported:
+                    if format_id and format_id != 'best':
+                        cmd.extend(['-f', f'{format_id}+bestaudio/best'])
+                    else:
+                        cmd.extend(['-f', 'bestvideo+bestaudio/best'])
+                    cmd.extend(['--merge-output-format', 'mp4'])
+                else:
+                    cmd.extend([
+                        '--add-header', f'Referer: {current_referer}',
+                        '--add-header', f'Origin: {domain}',
+                        '--concurrent-fragments', '4',
+                    ])
+                    if format_id and format_id != 'best':
+                        cmd.extend(['-f', format_id])
+                    if cookies:
+                        cmd.extend(['--add-header', f'Cookie: {cookies}'])
                 
                 cmd.append(url)
-                
-                if cookies:
-                    cmd.extend(['--add-header', f'Cookie: {cookies}'])
                 
                 logger.info(f"Task {task_id}: Attempt {i+1}/{len(agents_to_try)} (UA: {'Mobile' if 'Mobile' in ua else 'Desktop'})")
                 
