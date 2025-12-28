@@ -12,36 +12,43 @@ const App = {
         videoTitle: null
     },
     
-    elements: {
-        input: document.getElementById('url'),
-        pasteBtn: document.getElementById('pasteBtn'),
-        clearBtn: document.getElementById('clearBtn'),
-        fetchBtn: document.getElementById('fetchBtn'),
-        convertBtn: document.getElementById('convertBtn'),
-        btnContent: document.getElementById('btnContent'),
-        btnLoader: document.getElementById('btnLoader'),
-        fetchContent: document.getElementById('fetchContent'),
-        fetchLoader: document.getElementById('fetchLoader'),
-        formatSection: document.getElementById('formatSection'),
-        formatList: document.getElementById('formatList'),
-        videoTitle: document.getElementById('videoTitle'),
-        statusCard: document.getElementById('statusCard'),
-        statusIcon: document.getElementById('statusIcon'),
-        statusTitle: document.getElementById('statusTitle'),
-        statusMessage: document.getElementById('statusMessage'),
-        progressContainer: document.getElementById('progressContainer'),
-        progressBar: document.getElementById('progressBar'),
-        progressText: document.getElementById('progressText'),
-        actionArea: document.getElementById('actionArea'),
-        downloadBtn: document.getElementById('downloadBtn'),
-        errorArea: document.getElementById('errorArea'),
-        errorDetails: document.getElementById('errorDetails')
-    },
+    elements: {},
 
     init() {
-        if (!this.elements.input) return;
+        this.elements = {
+            input: document.getElementById('url'),
+            pasteBtn: document.getElementById('pasteBtn'),
+            clearBtn: document.getElementById('clearBtn'),
+            fetchBtn: document.getElementById('fetchBtn'),
+            convertBtn: document.getElementById('convertBtn'),
+            btnContent: document.getElementById('btnContent'),
+            btnLoader: document.getElementById('btnLoader'),
+            fetchContent: document.getElementById('fetchContent'),
+            fetchLoader: document.getElementById('fetchLoader'),
+            formatSection: document.getElementById('formatSection'),
+            formatList: document.getElementById('formatList'),
+            videoTitle: document.getElementById('videoTitle'),
+            statusCard: document.getElementById('statusCard'),
+            statusIcon: document.getElementById('statusIcon'),
+            statusTitle: document.getElementById('statusTitle'),
+            statusMessage: document.getElementById('statusMessage'),
+            progressContainer: document.getElementById('progressContainer'),
+            progressBar: document.getElementById('progressBar'),
+            progressText: document.getElementById('progressText'),
+            actionArea: document.getElementById('actionArea'),
+            downloadBtn: document.getElementById('downloadBtn'),
+            errorArea: document.getElementById('errorArea'),
+            errorDetails: document.getElementById('errorDetails')
+        };
+
+        if (!this.elements.input) {
+            console.error('App: URL input not found');
+            return;
+        }
+        
         this.bindEvents();
         this.checkInputState();
+        console.log('App initialized');
     },
 
     bindEvents() {
@@ -82,6 +89,14 @@ const App = {
                 this.elements.input.focus();
             });
         }
+
+        if (this.elements.fetchBtn) {
+            this.elements.fetchBtn.addEventListener('click', () => this.fetchFormats());
+        }
+
+        if (this.elements.convertBtn) {
+            this.elements.convertBtn.addEventListener('click', () => this.startConversion());
+        }
     },
 
     checkInputState() {
@@ -111,20 +126,25 @@ const App = {
         if (this.elements.fetchBtn) {
             this.elements.fetchBtn.classList.remove('hidden');
         }
+        if (this.elements.statusCard) {
+            this.elements.statusCard.classList.add('hidden');
+        }
     },
 
     setFetchLoading(isLoading) {
         if (!this.elements.fetchBtn) return;
         
         this.elements.fetchBtn.disabled = isLoading;
-        this.elements.input.disabled = isLoading;
+        if (this.elements.input) this.elements.input.disabled = isLoading;
         
-        if (isLoading) {
-            this.elements.fetchContent.classList.add('hidden');
-            this.elements.fetchLoader.classList.remove('hidden');
-        } else {
-            this.elements.fetchContent.classList.remove('hidden');
-            this.elements.fetchLoader.classList.add('hidden');
+        if (this.elements.fetchContent && this.elements.fetchLoader) {
+            if (isLoading) {
+                this.elements.fetchContent.classList.add('hidden');
+                this.elements.fetchLoader.classList.remove('hidden');
+            } else {
+                this.elements.fetchContent.classList.remove('hidden');
+                this.elements.fetchLoader.classList.add('hidden');
+            }
         }
     },
 
@@ -133,23 +153,25 @@ const App = {
         if (!this.elements.convertBtn) return;
         
         this.elements.convertBtn.disabled = isLoading;
-        this.elements.input.disabled = isLoading;
+        if (this.elements.input) this.elements.input.disabled = isLoading;
         
-        if (isLoading) {
-            this.elements.btnContent.classList.add('hidden');
-            this.elements.btnLoader.classList.remove('hidden');
-        } else {
-            this.elements.btnContent.classList.remove('hidden');
-            this.elements.btnLoader.classList.add('hidden');
+        if (this.elements.btnContent && this.elements.btnLoader) {
+            if (isLoading) {
+                this.elements.btnContent.classList.add('hidden');
+                this.elements.btnLoader.classList.remove('hidden');
+            } else {
+                this.elements.btnContent.classList.remove('hidden');
+                this.elements.btnLoader.classList.add('hidden');
+            }
         }
     },
 
     async fetchFormats() {
-        const url = this.elements.input.value.trim();
+        const url = this.elements.input?.value.trim();
         
         if (!url) {
             Toast.warning('Please enter a URL first');
-            this.elements.input.focus();
+            this.elements.input?.focus();
             return;
         }
 
@@ -159,7 +181,9 @@ const App = {
         }
 
         this.setFetchLoading(true);
-        this.elements.statusCard.classList.add('hidden');
+        if (this.elements.statusCard) {
+            this.elements.statusCard.classList.add('hidden');
+        }
         Toast.info('Fetching available formats...');
 
         try {
@@ -186,7 +210,9 @@ const App = {
 
         } catch (error) {
             Toast.error(error.message || 'Failed to fetch formats');
-            this.elements.statusCard.classList.remove('hidden');
+            if (this.elements.statusCard) {
+                this.elements.statusCard.classList.remove('hidden');
+            }
             this.updateStatusUI('failed', error.message);
         } finally {
             this.setFetchLoading(false);
@@ -199,8 +225,8 @@ const App = {
         this.elements.formatSection.classList.remove('hidden');
         this.elements.formatSection.classList.add('animate-scale-in');
         
-        this.elements.fetchBtn.classList.add('hidden');
-        this.elements.convertBtn.classList.remove('hidden');
+        if (this.elements.fetchBtn) this.elements.fetchBtn.classList.add('hidden');
+        if (this.elements.convertBtn) this.elements.convertBtn.classList.remove('hidden');
 
         if (this.elements.videoTitle && this.state.videoTitle) {
             this.elements.videoTitle.textContent = this.state.videoTitle;
@@ -248,7 +274,7 @@ const App = {
     },
 
     async startConversion() {
-        const url = this.elements.input.value.trim();
+        const url = this.elements.input?.value.trim();
         
         if (!url) {
             Toast.warning('Please enter a URL first');
@@ -257,8 +283,8 @@ const App = {
 
         this.setConvertLoading(true);
         this.state.progress = 0;
-        this.elements.statusCard.classList.add('hidden');
-        this.elements.errorArea.classList.add('hidden');
+        if (this.elements.statusCard) this.elements.statusCard.classList.add('hidden');
+        if (this.elements.errorArea) this.elements.errorArea.classList.add('hidden');
 
         Toast.info('Starting conversion...');
 
@@ -280,8 +306,10 @@ const App = {
             if (!response.ok) throw new Error(data.error || 'Failed to start conversion');
 
             this.state.currentTaskId = data.task_id;
-            this.elements.statusCard.classList.remove('hidden');
-            this.elements.statusCard.classList.add('animate-scale-in');
+            if (this.elements.statusCard) {
+                this.elements.statusCard.classList.remove('hidden');
+                this.elements.statusCard.classList.add('animate-scale-in');
+            }
             this.updateStatusUI('processing');
 
             if (this.state.pollInterval) clearInterval(this.state.pollInterval);
@@ -289,7 +317,7 @@ const App = {
 
         } catch (error) {
             this.setConvertLoading(false);
-            this.elements.statusCard.classList.remove('hidden');
+            if (this.elements.statusCard) this.elements.statusCard.classList.remove('hidden');
             this.updateStatusUI('failed', error.message);
             Toast.error(error.message || 'Conversion failed');
         }
@@ -372,30 +400,36 @@ const App = {
             </div>`
         };
 
-        this.elements.statusIcon.innerHTML = icons[status] || icons.processing;
+        if (this.elements.statusIcon) {
+            this.elements.statusIcon.innerHTML = icons[status] || icons.processing;
+        }
 
         if (status === 'processing') {
-            this.elements.statusTitle.textContent = 'Processing Stream...';
-            this.elements.statusMessage.textContent = 'Downloading and converting to MP4.';
-            this.elements.progressContainer.classList.remove('hidden');
-            this.elements.actionArea.classList.add('hidden');
-            this.elements.errorArea.classList.add('hidden');
+            if (this.elements.statusTitle) this.elements.statusTitle.textContent = 'Processing Stream...';
+            if (this.elements.statusMessage) this.elements.statusMessage.textContent = 'Downloading and converting to MP4.';
+            if (this.elements.progressContainer) this.elements.progressContainer.classList.remove('hidden');
+            if (this.elements.actionArea) this.elements.actionArea.classList.add('hidden');
+            if (this.elements.errorArea) this.elements.errorArea.classList.add('hidden');
         } else if (status === 'completed') {
-            this.elements.statusTitle.textContent = 'Ready for Download';
-            this.elements.statusMessage.textContent = 'Your video has been converted successfully.';
-            this.elements.progressContainer.classList.add('hidden');
-            this.elements.actionArea.classList.remove('hidden');
-            this.elements.actionArea.classList.add('animate-scale-in');
-            this.elements.errorArea.classList.add('hidden');
-            this.elements.downloadBtn.href = `/download/${this.state.currentTaskId}`;
+            if (this.elements.statusTitle) this.elements.statusTitle.textContent = 'Ready for Download';
+            if (this.elements.statusMessage) this.elements.statusMessage.textContent = 'Your video has been converted successfully.';
+            if (this.elements.progressContainer) this.elements.progressContainer.classList.add('hidden');
+            if (this.elements.actionArea) {
+                this.elements.actionArea.classList.remove('hidden');
+                this.elements.actionArea.classList.add('animate-scale-in');
+            }
+            if (this.elements.errorArea) this.elements.errorArea.classList.add('hidden');
+            if (this.elements.downloadBtn) this.elements.downloadBtn.href = `/download/${this.state.currentTaskId}`;
         } else if (status === 'failed') {
-            this.elements.statusTitle.textContent = 'Conversion Failed';
-            this.elements.statusMessage.textContent = 'Something went wrong while processing.';
-            this.elements.progressContainer.classList.add('hidden');
-            this.elements.actionArea.classList.add('hidden');
-            this.elements.errorArea.classList.remove('hidden');
-            this.elements.errorArea.classList.add('animate-scale-in');
-            this.elements.errorDetails.textContent = message || 'Unknown server error.';
+            if (this.elements.statusTitle) this.elements.statusTitle.textContent = 'Conversion Failed';
+            if (this.elements.statusMessage) this.elements.statusMessage.textContent = 'Something went wrong while processing.';
+            if (this.elements.progressContainer) this.elements.progressContainer.classList.add('hidden');
+            if (this.elements.actionArea) this.elements.actionArea.classList.add('hidden');
+            if (this.elements.errorArea) {
+                this.elements.errorArea.classList.remove('hidden');
+                this.elements.errorArea.classList.add('animate-scale-in');
+            }
+            if (this.elements.errorDetails) this.elements.errorDetails.textContent = message || 'Unknown server error.';
         }
     }
 };

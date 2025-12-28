@@ -26,7 +26,7 @@ CONFIG = {
     'DOWNLOAD_FOLDER': 'downloads',
     'DB_PATH': os.path.join('downloads', 'tasks.db'),
     'MAX_WORKERS': 4,
-    'CLEANUP_INTERVAL': 86400,
+    'CLEANUP_INTERVAL': 3600,
     'RETENTION_PERIOD': 86400,
 }
 
@@ -146,26 +146,37 @@ def convert_m3u8(task_id, url, output_path, referer=None, cookies=None, format_i
         update_task_status(task_id, 'failed', error=str(e))
 
 def cleanup_old_files():
+    first_run = True
     while True:
         try:
-            time.sleep(CONFIG['CLEANUP_INTERVAL'])
+            if not first_run:
+                time.sleep(CONFIG['CLEANUP_INTERVAL'])
+            else:
+                first_run = False
+                time.sleep(5)
+            
             logger.info("Running cleanup task...")
             
             cutoff_time = time.time() - CONFIG['RETENTION_PERIOD']
+            deleted_count = 0
             
             for filename in os.listdir(CONFIG['DOWNLOAD_FOLDER']):
                 if filename.endswith('.mp4'):
                     filepath = os.path.join(CONFIG['DOWNLOAD_FOLDER'], filename)
-                    if os.path.getmtime(filepath) < cutoff_time:
-                        try:
+                    try:
+                        if os.path.getmtime(filepath) < cutoff_time:
                             os.remove(filepath)
                             logger.info(f"Deleted old file: {filename}")
-                        except OSError as e:
-                            logger.warning(f"Error deleting {filename}: {e}")
+                            deleted_count += 1
+                    except OSError as e:
+                        logger.warning(f"Error deleting {filename}: {e}")
 
             with get_db() as conn:
-                conn.execute("DELETE FROM tasks WHERE created_at < datetime('now', '-1 day')")
+                cursor = conn.execute("DELETE FROM tasks WHERE created_at < datetime('now', '-1 day')")
+                db_deleted = cursor.rowcount
                 conn.commit()
+            
+            logger.info(f"Cleanup complete: {deleted_count} files, {db_deleted} DB records deleted")
                 
         except Exception as e:
             logger.error(f"Cleanup loop error: {e}")
@@ -260,7 +271,6 @@ def index():
 
 @app.route('/fetch-formats', methods=['POST'])
 def fetch_formats():
-    """Fetch available video formats/resolutions from URL"""
     data = request.json
     url = data.get('url', '').strip()
     
