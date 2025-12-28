@@ -36,7 +36,11 @@ def convert():
     if not resolved_url:
         resolved_url = url
         # Skip resolver for TikTok and direct supported sites
-        if '.m3u8' not in url.lower() and not TikTokDownloader.is_tiktok_url(url) and not is_direct_supported(url):
+        is_tiktok = TikTokDownloader.is_tiktok_url(url)
+        is_direct = is_direct_supported(url)
+        logger.info(f"URL check - TikTok: {is_tiktok}, Direct: {is_direct}, URL: {url}")
+        
+        if '.m3u8' not in url.lower() and not is_tiktok and not is_direct:
             try:
                 resolved_url, cookies = resolve_source_url(url)
                 logger.info(f"Resolved to: {resolved_url}")
