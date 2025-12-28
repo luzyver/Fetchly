@@ -98,7 +98,7 @@ def download(task_id):
         return send_file(
             task['file'],
             as_attachment=True,
-            download_name=f"video_{task_id[:8]}.{ext}"
+            download_name=f"{task_id}.{ext}"
         )
     except Exception as e:
         logger.error(f"Download failed: {e}")

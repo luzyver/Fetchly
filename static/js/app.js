@@ -301,18 +301,22 @@ const App = {
         if (this.elements.statusIcon) this.elements.statusIcon.innerHTML = icons[status] || icons.processing;
 
         if (status === 'processing') {
+            const isAudio = this.state.selectedFormat === 'tiktok_audio';
             this.elements.statusTitle && (this.elements.statusTitle.textContent = 'Processing...');
-            this.elements.statusMessage && (this.elements.statusMessage.textContent = 'Downloading and converting to MP4');
+            this.elements.statusMessage && (this.elements.statusMessage.textContent = isAudio ? 'Downloading audio...' : 'Downloading and converting to MP4');
             this.elements.progressContainer?.classList.remove('hidden');
             this.elements.actionArea?.classList.add('hidden');
             this.elements.errorArea?.classList.add('hidden');
         } else if (status === 'completed') {
+            const isAudio = this.state.selectedFormat === 'tiktok_audio';
             this.elements.statusTitle && (this.elements.statusTitle.textContent = 'Ready!');
-            this.elements.statusMessage && (this.elements.statusMessage.textContent = 'Your video is ready for download');
+            this.elements.statusMessage && (this.elements.statusMessage.textContent = isAudio ? 'Your audio is ready for download' : 'Your video is ready for download');
             this.elements.progressContainer?.classList.add('hidden');
             this.elements.actionArea?.classList.remove('hidden');
             this.elements.errorArea?.classList.add('hidden');
             if (this.elements.downloadBtn) this.elements.downloadBtn.href = `/download/${this.state.currentTaskId}`;
+            const btnText = document.getElementById('downloadBtnText');
+            if (btnText) btnText.textContent = isAudio ? 'Download MP3' : 'Download MP4';
         } else if (status === 'failed') {
             this.elements.statusTitle && (this.elements.statusTitle.textContent = 'Failed');
             this.elements.statusMessage && (this.elements.statusMessage.textContent = 'Something went wrong');
