@@ -110,7 +110,7 @@ def convert_m3u8(task_id, url, output_path, referer=None, cookies=None, format_i
                     '-o', output_path,
                 ]
                 
-                if format_id:
+                if format_id and format_id != 'best':
                     cmd.extend(['-f', format_id])
                 
                 cmd.append(url)
@@ -295,27 +295,50 @@ def fetch_formats():
         parsed_url = urlparse(resolved_url)
         domain = f"{parsed_url.scheme}://{parsed_url.netloc}/"
         
-        cmd = [
-            'yt-dlp',
-            '--user-agent', USER_AGENTS['DESKTOP'],
-            '--add-header', f'Referer: {referer}',
-            '--add-header', f'Origin: {domain}',
-            '--no-check-certificate',
-            '-J',
-            resolved_url
-        ]
-        
-        if cookies:
-            cmd.extend(['--add-header', f'Cookie: {cookies}'])
-        
-        process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        stdout, stderr = process.communicate(timeout=30)
-        
-        if process.returncode != 0:
-            error_msg = stderr.decode().strip()
-            return jsonify({'error': f'Failed to fetch formats: {error_msg[-200:]}'}), 400
+        agents_to_try = [USER_AGENTS['DESKTOP'], USER_AGENTS['MOBILE']]
+        last_error = None
+        stdout = None
         
         import json
+
+        for i, ua in enumerate(agents_to_try):
+            try:
+                logger.info(f"Fetch Formats: Attempt {i+1}/{len(agents_to_try)} (UA: {'Mobile' if 'Mobile' in ua else 'Desktop'})")
+                
+                cmd = [
+                    'yt-dlp',
+                    '--user-agent', ua,
+                    '--add-header', f'Referer: {referer}',
+                    '--add-header', f'Origin: {domain}',
+                    '--no-check-certificate',
+                    '-J',
+                    resolved_url
+                ]
+                
+                if cookies:
+                    cmd.extend(['--add-header', f'Cookie: {cookies}'])
+                
+                process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                out, err = process.communicate(timeout=30)
+                
+                if process.returncode == 0:
+                    stdout = out
+                    break
+                else:
+                    error_msg = err.decode().strip()
+                    last_error = error_msg[-200:]
+                    logger.warning(f"Fetch Formats: Attempt {i+1} failed. Error: {last_error}")
+            
+            except subprocess.TimeoutExpired:
+                last_error = "Timeout"
+                logger.warning(f"Fetch Formats: Attempt {i+1} timed out")
+            except Exception as e:
+                last_error = str(e)
+                logger.warning(f"Fetch Formats: Attempt {i+1} error: {e}")
+
+        if not stdout:
+            return jsonify({'error': f'Failed to fetch formats: {last_error}'}), 400
+        
         video_info = json.loads(stdout.decode())
         
         formats = []
