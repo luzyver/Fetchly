@@ -9,6 +9,7 @@ services:
       - FLASK_ENV=production
     volumes:
       - ./downloads:/app/downloads
+      - ./config/cookies.txt:/app/cookies.txt
     networks:
       - nginx_default
 

@@ -1,7 +1,8 @@
+import os
 import subprocess
 import logging
 from urllib.parse import urlparse
-from core.config import USER_AGENTS
+from core.config import CONFIG, USER_AGENTS
 from core.database import update_task_status
 
 logger = logging.getLogger(__name__)
@@ -33,6 +34,9 @@ def convert_m3u8(task_id, url, output_path, referer=None, cookies=None, format_i
         agents_to_try = [USER_AGENTS['DESKTOP'], USER_AGENTS['MOBILE']]
         success = False
         last_error = None
+        
+        cookie_file = CONFIG.get('COOKIE_FILE')
+        has_cookie_file = cookie_file and os.path.exists(cookie_file) and os.path.getsize(cookie_file) > 100
 
         for i, ua in enumerate(agents_to_try):
             try:
@@ -43,6 +47,10 @@ def convert_m3u8(task_id, url, output_path, referer=None, cookies=None, format_i
                     '--no-playlist',
                     '-o', output_path,
                 ]
+                
+                if has_cookie_file:
+                    cmd.insert(1, '--cookies')
+                    cmd.insert(2, cookie_file)
                 
                 if direct_supported:
                     if format_id and format_id != 'best':

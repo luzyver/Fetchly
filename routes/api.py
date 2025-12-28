@@ -62,6 +62,9 @@ def fetch_formats():
         agents_to_try = [USER_AGENTS['DESKTOP'], USER_AGENTS['MOBILE']]
         last_error = None
         stdout = None
+        
+        cookie_file = CONFIG.get('COOKIE_FILE')
+        has_cookie_file = cookie_file and os.path.exists(cookie_file) and os.path.getsize(cookie_file) > 100
 
         for i, ua in enumerate(agents_to_try):
             try:
@@ -77,7 +80,10 @@ def fetch_formats():
                     resolved_url
                 ]
                 
-                if cookies:
+                if has_cookie_file:
+                    cmd.insert(1, '--cookies')
+                    cmd.insert(2, cookie_file)
+                elif cookies:
                     cmd.extend(['--add-header', f'Cookie: {cookies}'])
                 
                 process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
