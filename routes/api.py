@@ -45,7 +45,6 @@ def fetch_formats():
     
     # TikTok: fetch info and return 3 format options with size
     if is_tiktok:
-        from core.tiktok import TikTokDownloader
         downloader = TikTokDownloader()
         tiktok_info = downloader.get_download_urls(url)
         
