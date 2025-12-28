@@ -18,7 +18,7 @@ DIRECT_SUPPORTED_DOMAINS = [
     'youtube.com', 'youtu.be', 'youtube-nocookie.com',
     'vimeo.com', 'dailymotion.com', 'twitch.tv',
     'facebook.com', 'fb.watch', 'twitter.com', 'x.com',
-    'tiktok.com', 'instagram.com', 'bilibili.com'
+    'instagram.com', 'bilibili.com'
 ]
 
 os.makedirs(CONFIG['DOWNLOAD_FOLDER'], exist_ok=True)

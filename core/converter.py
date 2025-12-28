@@ -4,6 +4,7 @@ import logging
 from urllib.parse import urlparse
 from core.config import CONFIG, USER_AGENTS, DIRECT_SUPPORTED_DOMAINS
 from core.database import update_task_status
+from core.tiktok import TikTokDownloader, download_tiktok_video
 
 logger = logging.getLogger(__name__)
 
@@ -18,6 +19,17 @@ def convert_m3u8(task_id, url, output_path, referer=None, cookies=None, format_i
     logger.info(f"Task {task_id}: Starting conversion for {url} (format: {format_id or 'best'})")
     try:
         update_task_status(task_id, 'processing')
+        
+        if TikTokDownloader.is_tiktok_url(url):
+            logger.info(f"Task {task_id}: Detected TikTok URL, using custom downloader")
+            result = download_tiktok_video(url, output_path, no_watermark=True)
+            
+            if result["success"]:
+                update_task_status(task_id, 'completed', file=output_path)
+                logger.info(f"Task {task_id}: TikTok download successful - {result.get('title', 'Unknown')}")
+                return
+            else:
+                logger.warning(f"Task {task_id}: TikTok custom downloader failed: {result.get('error')}, trying yt-dlp...")
         
         parsed_url = urlparse(url)
         domain = f"{parsed_url.scheme}://{parsed_url.netloc}/"
