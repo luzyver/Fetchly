@@ -10,6 +10,7 @@ services:
     volumes:
       - ./downloads:/app/downloads
       - ./config/cookies.txt:/app/cookies.txt
+      - ./config/tiktok_cookies.txt:/app/tiktok_cookies.txt
     networks:
       - nginx_default
 

@@ -1,18 +1,45 @@
+"""
+TikTok Downloader with Cookie Support
+For videos that require login (age-restricted, private, region-locked)
+"""
+
+import os
 import re
 import json
 import logging
 import requests
-from urllib.parse import urlparse, parse_qs, urlencode
+from http.cookiejar import MozillaCookieJar
+from urllib.parse import urlparse
+from core.config import CONFIG
 
 logger = logging.getLogger(__name__)
 
-class TikTokDownloader:
-    API_DOMAIN = "https://api16-normal-c-useast1a.tiktokv.com"
+
+def load_cookies_from_file(cookie_file):
+    """Load cookies from Netscape format cookie file"""
+    cookies = {}
+    if not cookie_file or not os.path.exists(cookie_file):
+        return cookies
     
-    HEADERS = {
-        "User-Agent": "com.zhiliaoapp.musically/2023501030 (Linux; U; Android 12; en_US; Pixel 6; Build/SD1A.210817.023; Cronet/TTNetVersion:b4d74d15 2023-04-21 QuicVersion:0144d358 2023-03-10)",
-        "Accept": "application/json",
-    }
+    try:
+        jar = MozillaCookieJar(cookie_file)
+        jar.load(ignore_discard=True, ignore_expires=True)
+        for cookie in jar:
+            if 'tiktok' in cookie.domain:
+                cookies[cookie.name] = cookie.value
+        logger.info(f"Loaded {len(cookies)} TikTok cookies from {cookie_file}")
+    except Exception as e:
+        logger.warning(f"Failed to load cookies: {e}")
+    
+    return cookies
+
+
+class TikTokDownloader:
+    API_ENDPOINTS = [
+        "https://api22-normal-c-useast2a.tiktokv.com/aweme/v1/feed/",
+        "https://api16-normal-c-useast1a.tiktokv.com/aweme/v1/feed/",
+        "https://api19-normal-c-useast1a.tiktokv.com/aweme/v1/feed/",
+    ]
     
     URL_PATTERNS = [
         r'tiktok\.com/@[\w.-]+/video/(\d+)',
@@ -21,11 +48,23 @@ class TikTokDownloader:
         r'vt\.tiktok\.com/(\w+)',
     ]
     
-    def __init__(self, proxy=None):
+    def __init__(self, cookie_file=None):
         self.session = requests.Session()
-        self.session.headers.update(self.HEADERS)
-        if proxy:
-            self.session.proxies = {"http": proxy, "https": proxy}
+        
+        # Load cookies
+        cf = cookie_file or CONFIG.get('TIKTOK_COOKIE_FILE')
+        self.cookies = load_cookies_from_file(cf)
+        
+        # Set headers
+        self.session.headers.update({
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+            "Accept": "application/json, text/plain, */*",
+            "Accept-Language": "en-US,en;q=0.9",
+            "Referer": "https://www.tiktok.com/",
+        })
+        
+        if self.cookies:
+            self.session.cookies.update(self.cookies)
     
     @staticmethod
     def is_tiktok_url(url):
@@ -49,47 +88,63 @@ class TikTokDownloader:
             if match:
                 video_id = match.group(1)
                 if video_id.isdigit():
-                    return video_id
+                    return video_id, url
         
         match = re.search(r'/video/(\d+)', url)
         if match:
-            return match.group(1)
+            return match.group(1), url
         
         raise ValueError(f"Cannot extract video ID from URL: {url}")
-    
+
     def _get_video_info_api(self, video_id):
-        api_url = f"{self.API_DOMAIN}/aweme/v1/feed/"
-        
+        """Try multiple API endpoints"""
         params = {
             "aweme_id": video_id,
-            "version_code": "2023501030",
-            "app_name": "musical_ly",
+            "version_code": "300904",
             "device_platform": "android",
             "device_type": "Pixel 6",
             "os_version": "12",
+            "app_name": "trill",
+            "region": "US",
+            "language": "en",
+            "aid": "1180",
         }
         
-        try:
-            resp = self.session.get(api_url, params=params, timeout=15)
-            resp.raise_for_status()
-            data = resp.json()
-            
-            if data.get("aweme_list"):
-                return data["aweme_list"][0]
-            return None
-        except Exception as e:
-            logger.error(f"API request failed: {e}")
-            return None
+        headers = {
+            "User-Agent": "com.ss.android.ugc.trill/300904 (Linux; U; Android 12; en_US; Pixel 6; Build/SD1A.210817.023)",
+            "Accept": "application/json",
+        }
+        
+        for api_url in self.API_ENDPOINTS:
+            try:
+                logger.info(f"Trying API: {api_url}")
+                resp = requests.get(api_url, params=params, headers=headers, timeout=15)
+                
+                if resp.status_code == 200 and resp.text.strip():
+                    data = resp.json()
+                    if data.get("aweme_list"):
+                        logger.info("API request successful")
+                        return data["aweme_list"][0]
+            except Exception as e:
+                logger.warning(f"API {api_url} failed: {e}")
+                continue
+        
+        return None
     
     def _get_video_info_web(self, url):
+        """Scrape video info from web page (with cookies for login-required videos)"""
         try:
-            headers = {
-                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-                "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-            }
+            logger.info(f"Trying web scraping: {url[:80]}...")
             
-            resp = requests.get(url, headers=headers, timeout=15)
-            resp.raise_for_status()
+            resp = self.session.get(url, timeout=15, allow_redirects=True)
+            
+            if resp.status_code != 200:
+                logger.warning(f"Web request failed with status {resp.status_code}")
+                return None
+            
+            # Check if login required
+            if 'login' in resp.url.lower() or 'LoginModal' in resp.text:
+                logger.warning("Video requires login - cookies may be needed")
             
             patterns = [
                 r'<script id="__UNIVERSAL_DATA_FOR_REHYDRATION__"[^>]*>([^<]+)</script>',
@@ -101,9 +156,16 @@ class TikTokDownloader:
                 if match:
                     try:
                         data = json.loads(match.group(1))
-                        return self._parse_web_data(data)
+                        result = self._parse_web_data(data)
+                        if result:
+                            return result
                     except json.JSONDecodeError:
                         continue
+            
+            # Try to find video URL directly
+            video_urls = re.findall(r'(https://[^"\']+\.tiktok[^"\']+\.mp4[^"\']*)', resp.text)
+            if video_urls:
+                return {"direct_url": video_urls[0].replace('\\u002F', '/')}
             
             return None
         except Exception as e:
@@ -112,12 +174,14 @@ class TikTokDownloader:
     
     def _parse_web_data(self, data):
         try:
+            # __UNIVERSAL_DATA_FOR_REHYDRATION__ format
             if "__DEFAULT_SCOPE__" in data:
                 video_detail = data["__DEFAULT_SCOPE__"].get("webapp.video-detail", {})
                 item_info = video_detail.get("itemInfo", {}).get("itemStruct", {})
                 if item_info:
                     return item_info
             
+            # SIGI_STATE format
             if "ItemModule" in data:
                 items = data["ItemModule"]
                 if items:
@@ -141,20 +205,33 @@ class TikTokDownloader:
         }
         
         try:
-            video_id = self._extract_video_id(url)
+            video_id, resolved_url = self._extract_video_id(url)
             logger.info(f"Extracted video ID: {video_id}")
             
+            # Try API first
             video_info = self._get_video_info_api(video_id)
             
             if video_info:
                 result = self._extract_urls_from_api(video_info)
-            else:
-                logger.info("API failed, trying web scraping...")
-                video_info = self._get_video_info_web(url)
+            
+            # Fallback to web scraping (uses cookies)
+            if not result["success"]:
+                logger.info("API failed, trying web scraping with cookies...")
+                video_info = self._get_video_info_web(resolved_url)
+                
                 if video_info:
-                    result = self._extract_urls_from_web(video_info)
+                    if "direct_url" in video_info:
+                        result["no_watermark"] = video_info["direct_url"]
+                        result["success"] = True
+                        result["title"] = "TikTok Video"
+                    else:
+                        result = self._extract_urls_from_web(video_info)
+            
+            if not result["success"]:
+                if self.cookies:
+                    result["error"] = "Failed to get video. Video may be private or unavailable."
                 else:
-                    result["error"] = "Failed to get video info from both API and web"
+                    result["error"] = "Failed to get video. Try adding TikTok cookies for login-required videos."
             
             return result
             
@@ -162,7 +239,7 @@ class TikTokDownloader:
             logger.error(f"TikTok download failed: {e}")
             result["error"] = str(e)
             return result
-    
+
     def _extract_urls_from_api(self, video_info):
         result = {
             "success": False,
@@ -177,27 +254,36 @@ class TikTokDownloader:
         
         try:
             video = video_info.get("video", {})
+            
+            # No watermark URL
             play_addr = video.get("play_addr", {})
             url_list = play_addr.get("url_list", [])
             if url_list:
                 result["no_watermark"] = url_list[0]
             
+            # Watermark URL
             download_addr = video.get("download_addr", {})
             download_list = download_addr.get("url_list", [])
             if download_list:
                 result["watermark"] = download_list[0]
             
+            # Audio
             music = video_info.get("music", {})
             play_url = music.get("play_url", {})
-            music_urls = play_url.get("url_list", [])
-            if music_urls:
-                result["audio"] = music_urls[0]
+            if isinstance(play_url, dict):
+                music_urls = play_url.get("url_list", [])
+                if music_urls:
+                    result["audio"] = music_urls[0]
+            elif isinstance(play_url, str):
+                result["audio"] = play_url
             
+            # Cover
             cover = video.get("cover", {})
             cover_urls = cover.get("url_list", [])
             if cover_urls:
                 result["cover"] = cover_urls[0]
             
+            # Metadata
             result["title"] = video_info.get("desc", "TikTok Video")
             author = video_info.get("author", {})
             result["author"] = author.get("nickname", author.get("unique_id", "Unknown"))
@@ -225,23 +311,28 @@ class TikTokDownloader:
         try:
             video = video_info.get("video", {})
             
+            # playAddr
             play_addr = video.get("playAddr")
             if isinstance(play_addr, str):
                 result["no_watermark"] = play_addr
             elif isinstance(play_addr, dict):
                 result["no_watermark"] = play_addr.get("src") or play_addr.get("url")
             
+            # downloadAddr
             download_addr = video.get("downloadAddr")
             if isinstance(download_addr, str):
                 result["watermark"] = download_addr
             elif isinstance(download_addr, dict):
                 result["watermark"] = download_addr.get("src") or download_addr.get("url")
             
+            # Audio
             music = video_info.get("music", {})
             result["audio"] = music.get("playUrl")
             
+            # Cover
             result["cover"] = video.get("cover") or video.get("originCover")
             
+            # Metadata
             result["title"] = video_info.get("desc", "TikTok Video")
             result["author"] = video_info.get("author", {}).get("nickname", "Unknown")
             
@@ -254,17 +345,41 @@ class TikTokDownloader:
         return result
 
 
-def download_tiktok_video(url, output_path, no_watermark=True):
+def download_tiktok_video(url, output_path, format_id='tiktok_no_watermark'):
+    """
+    Download TikTok video
+    
+    Args:
+        url: TikTok video URL
+        output_path: Path to save the video
+        format_id: 'tiktok_no_watermark', 'tiktok_watermark', or 'tiktok_audio'
+    """
+    logger.info(f"TikTok download started: {url} (format: {format_id})")
+    
     downloader = TikTokDownloader()
     result = downloader.get_download_urls(url)
+    
+    logger.info(f"TikTok result: success={result['success']}, has_cookies={bool(downloader.cookies)}")
     
     if not result["success"]:
         return {"success": False, "error": result.get("error", "Failed to get download URL")}
     
-    video_url = result["no_watermark"] if no_watermark and result["no_watermark"] else result["watermark"]
+    # Select URL based on format
+    if format_id == 'tiktok_audio':
+        download_url = result.get("audio")
+        if not download_url:
+            return {"success": False, "error": "Audio URL not available"}
+        if output_path.endswith('.mp4'):
+            output_path = output_path[:-4] + '.mp3'
+    elif format_id == 'tiktok_watermark':
+        download_url = result.get("watermark") or result.get("no_watermark")
+    else:
+        download_url = result.get("no_watermark") or result.get("watermark")
     
-    if not video_url:
-        return {"success": False, "error": "No video URL available"}
+    if not download_url:
+        return {"success": False, "error": "No download URL available"}
+    
+    logger.info(f"Downloading from: {download_url[:100]}...")
     
     try:
         headers = {
@@ -272,7 +387,7 @@ def download_tiktok_video(url, output_path, no_watermark=True):
             "Referer": "https://www.tiktok.com/",
         }
         
-        resp = requests.get(video_url, headers=headers, stream=True, timeout=60)
+        resp = requests.get(download_url, headers=headers, stream=True, timeout=60)
         resp.raise_for_status()
         
         with open(output_path, 'wb') as f:
@@ -280,6 +395,7 @@ def download_tiktok_video(url, output_path, no_watermark=True):
                 if chunk:
                     f.write(chunk)
         
+        logger.info(f"TikTok download completed: {output_path}")
         return {
             "success": True,
             "file": output_path,
@@ -288,5 +404,5 @@ def download_tiktok_video(url, output_path, no_watermark=True):
         }
         
     except Exception as e:
-        logger.error(f"Download failed: {e}")
+        logger.error(f"TikTok download failed: {e}")
         return {"success": False, "error": str(e)}
