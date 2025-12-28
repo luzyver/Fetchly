@@ -48,7 +48,9 @@ def convert():
                 return jsonify({'error': f'Could not fetch video: {str(e)}'}), 400
     
     task_id = str(uuid.uuid4())
-    filename = f"{task_id}.mp4"
+    # Use .mp3 extension for TikTok audio
+    ext = 'mp3' if format_id == 'tiktok_audio' else 'mp4'
+    filename = f"{task_id}.{ext}"
     output_path = os.path.join(CONFIG['DOWNLOAD_FOLDER'], filename)
     
     try:
@@ -91,10 +93,12 @@ def download(task_id):
         if not task['file'] or not os.path.exists(task['file']):
              return jsonify({'error': 'File expired or removed'}), 404
 
+        # Determine extension from file
+        ext = 'mp3' if task['file'].endswith('.mp3') else 'mp4'
         return send_file(
             task['file'],
             as_attachment=True,
-            download_name=f"video_{task_id[:8]}.mp4"
+            download_name=f"video_{task_id[:8]}.{ext}"
         )
     except Exception as e:
         logger.error(f"Download failed: {e}")
