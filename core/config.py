@@ -4,7 +4,6 @@ CONFIG = {
     'DOWNLOAD_FOLDER': 'downloads',
     'DB_PATH': os.path.join('downloads', 'tasks.db'),
     'COOKIE_FILE': 'cookies.txt',
-    'TIKTOK_COOKIE_FILE': 'tiktok_cookies.txt',
     'MAX_WORKERS': 4,
     'CLEANUP_INTERVAL': 3600,
     'RETENTION_PERIOD': 86400,
