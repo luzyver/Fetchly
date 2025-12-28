@@ -43,19 +43,41 @@ def fetch_formats():
             is_direct_supported = True
             break
     
-    # TikTok: return simple format, skip yt-dlp entirely
+    # TikTok: return 3 format options
     if is_tiktok:
         return jsonify({
-            'formats': [{
-                'format_id': 'best',
-                'resolution': 'Best Quality (No Watermark)',
-                'height': 9999,
-                'width': 0,
-                'ext': 'mp4',
-                'filesize': '',
-                'bitrate': '',
-                'has_audio': True
-            }],
+            'formats': [
+                {
+                    'format_id': 'tiktok_no_watermark',
+                    'resolution': 'No Watermark (Best)',
+                    'height': 9999,
+                    'width': 0,
+                    'ext': 'mp4',
+                    'filesize': '',
+                    'bitrate': '',
+                    'has_audio': True
+                },
+                {
+                    'format_id': 'tiktok_watermark',
+                    'resolution': 'With Watermark',
+                    'height': 9998,
+                    'width': 0,
+                    'ext': 'mp4',
+                    'filesize': '',
+                    'bitrate': '',
+                    'has_audio': True
+                },
+                {
+                    'format_id': 'tiktok_audio',
+                    'resolution': 'Audio Only (MP3)',
+                    'height': 0,
+                    'width': 0,
+                    'ext': 'mp3',
+                    'filesize': '',
+                    'bitrate': '',
+                    'has_audio': True
+                }
+            ],
             'resolved_url': url,
             'title': 'TikTok Video',
             'duration': None,
