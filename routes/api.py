@@ -13,7 +13,6 @@ logger = logging.getLogger(__name__)
 
 api_bp = Blueprint('api', __name__)
 
-# Will be set from app.py
 executor = None
 
 def set_executor(exec):
@@ -89,6 +88,7 @@ def fetch_formats():
             return jsonify({'error': f'Failed to fetch formats: {last_error}'}), 400
         
         video_info = json.loads(stdout.decode())
+        duration = video_info.get('duration')
         
         formats = []
         seen_resolutions = set()
@@ -120,6 +120,14 @@ def fetch_formats():
                     size_str = f"{filesize / (1024*1024):.1f} MB"
                 else:
                     size_str = f"{filesize / 1024:.1f} KB"
+            elif tbr and duration:
+                estimated_bytes = (tbr * 1000 / 8) * duration
+                if estimated_bytes > 1024 * 1024 * 1024:
+                    size_str = f"~{estimated_bytes / (1024*1024*1024):.1f} GB"
+                elif estimated_bytes > 1024 * 1024:
+                    size_str = f"~{estimated_bytes / (1024*1024):.0f} MB"
+                else:
+                    size_str = f"~{estimated_bytes / 1024:.0f} KB"
             
             formats.append({
                 'format_id': format_id,
