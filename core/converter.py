@@ -21,15 +21,17 @@ def convert_m3u8(task_id, url, output_path, referer=None, cookies=None, format_i
         update_task_status(task_id, 'processing')
         
         if TikTokDownloader.is_tiktok_url(url):
-            logger.info(f"Task {task_id}: Detected TikTok URL, using custom downloader")
-            result = download_tiktok_video(url, output_path, no_watermark=True)
+            logger.info(f"Task {task_id}: Detected TikTok URL, using custom downloader (format: {format_id})")
+            tiktok_format = format_id if format_id and format_id.startswith('tiktok_') else 'tiktok_no_watermark'
+            result = download_tiktok_video(url, output_path, format_id=tiktok_format)
             
             if result["success"]:
-                update_task_status(task_id, 'completed', file=output_path)
+                update_task_status(task_id, 'completed', file=result.get('file', output_path))
                 logger.info(f"Task {task_id}: TikTok download successful - {result.get('title', 'Unknown')}")
-                return
             else:
-                logger.warning(f"Task {task_id}: TikTok custom downloader failed: {result.get('error')}, trying yt-dlp...")
+                logger.error(f"Task {task_id}: TikTok download failed: {result.get('error')}")
+                update_task_status(task_id, 'failed', error=f"TikTok: {result.get('error')}")
+            return
         
         parsed_url = urlparse(url)
         domain = f"{parsed_url.scheme}://{parsed_url.netloc}/"
