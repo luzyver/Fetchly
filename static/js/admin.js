@@ -75,7 +75,7 @@ async function deleteTask(taskId) {
         const response = await fetch(`/admin/delete_task/${taskId}`, { method: 'DELETE' });
         if (response.ok) {
             Toast.success('Task deleted successfully');
-            const row = document.querySelector(`[data-task-id="${taskId}"]`) || 
+            const row = document.querySelector(`[data-task-id="${taskId}"]`) ||
                         event.target.closest('tr, .md\:hidden > div');
             if (row) {
                 row.style.transition = 'all 0.3s ease';
@@ -88,7 +88,7 @@ async function deleteTask(taskId) {
         } else {
             Toast.error('Failed to delete task');
         }
-    } catch (e) { 
+    } catch (e) {
         console.error(e);
         Toast.error('Network error occurred');
     }

@@ -58,24 +58,24 @@ body {
 }
 
 @keyframes slide-up {
-    from { 
-        transform: translateY(100%); 
-        opacity: 0; 
+    from {
+        transform: translateY(100%);
+        opacity: 0;
     }
-    to { 
-        transform: translateY(0); 
-        opacity: 1; 
+    to {
+        transform: translateY(0);
+        opacity: 1;
     }
 }
 
 @keyframes slide-down {
-    from { 
-        transform: translateY(-100%); 
-        opacity: 0; 
+    from {
+        transform: translateY(-100%);
+        opacity: 0;
     }
-    to { 
-        transform: translateY(0); 
-        opacity: 1; 
+    to {
+        transform: translateY(0);
+        opacity: 1;
     }
 }
 
@@ -90,13 +90,13 @@ body {
 }
 
 @keyframes scale-in {
-    from { 
-        transform: scale(0.9); 
-        opacity: 0; 
+    from {
+        transform: scale(0.9);
+        opacity: 0;
     }
-    to { 
-        transform: scale(1); 
-        opacity: 1; 
+    to {
+        transform: scale(1);
+        opacity: 1;
     }
 }
 
@@ -425,4 +425,32 @@ body {
 ::selection {
     background: rgba(14, 165, 233, 0.3);
     color: white;
+}
+
+
+.custom-scrollbar::-webkit-scrollbar {
+    width: 6px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+    background: rgba(30, 41, 59, 0.3);
+    border-radius: 3px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+    background: rgba(71, 85, 105, 0.5);
+    border-radius: 3px;
+}
+
+
+.format-option {
+    transition: all 0.2s ease;
+}
+
+.format-option:hover {
+    transform: translateX(2px);
+}
+
+.format-option input[type="radio"] {
+    accent-color: #0ea5e9;
 }

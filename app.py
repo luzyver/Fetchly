@@ -14,7 +14,7 @@ from contextlib import closing, contextmanager
 from urllib.parse import urlparse, urljoin
 
 logging.basicConfig(
-    level=logging.INFO, 
+    level=logging.INFO,
     format='%(asctime)s - [%(levelname)s] - %(message)s',
     datefmt='%Y-%m-%d %H:%M:%S'
 )
@@ -84,8 +84,8 @@ def update_task_status(task_id, status, file=None, error=None):
     except Exception as e:
         logger.error(f"Failed to update task {task_id}: {e}")
 
-def convert_m3u8(task_id, url, output_path, referer=None, cookies=None):
-    logger.info(f"Task {task_id}: Starting conversion for {url}")
+def convert_m3u8(task_id, url, output_path, referer=None, cookies=None, format_id=None):
+    logger.info(f"Task {task_id}: Starting conversion for {url} (format: {format_id or 'best'})")
     try:
         update_task_status(task_id, 'processing')
         
@@ -108,8 +108,12 @@ def convert_m3u8(task_id, url, output_path, referer=None, cookies=None):
                     '--no-playlist',
                     '--concurrent-fragments', '4',
                     '-o', output_path,
-                    url
                 ]
+                
+                if format_id:
+                    cmd.extend(['-f', format_id])
+                
+                cmd.append(url)
                 
                 if cookies:
                     cmd.extend(['--add-header', f'Cookie: {cookies}'])
@@ -190,7 +194,7 @@ def resolve_source_url(url):
     chrome_options.add_argument("--disable-dev-shm-usage")
     chrome_options.add_argument("--disable-gpu")
     chrome_options.add_argument("--window-size=1920,1080")
-    chrome_options.add_argument("--blink-settings=imagesEnabled=false") 
+    chrome_options.add_argument("--blink-settings=imagesEnabled=false")
     chrome_options.add_argument(f"user-agent={USER_AGENTS['DESKTOP']}")
     
     driver_path = get_chromedriver_path()
@@ -254,6 +258,128 @@ def resolve_source_url(url):
 def index():
     return render_template('index.html')
 
+@app.route('/fetch-formats', methods=['POST'])
+def fetch_formats():
+    """Fetch available video formats/resolutions from URL"""
+    data = request.json
+    url = data.get('url', '').strip()
+    
+    if not url:
+        return jsonify({'error': 'URL is required'}), 400
+    
+    if not url.startswith(('http://', 'https://')):
+        return jsonify({'error': 'Invalid URL format'}), 400
+
+    resolved_url = url
+    cookies = None
+    referer = url
+    
+    if '.m3u8' not in url.lower():
+        try:
+            resolved_url, cookies = resolve_source_url(url)
+            logger.info(f"Resolved to: {resolved_url}")
+        except Exception as e:
+            return jsonify({'error': f'Could not fetch video: {str(e)}'}), 400
+    
+    try:
+        parsed_url = urlparse(resolved_url)
+        domain = f"{parsed_url.scheme}://{parsed_url.netloc}/"
+        
+        cmd = [
+            'yt-dlp',
+            '--user-agent', USER_AGENTS['DESKTOP'],
+            '--add-header', f'Referer: {referer}',
+            '--add-header', f'Origin: {domain}',
+            '--no-check-certificate',
+            '-J',
+            resolved_url
+        ]
+        
+        if cookies:
+            cmd.extend(['--add-header', f'Cookie: {cookies}'])
+        
+        process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        stdout, stderr = process.communicate(timeout=30)
+        
+        if process.returncode != 0:
+            error_msg = stderr.decode().strip()
+            return jsonify({'error': f'Failed to fetch formats: {error_msg[-200:]}'}), 400
+        
+        import json
+        video_info = json.loads(stdout.decode())
+        
+        formats = []
+        seen_resolutions = set()
+        
+        for fmt in video_info.get('formats', []):
+            height = fmt.get('height')
+            width = fmt.get('width')
+            format_id = fmt.get('format_id', '')
+            ext = fmt.get('ext', 'mp4')
+            filesize = fmt.get('filesize') or fmt.get('filesize_approx')
+            tbr = fmt.get('tbr')
+            vcodec = fmt.get('vcodec', 'none')
+            acodec = fmt.get('acodec', 'none')
+            
+            if vcodec == 'none' or not height:
+                continue
+            
+            resolution = f"{height}p"
+            
+            if resolution in seen_resolutions:
+                continue
+            seen_resolutions.add(resolution)
+            
+            size_str = ""
+            if filesize:
+                if filesize > 1024 * 1024 * 1024:
+                    size_str = f"{filesize / (1024*1024*1024):.1f} GB"
+                elif filesize > 1024 * 1024:
+                    size_str = f"{filesize / (1024*1024):.1f} MB"
+                else:
+                    size_str = f"{filesize / 1024:.1f} KB"
+            
+            formats.append({
+                'format_id': format_id,
+                'resolution': resolution,
+                'height': height,
+                'width': width,
+                'ext': ext,
+                'filesize': size_str,
+                'bitrate': f"{int(tbr)}kbps" if tbr else "",
+                'has_audio': acodec != 'none'
+            })
+        
+        formats.sort(key=lambda x: x['height'], reverse=True)
+        
+        formats.insert(0, {
+            'format_id': 'best',
+            'resolution': 'Best Quality',
+            'height': 9999,
+            'width': 0,
+            'ext': 'mp4',
+            'filesize': '',
+            'bitrate': '',
+            'has_audio': True
+        })
+        
+        return jsonify({
+            'formats': formats,
+            'resolved_url': resolved_url,
+            'title': video_info.get('title', 'Video'),
+            'duration': video_info.get('duration'),
+            'cookies': cookies,
+            'referer': referer
+        })
+        
+    except subprocess.TimeoutExpired:
+        return jsonify({'error': 'Request timeout. Try again.'}), 408
+    except json.JSONDecodeError:
+        return jsonify({'error': 'Failed to parse video info'}), 400
+    except Exception as e:
+        logger.error(f"Fetch formats error: {e}")
+        return jsonify({'error': str(e)}), 500
+
 @app.errorhandler(404)
 def page_not_found(e):
     return render_template('404.html'), 404
@@ -266,6 +392,10 @@ def method_not_allowed(e):
 def convert():
     data = request.json
     url = data.get('url', '').strip()
+    format_id = data.get('format_id', 'best')
+    resolved_url = data.get('resolved_url')
+    cookies = data.get('cookies')
+    referer = data.get('referer', url)
     
     if not url:
         return jsonify({'error': 'URL is required'}), 400
@@ -273,16 +403,14 @@ def convert():
     if not url.startswith(('http://', 'https://')):
         return jsonify({'error': 'Invalid URL format'}), 400
 
-    resolved_url = url
-    cookies = None
-    referer = url 
-    
-    if '.m3u8' not in url.lower():
-        try:
-            resolved_url, cookies = resolve_source_url(url)
-            logger.info(f"Resolved to: {resolved_url}")
-        except Exception as e:
-            return jsonify({'error': f'Could not fetch video: {str(e)}'}), 400
+    if not resolved_url:
+        resolved_url = url
+        if '.m3u8' not in url.lower():
+            try:
+                resolved_url, cookies = resolve_source_url(url)
+                logger.info(f"Resolved to: {resolved_url}")
+            except Exception as e:
+                return jsonify({'error': f'Could not fetch video: {str(e)}'}), 400
     
     task_id = str(uuid.uuid4())
     filename = f"{task_id}.mp4"
@@ -294,7 +422,7 @@ def convert():
                          (task_id, resolved_url, 'queued'))
             conn.commit()
             
-        executor.submit(convert_m3u8, task_id, resolved_url, output_path, referer, cookies)
+        executor.submit(convert_m3u8, task_id, resolved_url, output_path, referer, cookies, format_id)
         return jsonify({'task_id': task_id})
         
     except Exception as e:
