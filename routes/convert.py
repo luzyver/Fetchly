@@ -5,7 +5,8 @@ from flask import Blueprint, request, jsonify, send_file
 from core.config import CONFIG
 from core.database import get_db
 from core.resolver import resolve_source_url
-from core.converter import convert_m3u8
+from core.converter import convert_m3u8, is_direct_supported
+from core.tiktok import TikTokDownloader
 
 logger = logging.getLogger(__name__)
 
@@ -34,7 +35,8 @@ def convert():
 
     if not resolved_url:
         resolved_url = url
-        if '.m3u8' not in url.lower():
+        # Skip resolver for TikTok and direct supported sites
+        if '.m3u8' not in url.lower() and not TikTokDownloader.is_tiktok_url(url) and not is_direct_supported(url):
             try:
                 resolved_url, cookies = resolve_source_url(url)
                 logger.info(f"Resolved to: {resolved_url}")
