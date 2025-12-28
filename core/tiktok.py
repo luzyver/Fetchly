@@ -131,6 +131,39 @@ class TikTokDownloader:
         
         return None
     
+    def _get_video_info_tikwm(self, url):
+        """Use tikwm.com API as fallback - more reliable for blocked regions"""
+        try:
+            api_url = "https://www.tikwm.com/api/"
+            
+            resp = requests.post(api_url, data={"url": url, "hd": 1}, timeout=15)
+            
+            if resp.status_code != 200:
+                logger.warning(f"TikWM API failed with status {resp.status_code}")
+                return None
+            
+            data = resp.json()
+            
+            if data.get("code") != 0:
+                logger.warning(f"TikWM API error: {data.get('msg')}")
+                return None
+            
+            video_data = data.get("data", {})
+            
+            return {
+                "no_watermark": video_data.get("play") or video_data.get("hdplay"),
+                "watermark": video_data.get("wmplay"),
+                "audio": video_data.get("music"),
+                "cover": video_data.get("cover"),
+                "title": video_data.get("title", "TikTok Video"),
+                "author": video_data.get("author", {}).get("nickname", "Unknown"),
+                "success": True
+            }
+            
+        except Exception as e:
+            logger.error(f"TikWM API failed: {e}")
+            return None
+
     def _get_video_info_web(self, url):
         """Scrape video info from web page (with cookies for login-required videos)"""
         try:
@@ -241,11 +274,15 @@ class TikTokDownloader:
                     else:
                         result = self._extract_urls_from_web(video_info)
             
+            # Fallback to TikWM API (third-party, more reliable)
             if not result["success"]:
-                if self.cookies:
-                    result["error"] = "Failed to get video. Video may be private or unavailable."
-                else:
-                    result["error"] = "Failed to get video. Try adding TikTok cookies for login-required videos."
+                logger.info("Web scraping failed, trying TikWM API...")
+                tikwm_result = self._get_video_info_tikwm(resolved_url)
+                if tikwm_result and tikwm_result.get("success"):
+                    result = tikwm_result
+            
+            if not result["success"]:
+                result["error"] = "Failed to get video. Video may be private or unavailable."
             
             return result
             
