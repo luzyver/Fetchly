@@ -2,17 +2,10 @@ import os
 import subprocess
 import logging
 from urllib.parse import urlparse
-from core.config import CONFIG, USER_AGENTS
+from core.config import CONFIG, USER_AGENTS, DIRECT_SUPPORTED_DOMAINS
 from core.database import update_task_status
 
 logger = logging.getLogger(__name__)
-
-DIRECT_SUPPORTED_DOMAINS = [
-    'youtube.com', 'youtu.be', 'youtube-nocookie.com',
-    'vimeo.com', 'dailymotion.com', 'twitch.tv',
-    'facebook.com', 'fb.watch', 'twitter.com', 'x.com',
-    'tiktok.com', 'instagram.com', 'bilibili.com'
-]
 
 def is_direct_supported(url):
     parsed = urlparse(url)

@@ -14,4 +14,11 @@ USER_AGENTS = {
     'MOBILE': 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36'
 }
 
+DIRECT_SUPPORTED_DOMAINS = [
+    'youtube.com', 'youtu.be', 'youtube-nocookie.com',
+    'vimeo.com', 'dailymotion.com', 'twitch.tv',
+    'facebook.com', 'fb.watch', 'twitter.com', 'x.com',
+    'tiktok.com', 'instagram.com', 'bilibili.com'
+]
+
 os.makedirs(CONFIG['DOWNLOAD_FOLDER'], exist_ok=True)

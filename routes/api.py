@@ -5,7 +5,7 @@ import subprocess
 import logging
 from flask import Blueprint, request, jsonify, send_file
 from urllib.parse import urlparse
-from core.config import CONFIG, USER_AGENTS
+from core.config import CONFIG, USER_AGENTS, DIRECT_SUPPORTED_DOMAINS
 from core.database import get_db
 from core.resolver import resolve_source_url
 
@@ -35,15 +35,8 @@ def fetch_formats():
     referer = url
     is_direct_supported = False
     
-    direct_supported_domains = [
-        'youtube.com', 'youtu.be', 'youtube-nocookie.com',
-        'vimeo.com', 'dailymotion.com', 'twitch.tv',
-        'facebook.com', 'fb.watch', 'twitter.com', 'x.com',
-        'tiktok.com', 'instagram.com', 'bilibili.com'
-    ]
-    
     parsed = urlparse(url)
-    for domain in direct_supported_domains:
+    for domain in DIRECT_SUPPORTED_DOMAINS:
         if domain in parsed.netloc:
             is_direct_supported = True
             break
@@ -105,7 +98,21 @@ def fetch_formats():
                 logger.warning(f"Fetch Formats: Attempt {i+1} error: {e}")
 
         if not stdout:
-            return jsonify({'error': f'Failed to fetch formats: {last_error}'}), 400
+            user_error = "Unable to fetch video formats. The video may be private, unavailable, or the platform is currently unsupported."
+            
+            if last_error:
+                if "login required" in last_error.lower() or "cookies" in last_error.lower():
+                    user_error = "This video requires authentication. Please ensure cookies are configured."
+                elif "private" in last_error.lower():
+                    user_error = "This video is private and cannot be accessed."
+                elif "not available" in last_error.lower() or "unavailable" in last_error.lower():
+                    user_error = "This video is not available in your region or has been removed."
+                elif "rate" in last_error.lower() or "limit" in last_error.lower():
+                    user_error = "Rate limit reached. Please try again later."
+                elif "timeout" in last_error.lower():
+                    user_error = "Request timed out. Please try again."
+            
+            return jsonify({'error': user_error}), 400
         
         video_info = json.loads(stdout.decode())
         duration = video_info.get('duration')
@@ -157,7 +164,7 @@ def fetch_formats():
                 'ext': ext,
                 'filesize': size_str,
                 'bitrate': f"{int(tbr)}kbps" if tbr else "",
-                'has_audio': acodec != 'none'
+                'has_audio': is_direct_supported or acodec != 'none'  # Direct platforms auto-merge audio
             })
         
         formats.sort(key=lambda x: x['height'], reverse=True)
