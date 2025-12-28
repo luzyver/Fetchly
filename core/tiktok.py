@@ -42,6 +42,9 @@ class TikTokDownloader:
             "cover": None,
             "title": None,
             "author": None,
+            "duration": None,
+            "size": None,
+            "size_hd": None,
             "error": None
         }
         
@@ -71,6 +74,9 @@ class TikTokDownloader:
             result["audio"] = video_data.get("music")
             result["cover"] = video_data.get("cover")
             result["title"] = video_data.get("title", "TikTok Video")
+            result["duration"] = video_data.get("duration")
+            result["size"] = video_data.get("size")  # size in bytes
+            result["size_hd"] = video_data.get("hd_size")  # HD size in bytes
             
             author = video_data.get("author", {})
             if isinstance(author, dict):

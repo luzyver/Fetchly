@@ -43,17 +43,33 @@ def fetch_formats():
             is_direct_supported = True
             break
     
-    # TikTok: return 3 format options
+    # TikTok: fetch info and return 3 format options with size
     if is_tiktok:
+        from core.tiktok import TikTokDownloader
+        downloader = TikTokDownloader()
+        tiktok_info = downloader.get_download_urls(url)
+        
+        # Format size helper
+        def format_size(size_bytes):
+            if not size_bytes:
+                return ''
+            if size_bytes > 1024 * 1024:
+                return f"{size_bytes / (1024*1024):.1f} MB"
+            elif size_bytes > 1024:
+                return f"{size_bytes / 1024:.1f} KB"
+            return f"{size_bytes} B"
+        
+        hd_size = format_size(tiktok_info.get('size_hd') or tiktok_info.get('size'))
+        
         return jsonify({
             'formats': [
                 {
                     'format_id': 'tiktok_no_watermark',
-                    'resolution': 'No Watermark (Best)',
+                    'resolution': 'No Watermark (HD)',
                     'height': 9999,
                     'width': 0,
                     'ext': 'mp4',
-                    'filesize': '',
+                    'filesize': hd_size,
                     'bitrate': '',
                     'has_audio': True
                 },
@@ -63,13 +79,13 @@ def fetch_formats():
                     'height': 9998,
                     'width': 0,
                     'ext': 'mp4',
-                    'filesize': '',
+                    'filesize': hd_size,
                     'bitrate': '',
                     'has_audio': True
                 },
                 {
                     'format_id': 'tiktok_audio',
-                    'resolution': 'Audio Only (MP3)',
+                    'resolution': 'Audio Only',
                     'height': 0,
                     'width': 0,
                     'ext': 'mp3',
@@ -79,8 +95,8 @@ def fetch_formats():
                 }
             ],
             'resolved_url': url,
-            'title': 'TikTok Video',
-            'duration': None,
+            'title': tiktok_info.get('title') or 'TikTok Video',
+            'duration': tiktok_info.get('duration'),
             'cookies': None,
             'referer': url
         })
