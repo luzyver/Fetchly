@@ -11,7 +11,6 @@ logger = logging.getLogger(__name__)
 
 convert_bp = Blueprint('convert', __name__)
 
-# Will be set from app.py
 executor = None
 
 def set_executor(exec):

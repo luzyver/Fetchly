@@ -164,7 +164,7 @@ def fetch_formats():
                 'ext': ext,
                 'filesize': size_str,
                 'bitrate': f"{int(tbr)}kbps" if tbr else "",
-                'has_audio': is_direct_supported or acodec != 'none'  # Direct platforms auto-merge audio
+                'has_audio': is_direct_supported or acodec != 'none'
             })
         
         formats.sort(key=lambda x: x['height'], reverse=True)

@@ -3,33 +3,32 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Page Not Found - StreamConvert</title>
-    <meta name="theme-color" content="#020617">
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+    <title>Page Not Found - Fetchly</title>
+    <meta name="theme-color" content="#0f0f23">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="{{ url_for('static', filename='js/tailwind_config.js') }}"></script>
+    <script>
+        tailwind.config = {
+            theme: { extend: { colors: { dark: { 950: '#0f0f23', 900: '#13132b' }, accent: { 500: '#8b5cf6' } } } }
+        }
+    </script>
 </head>
-<body class="bg-slate-950 text-slate-200 min-h-screen flex items-center justify-center p-4">
+<body class="bg-dark-950 text-gray-200 min-h-screen flex items-center justify-center p-4 font-['Inter']">
     <div class="fixed inset-0 z-0 pointer-events-none">
-        <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[60%] h-[60%] bg-brand-600/10 rounded-full blur-[120px]"></div>
+        <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-accent-500/10 rounded-full blur-[120px]"></div>
     </div>
     <div class="relative z-10 text-center max-w-md mx-auto space-y-6">
-        <div class="inline-flex items-center justify-center w-20 h-20 rounded-2xl bg-slate-900/50 border border-slate-800 shadow-2xl shadow-brand-500/10 mb-2">
-            <span class="text-4xl font-bold text-slate-400">404</span>
+        <div class="inline-flex items-center justify-center w-20 h-20 rounded-2xl bg-dark-900/50 border border-white/10 mb-2">
+            <span class="text-4xl font-bold text-gray-400">404</span>
         </div>
         <div class="space-y-2">
-            <h1 class="text-2xl font-bold text-white tracking-tight">Page Not Found</h1>
-            <p class="text-slate-400 text-sm leading-relaxed">
-                The page you are looking for doesn't exist or has been moved.
-            </p>
+            <h1 class="text-2xl font-bold text-white">Page Not Found</h1>
+            <p class="text-gray-400 text-sm">The page you're looking for doesn't exist.</p>
         </div>
-        <div class="pt-4">
-            <a href="/" class="inline-flex items-center justify-center px-6 py-3 text-sm font-medium text-white transition-all bg-slate-900 border border-slate-800 rounded-lg hover:bg-slate-800 hover:border-slate-700 focus:outline-none focus:ring-2 focus:ring-brand-500/20 active:scale-95">
-                <svg class="w-4 h-4 mr-2 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
-                Return Home
-            </a>
-        </div>
+        <a href="/" class="inline-flex items-center gap-2 px-6 py-3 text-sm font-medium text-white bg-dark-900 border border-white/10 rounded-xl hover:bg-dark-900/80 transition-all">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
+            Back to Fetchly
+        </a>
     </div>
 </body>
 </html>
