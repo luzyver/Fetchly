@@ -1,3 +1,4 @@
+import time
 import logging
 from flask import Flask, render_template
 from concurrent.futures import ThreadPoolExecutor
@@ -18,6 +19,12 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 app = Flask(__name__)
+
+CACHE_VERSION = str(int(time.time()))
+
+@app.context_processor
+def inject_cache_version():
+    return {'cache_version': CACHE_VERSION}
 
 init_db()
 
