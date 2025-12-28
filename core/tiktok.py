@@ -138,35 +138,49 @@ class TikTokDownloader:
             
             resp = self.session.get(url, timeout=15, allow_redirects=True)
             
+            logger.info(f"Web response status: {resp.status_code}, URL: {resp.url[:80]}")
+            
             if resp.status_code != 200:
                 logger.warning(f"Web request failed with status {resp.status_code}")
                 return None
             
-            # Check if login required
+            # Check if login required or redirected
             if 'login' in resp.url.lower() or 'LoginModal' in resp.text:
-                logger.warning("Video requires login - cookies may be needed")
+                logger.warning("Video requires login - cookies may be invalid or expired")
+            
+            # Log page content length for debug
+            logger.info(f"Page content length: {len(resp.text)} chars")
             
             patterns = [
                 r'<script id="__UNIVERSAL_DATA_FOR_REHYDRATION__"[^>]*>([^<]+)</script>',
                 r'<script id="SIGI_STATE"[^>]*>([^<]+)</script>',
+                r'"webapp\.video-detail":\s*(\{.+?\})\s*,\s*"webapp\.',
             ]
             
-            for pattern in patterns:
+            for i, pattern in enumerate(patterns):
                 match = re.search(pattern, resp.text)
                 if match:
+                    logger.info(f"Pattern {i+1} matched")
                     try:
                         data = json.loads(match.group(1))
                         result = self._parse_web_data(data)
                         if result:
+                            logger.info("Successfully parsed web data")
                             return result
-                    except json.JSONDecodeError:
+                    except json.JSONDecodeError as e:
+                        logger.warning(f"JSON decode failed for pattern {i+1}: {e}")
                         continue
             
-            # Try to find video URL directly
-            video_urls = re.findall(r'(https://[^"\']+\.tiktok[^"\']+\.mp4[^"\']*)', resp.text)
-            if video_urls:
-                return {"direct_url": video_urls[0].replace('\\u002F', '/')}
+            logger.warning("No patterns matched in page")
             
+            # Try to find video URL directly
+            video_urls = re.findall(r'(https://[^"\'\\]+(?:tiktok|bytedance)[^"\'\\]+\.mp4[^"\'\\]*)', resp.text)
+            if video_urls:
+                clean_url = video_urls[0].replace('\\u002F', '/').replace('\\u0026', '&')
+                logger.info(f"Found direct video URL: {clean_url[:80]}...")
+                return {"direct_url": clean_url}
+            
+            logger.warning("No video URLs found in page")
             return None
         except Exception as e:
             logger.error(f"Web scraping failed: {e}")
