@@ -8,6 +8,7 @@ from urllib.parse import urlparse
 from core.config import CONFIG, USER_AGENTS, DIRECT_SUPPORTED_DOMAINS
 from core.database import get_db
 from core.resolver import resolve_source_url
+from core.tiktok import TikTokDownloader
 
 logger = logging.getLogger(__name__)
 
@@ -34,12 +35,33 @@ def fetch_formats():
     cookies = None
     referer = url
     is_direct_supported = False
+    is_tiktok = TikTokDownloader.is_tiktok_url(url)
     
     parsed = urlparse(url)
     for domain in DIRECT_SUPPORTED_DOMAINS:
         if domain in parsed.netloc:
             is_direct_supported = True
             break
+    
+    # TikTok: return simple format, skip yt-dlp entirely
+    if is_tiktok:
+        return jsonify({
+            'formats': [{
+                'format_id': 'best',
+                'resolution': 'Best Quality (No Watermark)',
+                'height': 9999,
+                'width': 0,
+                'ext': 'mp4',
+                'filesize': '',
+                'bitrate': '',
+                'has_audio': True
+            }],
+            'resolved_url': url,
+            'title': 'TikTok Video',
+            'duration': None,
+            'cookies': None,
+            'referer': url
+        })
     
     if not is_direct_supported and '.m3u8' not in url.lower():
         try:
