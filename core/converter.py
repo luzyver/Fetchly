@@ -14,6 +14,11 @@ def is_direct_supported(url):
     return any(domain in parsed.netloc for domain in DIRECT_SUPPORTED_DOMAINS)
 
 
+def is_twitter_url(url):
+    parsed = urlparse(url)
+    return any(domain in parsed.netloc for domain in ['twitter.com', 'x.com'])
+
+
 def convert_m3u8(task_id, url, output_path, referer=None, cookies=None, format_id=None):
     logger.info(f"Task {task_id}: Starting conversion for {url} (format: {format_id or 'best'})")
 
@@ -22,6 +27,10 @@ def convert_m3u8(task_id, url, output_path, referer=None, cookies=None, format_i
 
         if TikTokDownloader.is_tiktok_url(url):
             _handle_tiktok(task_id, url, output_path, format_id)
+            return
+
+        if is_twitter_url(url) and format_id and format_id.startswith('twitter_'):
+            _handle_twitter(task_id, url, output_path, format_id)
             return
 
         _handle_generic(task_id, url, output_path, referer, cookies, format_id)
@@ -42,6 +51,39 @@ def _handle_tiktok(task_id, url, output_path, format_id):
     else:
         logger.error(f"Task {task_id}: TikTok download failed: {result.get('error')}")
         update_task_status(task_id, 'failed', error=f"TikTok: {result.get('error')}")
+
+
+def _handle_twitter(task_id, url, output_path, format_id):
+    logger.info(f"Task {task_id}: Detected Twitter URL with video selection (format: {format_id})")
+    
+    video_index = int(format_id.replace('twitter_', ''))
+    
+    cookie_file = CONFIG.get('COOKIE_FILE')
+    has_cookie_file = cookie_file and os.path.exists(cookie_file) and os.path.getsize(cookie_file) > 100
+
+    cmd = ['yt-dlp', '--no-check-certificate', '-f', 'bestvideo+bestaudio/best',
+           '--merge-output-format', 'mp4', '--playlist-items', str(video_index + 1),
+           '-o', output_path, url]
+
+    if has_cookie_file:
+        cmd[1:1] = ['--cookies', cookie_file]
+
+    try:
+        logger.info(f"Task {task_id}: Downloading Twitter video {video_index + 1}")
+        process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        _, stderr = process.communicate()
+
+        if process.returncode == 0:
+            update_task_status(task_id, 'completed', file=output_path)
+            logger.info(f"Task {task_id}: Twitter download successful")
+        else:
+            last_error = stderr.decode().strip()[-300:]
+            logger.error(f"Task {task_id}: Twitter download failed: {last_error}")
+            update_task_status(task_id, 'failed', error=f"Twitter: {last_error}")
+
+    except Exception as e:
+        logger.error(f"Task {task_id}: Twitter exception: {e}")
+        update_task_status(task_id, 'failed', error=str(e))
 
 
 def _handle_generic(task_id, url, output_path, referer, cookies, format_id):
