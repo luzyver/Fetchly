@@ -13,4 +13,4 @@ RUN mkdir -p downloads
 
 EXPOSE 5050
 
-CMD ["gunicorn", "--workers", "3", "--bind", "0.0.0.0:5050", "app:app"]
+CMD ["gunicorn", "--workers", "3", "--timeout", "120", "--bind", "0.0.0.0:5050", "app:app"]

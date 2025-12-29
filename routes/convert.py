@@ -43,7 +43,9 @@ def convert():
 
         if '.m3u8' not in url.lower() and not is_tiktok and not is_twitter and not is_direct:
             try:
-                resolved_url, cookies = resolve_source_url(url)
+                resolved_url, cookies, _user_agent, captured_referer = resolve_source_url(url)
+                if captured_referer:
+                    referer = captured_referer
                 logger.info(f"Resolved to: {resolved_url}")
             except Exception as e:
                 return jsonify({'error': f'Could not fetch video: {str(e)}'}), 400

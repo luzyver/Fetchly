@@ -13,26 +13,40 @@ def is_direct_supported(url):
     return any(domain in parsed.netloc for domain in DIRECT_SUPPORTED_DOMAINS)
 
 
-def fetch_generic_formats(url, resolved_url, cookies=None):
-    referer = url
+def fetch_generic_formats(url, resolved_url, cookies=None, user_agent=None, referer=None):
+    current_referer = referer or url
     parsed_url = urlparse(resolved_url)
     domain = f"{parsed_url.scheme}://{parsed_url.netloc}/"
-
     cookie_file = CONFIG.get('COOKIE_FILE')
+
+    if current_referer:
+        parsed_ref = urlparse(current_referer)
+        origin_domain = f"{parsed_ref.scheme}://{parsed_ref.netloc}"
+    else:
+        origin_domain = domain
     has_cookie_file = cookie_file and os.path.exists(cookie_file) and os.path.getsize(cookie_file) > 100
 
     stdout = None
     last_error = None
 
-    for ua in [USER_AGENTS['DESKTOP'], USER_AGENTS['MOBILE']]:
+    for ua in ([user_agent] if user_agent else [USER_AGENTS['DESKTOP'], USER_AGENTS['MOBILE']]):
         try:
-            cmd = ['yt-dlp', '--user-agent', ua, '--add-header', f'Referer: {referer}',
-                   '--add-header', f'Origin: {domain}', '--no-check-certificate', '-J', resolved_url]
+            cmd = ['yt-dlp', '--user-agent', ua, '--add-header', f'Referer: {current_referer}',
+                   '--add-header', f'Origin: {origin_domain}', '--no-check-certificate', '-J', resolved_url]
 
-            if has_cookie_file:
-                cmd[1:1] = ['--cookies', cookie_file]
-            elif cookies:
+            if '.m3u8' in resolved_url.lower():
+                cmd[5:5] = [
+                    '--add-header', 'Accept: */*',
+                    '--add-header', 'Accept-Language: en-US,en;q=0.9',
+                    '--add-header', 'Sec-Fetch-Dest: empty',
+                    '--add-header', 'Sec-Fetch-Mode: cors',
+                    '--add-header', 'Sec-Fetch-Site: cross-site',
+                ]
+
+            if cookies:
                 cmd.extend(['--add-header', f'Cookie: {cookies}'])
+            elif has_cookie_file:
+                cmd[1:1] = ['--cookies', cookie_file]
 
             process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
             out, err = process.communicate(timeout=30)
@@ -135,6 +149,16 @@ def download_generic_video(url, output_path, referer=None, cookies=None, format_
                 cmd.extend(['-f', fmt, '--merge-output-format', 'mp4'])
             else:
                 cmd.extend(['--add-header', f'Referer: {current_referer}', '--add-header', f'Origin: {domain}', '--concurrent-fragments', '4'])
+                
+                if '.m3u8' in url.lower():
+                    cmd.extend([
+                        '--add-header', 'Accept: */*',
+                        '--add-header', 'Accept-Language: en-US,en;q=0.9',
+                        '--add-header', 'Sec-Fetch-Dest: empty',
+                        '--add-header', 'Sec-Fetch-Mode: cors',
+                        '--add-header', 'Sec-Fetch-Site: cross-site',
+                    ])
+                
                 if format_id and format_id != 'best':
                     cmd.extend(['-f', format_id])
                 if cookies:

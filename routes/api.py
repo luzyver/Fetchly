@@ -106,12 +106,16 @@ def _fetch_twitter_formats(url):
 def _fetch_generic_formats(url):
     resolved_url = url
     cookies = None
+    user_agent = None
+    referer = None
 
     if not is_direct_supported(url) and '.m3u8' not in url.lower():
-        resolved_url, cookies = resolve_source_url(url)
+        resolved_url, cookies, user_agent, referer = resolve_source_url(url)
+        if not resolved_url:
+            raise Exception("Could not find video stream")
         logger.info(f"Resolved to: {resolved_url}")
 
-    formats, video_info = fetch_generic_formats(url, resolved_url, cookies)
+    formats, video_info = fetch_generic_formats(url, resolved_url, cookies, user_agent, referer)
 
     return jsonify({
         'formats': formats,
@@ -119,5 +123,5 @@ def _fetch_generic_formats(url):
         'title': video_info.get('title', 'Video'),
         'duration': video_info.get('duration'),
         'cookies': cookies,
-        'referer': url
+        'referer': referer or url
     })
