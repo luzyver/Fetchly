@@ -104,18 +104,37 @@ def _find_m3u8_in_network(driver):
 
 def _find_m3u8_in_iframes(driver, original_url):
     iframes = driver.find_elements(By.TAG_NAME, "iframe")
+    iframe_urls = []
 
     for iframe in iframes:
-        src = iframe.get_attribute("src")
-        if not src or src == original_url:
-            continue
-        if not any(kw in src.lower() for kw in IFRAME_KEYWORDS):
+        try:
+            src = iframe.get_attribute("src")
+            if src and src != original_url and any(kw in src.lower() for kw in IFRAME_KEYWORDS):
+                iframe_urls.append(src)
+        except:
             continue
 
+    for src in iframe_urls:
         logger.info(f"Checking iframe: {src}")
 
         try:
-            driver.switch_to.frame(iframe)
+            driver.get(original_url)
+            time.sleep(2)
+
+            iframes = driver.find_elements(By.TAG_NAME, "iframe")
+            target_iframe = None
+            for iframe in iframes:
+                try:
+                    if iframe.get_attribute("src") == src:
+                        target_iframe = iframe
+                        break
+                except:
+                    continue
+
+            if not target_iframe:
+                continue
+
+            driver.switch_to.frame(target_iframe)
             time.sleep(3)
 
             result = _find_m3u8_in_page(driver)
@@ -136,7 +155,10 @@ def _find_m3u8_in_iframes(driver, original_url):
 
         except Exception as e:
             logger.warning(f"Iframe error: {e}")
-            driver.switch_to.default_content()
+            try:
+                driver.switch_to.default_content()
+            except:
+                pass
 
     return None
 

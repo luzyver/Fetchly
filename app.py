@@ -1,5 +1,7 @@
+import os
 import time
 import logging
+import fcntl
 from flask import Flask, render_template
 from concurrent.futures import ThreadPoolExecutor
 
@@ -48,7 +50,16 @@ def method_not_allowed(e):
     return render_template('405.html'), 405
 
 
-executor.submit(cleanup_old_files)
+def start_cleanup_once():
+    lock_file = os.path.join(CONFIG['DOWNLOAD_FOLDER'], '.cleanup.lock')
+    try:
+        fd = open(lock_file, 'w')
+        fcntl.flock(fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        executor.submit(cleanup_old_files)
+    except (IOError, OSError):
+        pass
+
+start_cleanup_once()
 
 if __name__ == '__main__':
     app.run(debug=False, host='0.0.0.0', port=5050)
