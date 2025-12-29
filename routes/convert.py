@@ -5,8 +5,10 @@ from flask import Blueprint, request, jsonify, send_file
 from core.config import CONFIG
 from core.database import get_db
 from core.resolver import resolve_source_url
-from core.converter import convert_m3u8, is_direct_supported
+from core.converter import convert_m3u8
 from core.tiktok import TikTokDownloader
+from core.twitter import is_twitter_url
+from core.generic import is_direct_supported
 
 logger = logging.getLogger(__name__)
 convert_bp = Blueprint('convert', __name__)
@@ -36,9 +38,10 @@ def convert():
     if not resolved_url:
         resolved_url = url
         is_tiktok = TikTokDownloader.is_tiktok_url(url)
+        is_twitter = is_twitter_url(url)
         is_direct = is_direct_supported(url)
 
-        if '.m3u8' not in url.lower() and not is_tiktok and not is_direct:
+        if '.m3u8' not in url.lower() and not is_tiktok and not is_twitter and not is_direct:
             try:
                 resolved_url, cookies = resolve_source_url(url)
                 logger.info(f"Resolved to: {resolved_url}")
