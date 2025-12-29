@@ -1,22 +1,27 @@
 import os
 import time
 import logging
-import fcntl
+from logging.handlers import RotatingFileHandler
 from flask import Flask, render_template
 from concurrent.futures import ThreadPoolExecutor
 
 from core.config import CONFIG
 from core.database import init_db
-from core.cleanup import cleanup_old_files
 from routes.main import main_bp
 from routes.api import api_bp, set_executor as set_api_executor
 from routes.convert import convert_bp, set_executor as set_convert_executor
 from routes.admin import admin_bp
 
+os.makedirs('logs', exist_ok=True)
+
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - [%(levelname)s] - %(message)s',
-    datefmt='%Y-%m-%d %H:%M:%S'
+    datefmt='%Y-%m-%d %H:%M:%S',
+    handlers=[
+        logging.StreamHandler(),
+        RotatingFileHandler('logs/app.log', maxBytes=10*1024*1024, backupCount=3)
+    ]
 )
 
 app = Flask(__name__)
@@ -50,16 +55,9 @@ def method_not_allowed(e):
     return render_template('405.html'), 405
 
 
-def start_cleanup_once():
-    lock_file = os.path.join(CONFIG['DOWNLOAD_FOLDER'], '.cleanup.lock')
-    try:
-        fd = open(lock_file, 'w')
-        fcntl.flock(fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
-        executor.submit(cleanup_old_files)
-    except (IOError, OSError):
-        pass
-
-start_cleanup_once()
-
 if __name__ == '__main__':
+    from core.cleanup import cleanup_old_files
+    import threading
+    thread = threading.Thread(target=cleanup_old_files, daemon=True)
+    thread.start()
     app.run(debug=False, host='0.0.0.0', port=5050)

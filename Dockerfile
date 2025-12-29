@@ -9,8 +9,8 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY . .
 
-RUN mkdir -p downloads
+RUN mkdir -p downloads logs
 
 EXPOSE 5050
 
-CMD ["gunicorn", "--workers", "3", "--timeout", "120", "--bind", "0.0.0.0:5050", "app:app"]
+CMD ["gunicorn", "-c", "gunicorn.conf.py", "app:app"]
