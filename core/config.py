@@ -14,11 +14,21 @@ USER_AGENTS = {
     'MOBILE': 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36'
 }
 
-DIRECT_SUPPORTED_DOMAINS = [
-    'youtube.com', 'youtu.be', 'youtube-nocookie.com',
-    'vimeo.com', 'dailymotion.com', 'twitch.tv',
-    'facebook.com', 'fb.watch', 'twitter.com', 'x.com',
-    'instagram.com', 'bilibili.com'
-]
+SUPPORTED_DOMAINS = {
+    'youtube': ['youtube.com', 'youtu.be', 'youtube-nocookie.com'],
+    'tiktok': ['tiktok.com', 'vm.tiktok.com', 'vt.tiktok.com'],
+    'twitter': ['twitter.com', 'x.com'],
+    'facebook': ['facebook.com', 'fb.watch'],
+    'instagram': ['instagram.com'],
+    'other': ['vimeo.com', 'dailymotion.com', 'twitch.tv', 'bilibili.com']
+}
+
+DIRECT_SUPPORTED_DOMAINS = (
+    SUPPORTED_DOMAINS['youtube'] +
+    SUPPORTED_DOMAINS['twitter'] +
+    SUPPORTED_DOMAINS['facebook'] +
+    SUPPORTED_DOMAINS['instagram'] +
+    SUPPORTED_DOMAINS['other']
+)
 
 os.makedirs(CONFIG['DOWNLOAD_FOLDER'], exist_ok=True)

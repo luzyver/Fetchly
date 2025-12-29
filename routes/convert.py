@@ -5,10 +5,8 @@ from flask import Blueprint, request, jsonify, send_file
 from core.config import CONFIG
 from core.database import get_db
 from core.resolver import resolve_source_url
-from core.converter import convert_m3u8
-from core.tiktok import TikTokDownloader
-from core.twitter import is_twitter_url
-from core.generic import is_direct_supported
+from core.converter import process_download
+from core.utils import is_tiktok_url, is_twitter_url, is_direct_supported
 
 logger = logging.getLogger(__name__)
 convert_bp = Blueprint('convert', __name__)
@@ -37,16 +35,21 @@ def convert():
 
     if not resolved_url:
         resolved_url = url
-        is_tiktok = TikTokDownloader.is_tiktok_url(url)
-        is_twitter = is_twitter_url(url)
-        is_direct = is_direct_supported(url)
+        needs_resolve = (
+            '.m3u8' not in url.lower() and
+            not is_tiktok_url(url) and
+            not is_twitter_url(url) and
+            not is_direct_supported(url)
+        )
 
-        if '.m3u8' not in url.lower() and not is_tiktok and not is_twitter and not is_direct:
+        if needs_resolve:
             try:
-                resolved_url, cookies, _user_agent, captured_referer = resolve_source_url(url)
-                if captured_referer:
-                    referer = captured_referer
-                logger.info(f"Resolved to: {resolved_url}")
+                result = resolve_source_url(url)
+                if result and result[0]:
+                    resolved_url, cookies, _, captured_referer = result
+                    if captured_referer:
+                        referer = captured_referer
+                    logger.info(f"Resolved to: {resolved_url}")
             except Exception as e:
                 return jsonify({'error': f'Could not fetch video: {str(e)}'}), 400
 
@@ -60,7 +63,7 @@ def convert():
                          (task_id, resolved_url, 'queued'))
             conn.commit()
 
-        executor.submit(convert_m3u8, task_id, resolved_url, output_path, referer, cookies, format_id)
+        executor.submit(process_download, task_id, resolved_url, output_path, referer, cookies, format_id)
         return jsonify({'task_id': task_id})
 
     except Exception as e:

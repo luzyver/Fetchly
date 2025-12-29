@@ -16,20 +16,19 @@ logging.basicConfig(
     format='%(asctime)s - [%(levelname)s] - %(message)s',
     datefmt='%Y-%m-%d %H:%M:%S'
 )
-logger = logging.getLogger(__name__)
 
 app = Flask(__name__)
+app.config['CACHE_VERSION'] = str(int(time.time()))
 
-CACHE_VERSION = str(int(time.time()))
 
 @app.context_processor
-def inject_cache_version():
-    return {'cache_version': CACHE_VERSION}
+def inject_globals():
+    return {'cache_version': app.config['CACHE_VERSION']}
+
 
 init_db()
 
 executor = ThreadPoolExecutor(max_workers=CONFIG['MAX_WORKERS'])
-
 set_api_executor(executor)
 set_convert_executor(executor)
 
@@ -38,13 +37,16 @@ app.register_blueprint(api_bp)
 app.register_blueprint(convert_bp)
 app.register_blueprint(admin_bp)
 
+
 @app.errorhandler(404)
 def page_not_found(e):
     return render_template('404.html'), 404
 
+
 @app.errorhandler(405)
 def method_not_allowed(e):
     return render_template('405.html'), 405
+
 
 executor.submit(cleanup_old_files)
 

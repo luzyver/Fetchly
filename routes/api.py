@@ -1,8 +1,9 @@
 import logging
 from flask import Blueprint, request, jsonify
-from core.tiktok import TikTokDownloader
-from core.twitter import is_twitter_url, fetch_twitter_formats
-from core.generic import is_direct_supported, fetch_generic_formats
+from core.utils import is_tiktok_url, is_twitter_url, is_direct_supported, get_user_error
+from core.tiktok import fetch_tiktok_formats
+from core.twitter import fetch_twitter_formats
+from core.generic import fetch_generic_formats
 from core.resolver import resolve_source_url
 
 logger = logging.getLogger(__name__)
@@ -13,35 +14,6 @@ executor = None
 def set_executor(exec):
     global executor
     executor = exec
-
-
-def _format_size(size_bytes):
-    if not size_bytes:
-        return ''
-    if size_bytes > 1024 * 1024:
-        return f"{size_bytes / (1024*1024):.1f} MB"
-    if size_bytes > 1024:
-        return f"{size_bytes / 1024:.1f} KB"
-    return f"{size_bytes} B"
-
-
-def _get_user_error(last_error):
-    if not last_error:
-        return "Unable to fetch video formats."
-
-    error_lower = last_error.lower()
-    if "login required" in error_lower or "cookies" in error_lower:
-        return "This video requires authentication."
-    if "private" in error_lower:
-        return "This video is private."
-    if "not available" in error_lower or "unavailable" in error_lower:
-        return "This video is not available."
-    if "rate" in error_lower or "limit" in error_lower:
-        return "Rate limit reached. Try again later."
-    if "timeout" in error_lower:
-        return "Request timed out. Try again."
-
-    return "Unable to fetch video formats."
 
 
 @api_bp.route('/fetch-formats', methods=['POST'])
@@ -56,41 +28,33 @@ def fetch_formats():
         return jsonify({'error': 'Invalid URL format'}), 400
 
     try:
-        if TikTokDownloader.is_tiktok_url(url):
-            return _fetch_tiktok_formats(url)
+        if is_tiktok_url(url):
+            return _handle_tiktok(url)
 
         if is_twitter_url(url):
-            return _fetch_twitter_formats(url)
+            return _handle_twitter(url)
 
-        return _fetch_generic_formats(url)
+        return _handle_generic(url)
 
     except Exception as e:
         logger.error(f"Fetch formats error: {e}")
-        return jsonify({'error': _get_user_error(str(e))}), 400
+        return jsonify({'error': get_user_error(str(e))}), 400
 
 
-def _fetch_tiktok_formats(url):
-    downloader = TikTokDownloader()
-    info = downloader.get_download_urls(url)
-    hd_size = _format_size(info.get('size_hd') or info.get('size'))
-
+def _handle_tiktok(url):
+    info = fetch_tiktok_formats(url)
     return jsonify({
-        'formats': [
-            {'format_id': 'tiktok_no_watermark', 'resolution': 'No Watermark (HD)', 'height': 9999, 'width': 0, 'ext': 'mp4', 'filesize': hd_size, 'bitrate': '', 'has_audio': True},
-            {'format_id': 'tiktok_watermark', 'resolution': 'With Watermark', 'height': 9998, 'width': 0, 'ext': 'mp4', 'filesize': hd_size, 'bitrate': '', 'has_audio': True},
-            {'format_id': 'tiktok_audio', 'resolution': 'Audio Only', 'height': 0, 'width': 0, 'ext': 'mp3', 'filesize': '', 'bitrate': '', 'has_audio': True}
-        ],
+        'formats': info['formats'],
         'resolved_url': url,
-        'title': info.get('title') or 'TikTok Video',
-        'duration': info.get('duration'),
+        'title': info['title'],
+        'duration': info['duration'],
         'cookies': None,
         'referer': url
     })
 
 
-def _fetch_twitter_formats(url):
+def _handle_twitter(url):
     info = fetch_twitter_formats(url)
-
     return jsonify({
         'formats': info['formats'],
         'resolved_url': url,
@@ -103,16 +67,17 @@ def _fetch_twitter_formats(url):
     })
 
 
-def _fetch_generic_formats(url):
+def _handle_generic(url):
     resolved_url = url
     cookies = None
     user_agent = None
     referer = None
 
     if not is_direct_supported(url) and '.m3u8' not in url.lower():
-        resolved_url, cookies, user_agent, referer = resolve_source_url(url)
-        if not resolved_url:
+        result = resolve_source_url(url)
+        if not result or not result[0]:
             raise Exception("Could not find video stream")
+        resolved_url, cookies, user_agent, referer = result
         logger.info(f"Resolved to: {resolved_url}")
 
     formats, video_info = fetch_generic_formats(url, resolved_url, cookies, user_agent, referer)
