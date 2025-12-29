@@ -2,14 +2,13 @@ import os
 import logging
 import threading
 from logging.handlers import RotatingFileHandler
-from core.cleanup import cleanup_old_files
 
 bind = "0.0.0.0:5050"
 workers = 3
 timeout = 120
+preload_app = False
 
-cleanup_started = False
-cleanup_lock = threading.Lock()
+_cleanup_started = False
 
 
 def _setup_logging():
@@ -24,18 +23,20 @@ def _setup_logging():
         '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
     ))
     
-    # Setup root logger for cleanup module
     cleanup_logger = logging.getLogger('core.cleanup')
     cleanup_logger.setLevel(logging.INFO)
     cleanup_logger.addHandler(handler)
 
 
-def on_starting(server):
-    global cleanup_started
-    with cleanup_lock:
-        if not cleanup_started:
-            cleanup_started = True
-            _setup_logging()
-            thread = threading.Thread(target=cleanup_old_files, daemon=True)
-            thread.start()
-            server.log.info("Cleanup thread started")
+def when_ready(server):
+    global _cleanup_started
+    if _cleanup_started:
+        return
+    _cleanup_started = True
+    
+    _setup_logging()
+    
+    from core.cleanup import cleanup_old_files
+    thread = threading.Thread(target=cleanup_old_files, daemon=True)
+    thread.start()
+    server.log.info("Cleanup thread started in master process")
