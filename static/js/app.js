@@ -146,11 +146,11 @@ const App = {
         if (!this.elements.historySection) return;
 
         if (history.length === 0) {
-            this.elements.historySection.classList.add('hidden');
+            this.elements.historyEmpty?.classList.remove('hidden');
+            this.elements.historyList.innerHTML = '';
             return;
         }
 
-        this.elements.historySection.classList.remove('hidden');
         this.elements.historyEmpty?.classList.add('hidden');
         this.elements.historyList?.classList.remove('hidden');
 
@@ -161,37 +161,19 @@ const App = {
             return `${bytes}B`;
         };
 
-        const statusColors = {
-            completed: 'text-emerald-400',
-            failed: 'text-red-400',
-            processing: 'text-accent-400',
-            queued: 'text-gray-400'
-        };
-
-        const statusIcons = {
-            completed: '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>',
-            failed: '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>',
-            processing: '<svg class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>',
-            queued: '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>'
-        };
-
         this.elements.historyList.innerHTML = history.map(item => `
-            <div class="flex items-center gap-3 p-3 rounded-lg bg-dark-800/30 border border-white/5">
-                <div class="${statusColors[item.status] || 'text-gray-400'}">
-                    ${statusIcons[item.status] || statusIcons.queued}
+            <div class="history-item">
+                <div class="flex justify-between items-start">
+                    <div class="history-title" title="${item.title || 'Unknown'}">${item.title || 'Untitled Video'}</div>
+                    ${item.status === 'completed' ? 
+                        `<a href="/download/${item.id}?fingerprint=${this.state.fingerprint}" class="text-xs text-white hover:underline">Download</a>` : 
+                        `<span class="text-xs text-[#565961]">${item.status}</span>`}
                 </div>
-                <div class="flex-1 min-w-0">
-                    <p class="text-sm text-white truncate">${item.title || 'Video'}</p>
-                    <p class="text-xs text-gray-500">${formatSize(item.filesize)}</p>
+                <div class="history-meta mt-1">
+                    <span class="status-dot ${item.status === 'completed' ? 'success' : item.status === 'failed' ? 'error' : 'processing'}"></span>
+                    <span>${formatSize(item.filesize)}</span>
+                    <span class="ml-auto font-mono text-[10px] text-[#565961]">${item.id.substring(0,6)}</span>
                 </div>
-                ${item.status === 'completed' ? `
-                    <a href="/download/${item.id}?fingerprint=${this.state.fingerprint}" 
-                       class="p-2 text-emerald-400 hover:bg-emerald-500/10 rounded-lg transition-all" title="Download">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
-                        </svg>
-                    </a>
-                ` : ''}
             </div>
         `).join('');
     },
@@ -315,19 +297,14 @@ const App = {
         this.elements.formatList.innerHTML = this.state.formats.map((fmt, i) => {
             const isBest = fmt.format_id === 'best';
             return `
-                <label class="format-option flex items-center gap-3 p-3 rounded-lg border transition-all ${i === 0 ? 'bg-accent-500/10 border-accent-500/30' : 'bg-dark-800/30 border-white/5 hover:bg-dark-800/50'}">
-                    <input type="radio" name="format" value="${fmt.format_id}" ${i === 0 ? 'checked' : ''} class="w-4 h-4">
-                    <div class="flex-1 min-w-0">
-                        <div class="flex items-center gap-2">
-                            <span class="text-sm font-semibold text-white">${fmt.resolution}</span>
-                            ${isBest ? '<span class="px-1.5 py-0.5 text-[10px] font-bold uppercase bg-accent-500/20 text-accent-400 rounded">Best</span>' : ''}
-                            ${!fmt.has_audio && !isBest ? '<span class="px-1.5 py-0.5 text-[10px] font-bold uppercase bg-yellow-500/20 text-yellow-400 rounded">No Audio</span>' : ''}
-                        </div>
-                        <div class="flex items-center gap-2 mt-0.5 text-[11px] text-gray-500">
-                            ${fmt.filesize ? `<span>${fmt.filesize}</span>` : ''}
-                            ${fmt.bitrate ? `<span>• ${fmt.bitrate}</span>` : ''}
-                            ${!isBest ? `<span>• ${fmt.ext.toUpperCase()}</span>` : ''}
-                        </div>
+                <label class="format-option ${i === 0 ? 'selected' : ''}">
+                    <input type="radio" name="format" value="${fmt.format_id}" ${i === 0 ? 'checked' : ''} class="hidden">
+                    <div class="flex justify-between items-center w-full">
+                        <span class="font-medium text-white">${fmt.resolution || 'Auto'}</span>
+                        ${isBest ? '<span class="text-[10px] bg-[#27282e] text-white px-1.5 rounded">BEST</span>' : ''}
+                    </div>
+                    <div class="format-meta">
+                        ${fmt.ext.toUpperCase()} ${fmt.filesize ? '• ' + fmt.filesize : ''}
                     </div>
                 </label>`;
         }).join('');
@@ -336,11 +313,9 @@ const App = {
             radio.addEventListener('change', (e) => {
                 this.state.selectedFormat = e.target.value;
                 this.elements.formatList.querySelectorAll('.format-option').forEach(opt => {
-                    opt.classList.remove('bg-accent-500/10', 'border-accent-500/30');
-                    opt.classList.add('bg-dark-800/30', 'border-white/5');
+                    opt.classList.remove('selected');
                 });
-                e.target.closest('.format-option').classList.remove('bg-dark-800/30', 'border-white/5');
-                e.target.closest('.format-option').classList.add('bg-accent-500/10', 'border-accent-500/30');
+                e.target.closest('.format-option').classList.add('selected');
             });
         });
     },
@@ -435,22 +410,9 @@ const App = {
 
     updateStatusUI(status, message = '') {
         const icons = {
-            processing: `<div class="rounded-full bg-accent-500/10 p-3 ring-2 ring-accent-500/20 glow-accent">
-                <svg class="h-6 w-6 text-accent-400 animate-spin" fill="none" viewBox="0 0 24 24">
-                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                </svg>
-            </div>`,
-            completed: `<div class="rounded-full bg-emerald-500/10 p-3 ring-2 ring-emerald-500/20 glow-success">
-                <svg class="h-6 w-6 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
-                </svg>
-            </div>`,
-            failed: `<div class="rounded-full bg-red-500/10 p-3 ring-2 ring-red-500/20 glow-error">
-                <svg class="h-6 w-6 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-                </svg>
-            </div>`
+            processing: `<div class="status-dot processing w-4 h-4 bg-[#d6d6d6] rounded-full"></div>`,
+            completed: `<svg class="w-5 h-5 text-[#499d79]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>`,
+            failed: `<svg class="w-5 h-5 text-[#cf5b5b]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>`
         };
 
         if (this.elements.statusIcon) this.elements.statusIcon.innerHTML = icons[status] || icons.processing;

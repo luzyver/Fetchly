@@ -1,296 +1,159 @@
 <!DOCTYPE html>
-<html lang="en" class="dark">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Fetchly - Smart Video Downloader</title>
-    <meta name="description" content="Download videos from any platform. Auto-detect streams, choose quality, convert to MP4.">
-    <meta name="theme-color" content="#0f0f23">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fetchly Pro</title>
+    <meta name="theme-color" content="#0b0c0e">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}?v={{ cache_version }}">
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = {
-            darkMode: 'class',
             theme: {
                 extend: {
-                    colors: {
-                        dark: { 950: '#0f0f23', 900: '#13132b', 800: '#1a1a3e', 700: '#252552' },
-                        accent: { 400: '#a78bfa', 500: '#8b5cf6', 600: '#7c3aed' },
-                        cyber: { 400: '#22d3ee', 500: '#06b6d4' }
-                    }
+                    fontFamily: { sans: ['Inter', 'sans-serif'], mono: ['JetBrains Mono', 'monospace'] }
                 }
             }
         }
     </script>
+    <style>
+        .hidden { display: none !important; }
+    </style>
 </head>
-<body class="bg-dark-950 text-gray-200 min-h-screen flex flex-col font-['Inter'] overflow-x-hidden">
+<body>
 
+<div class="app-layout">
     
-    <div class="fixed inset-0 z-0 overflow-hidden pointer-events-none">
-        <div class="absolute top-0 left-1/4 w-96 h-96 bg-accent-500/20 rounded-full blur-[128px] animate-pulse"></div>
-        <div class="absolute bottom-0 right-1/4 w-96 h-96 bg-cyber-500/15 rounded-full blur-[128px] animate-pulse" style="animation-delay: 1s"></div>
-        <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-purple-600/5 rounded-full blur-[150px]"></div>
-    </div>
-
-    
-    <nav class="relative z-50 border-b border-white/5 bg-dark-950/80 backdrop-blur-xl sticky top-0">
-        <div class="max-w-6xl mx-auto px-4 sm:px-6">
-            <div class="flex items-center justify-between h-16">
-                <a href="/" class="flex items-center gap-2.5 group">
-                    <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-accent-400 via-accent-500 to-cyber-500 flex items-center justify-center shadow-lg shadow-accent-500/25 group-hover:shadow-accent-500/40 transition-all group-hover:scale-105">
-                        <svg class="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
-                        </svg>
-                    </div>
-                    <span class="text-xl font-bold bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent">Fetchly</span>
-                </a>
+    <!-- Left: Main Action Area -->
+    <main class="main-content">
+        <header class="mb-12">
+            <div class="flex items-center gap-2 mb-6">
+                <svg class="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+                </svg>
+                <span class="font-bold tracking-tight text-white">Fetchly</span>
+                <span class="px-1.5 py-0.5 text-[10px] font-medium bg-[#27282e] text-[#8a8d95] rounded">PRO</span>
             </div>
-        </div>
-    </nav>
-
-    
-    <main class="flex-grow flex flex-col items-center justify-center p-4 sm:p-6 relative z-10">
-        <div class="w-full max-w-2xl mx-auto space-y-8">
             
-            
-            <div class="text-center space-y-4 pt-6">
-                <h1 class="text-4xl sm:text-5xl font-extrabold tracking-tight">
-                    <span class="text-white">Download Videos</span><br>
-                    <span class="bg-gradient-to-r from-accent-400 via-cyber-400 to-accent-400 bg-clip-text text-transparent">From Anywhere</span>
-                </h1>
-                <p class="text-gray-400 text-sm sm:text-base max-w-md mx-auto">
-                    Paste any video URL. We auto-detect streams, let you pick quality, and convert to MP4.
-                </p>
-            </div>
+            <h1 class="text-4xl sm:text-5xl text-white mb-4 tracking-tight">Media Extraction<br>Utility</h1>
+            <p class="text-lg text-[#8a8d95] max-w-xl">
+                Professional-grade downloader for YouTube, Twitter, TikTok, and Instagram. 
+                Optimized for high-bitrate archival.
+            </p>
+        </header>
 
-            
-            <div class="relative">
-                <div class="absolute -inset-1 bg-gradient-to-r from-accent-500/20 via-cyber-500/20 to-accent-500/20 rounded-2xl blur-xl opacity-50"></div>
-                <div class="relative bg-dark-900/90 backdrop-blur-xl rounded-2xl border border-white/10 p-6 space-y-5">
-                    
-                    
-                    <div class="space-y-2">
-                        <label class="text-xs font-semibold text-gray-400 uppercase tracking-wider">Video URL</label>
-                        <div class="relative group">
-                            <input type="text" id="url" 
-                                class="w-full px-4 py-4 pr-24 bg-dark-800/80 border border-white/10 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:border-accent-500/50 focus:ring-2 focus:ring-accent-500/20 transition-all font-mono text-sm"
-                                placeholder="https://youtube.com/watch?v=... or any video URL">
-                            <div class="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
-                                <button id="pasteBtn" class="p-2.5 text-gray-400 hover:text-white hover:bg-white/10 rounded-lg transition-all" title="Paste">
-                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
-                                    </svg>
-                                </button>
-                                <button id="clearBtn" class="hidden p-2.5 text-gray-400 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-all" title="Clear">
-                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
-                                    </svg>
-                                </button>
-                            </div>
-                        </div>
-                        <div id="usageInfo" class="mt-2"></div>
-                    </div>
-
-                    
-                    <button id="fetchBtn" class="w-full py-3.5 px-4 bg-dark-800 hover:bg-dark-700 border border-white/10 hover:border-white/20 rounded-xl font-semibold text-white transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
-                        <span id="fetchContent" class="flex items-center gap-2">
-                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
-                            </svg>
-                            Fetch Available Formats
-                        </span>
-                        <span id="fetchLoader" class="hidden flex items-center gap-2">
-                            <svg class="animate-spin h-5 w-5" fill="none" viewBox="0 0 24 24">
-                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                            </svg>
-                            Analyzing URL...
-                        </span>
+        <div class="w-full max-w-3xl">
+            <!-- URL Input -->
+            <div class="input-group relative group">
+                <input type="text" id="url" 
+                    class="hero-input font-mono" 
+                    placeholder="Paste URL here (cmd+v)" 
+                    autocomplete="off">
+                
+                <div class="absolute right-4 top-1/2 -translate-y-1/2 flex items-center gap-2">
+                    <button id="clearBtn" class="hidden p-1 text-[#8a8d95] hover:text-white transition-colors" title="Clear">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
                     </button>
-
-                    
-                    <div id="formatSection" class="hidden space-y-4 animate-fadeIn">
-                        <div class="flex items-center justify-between">
-                            <div class="flex items-center gap-2">
-                                <svg class="w-5 h-5 text-accent-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/>
-                                </svg>
-                                <span class="text-sm font-semibold text-white">Select Quality</span>
-                            </div>
-                            <span id="videoTitle" class="text-xs text-gray-500 truncate max-w-[180px]"></span>
-                        </div>
-                        <div id="formatList" class="space-y-2 max-h-56 overflow-y-auto pr-1 custom-scrollbar"></div>
-                    </div>
-
-                    
-                    <button id="convertBtn" class="hidden w-full py-4 px-4 bg-gradient-to-r from-accent-500 to-cyber-500 hover:from-accent-400 hover:to-cyber-400 rounded-xl font-bold text-white transition-all shadow-lg shadow-accent-500/25 hover:shadow-accent-500/40 disabled:opacity-50 disabled:cursor-not-allowed">
-                        <span id="btnContent" class="flex items-center justify-center gap-2">
-                            <span class="uppercase tracking-wider text-sm">Start Download</span>
-                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/>
-                            </svg>
-                        </span>
-                        <span id="btnLoader" class="hidden flex items-center justify-center gap-2">
-                            <svg class="animate-spin h-5 w-5" fill="none" viewBox="0 0 24 24">
-                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                            </svg>
-                            <span class="uppercase tracking-wider text-sm">Processing...</span>
-                        </span>
+                    <button id="pasteBtn" class="p-1 text-[#8a8d95] hover:text-white transition-colors" title="Paste">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
                     </button>
+                </div>
+            </div>
 
-                    
-                    <div id="statusCard" class="hidden animate-fadeIn">
-                        <div class="rounded-xl bg-dark-800/50 border border-white/10 p-5">
-                            <div class="flex items-start gap-4">
-                                <div id="statusIcon" class="flex-shrink-0"></div>
-                                <div class="flex-1 min-w-0 space-y-2">
-                                    <h3 id="statusTitle" class="text-sm font-semibold text-white"></h3>
-                                    <p id="statusMessage" class="text-sm text-gray-400"></p>
-                                    
-                                    <div id="progressContainer" class="hidden mt-4 space-y-2">
-                                        <div class="flex justify-between text-xs">
-                                            <span class="text-gray-400">Converting...</span>
-                                            <span id="progressText" class="text-accent-400 font-bold">0%</span>
-                                        </div>
-                                        <div class="h-2 bg-dark-700 rounded-full overflow-hidden">
-                                            <div id="progressBar" class="h-full bg-gradient-to-r from-accent-500 to-cyber-500 rounded-full transition-all duration-300" style="width: 0%"></div>
-                                        </div>
-                                    </div>
-                                    
-                                    <div id="actionArea" class="hidden mt-4">
-                                        <a href="#" id="downloadBtn" class="inline-flex items-center justify-center w-full px-6 py-3 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold rounded-xl transition-all shadow-lg shadow-emerald-500/20 gap-2">
-                                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
-                                            </svg>
-                                            <span id="downloadBtnText">Download</span>
-                                        </a>
-                                    </div>
-                                    
-                                    <div id="errorArea" class="hidden mt-3 p-3 bg-red-500/10 border border-red-500/20 rounded-lg">
-                                        <code id="errorDetails" class="text-xs font-mono text-red-400 break-all"></code>
-                                    </div>
-                                </div>
+            <!-- Fetch Button -->
+            <button id="fetchBtn" class="btn btn-primary w-full sm:w-auto min-w-[160px]">
+                <span id="fetchContent">Analyze Stream</span>
+                <span id="fetchLoader" class="hidden flex items-center gap-2">
+                    <svg class="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                    Processing...
+                </span>
+            </button>
+
+            <!-- Usage Info -->
+            <div id="usageInfo" class="mt-4 text-xs text-[#565961] font-mono"></div>
+
+            <!-- Format Selection Area -->
+            <div id="formatSection" class="hidden mt-10 border-t border-[#27282e] pt-8 animate-fadeIn">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-xs font-medium uppercase tracking-wider text-[#8a8d95]">Available Formats</h3>
+                    <span id="videoTitle" class="text-xs text-[#8a8d95] font-mono truncate max-w-[300px]"></span>
+                </div>
+                
+                <div id="formatList" class="format-selector">
+                    <!-- Populated by JS -->
+                </div>
+
+                <button id="convertBtn" class="hidden btn btn-primary w-full sm:w-auto min-w-[200px]">
+                    <span id="btnContent">Start Download</span>
+                    <span id="btnLoader" class="hidden flex items-center gap-2">
+                        <svg class="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                        Encoding...
+                    </span>
+                </button>
+            </div>
+
+            <!-- Status / Progress -->
+            <div id="statusCard" class="hidden mt-6 bg-[#15171b] border border-[#27282e] rounded-lg p-6 animate-fadeIn">
+                <div class="flex items-start gap-4">
+                    <div id="statusIcon" class="mt-1"></div>
+                    <div class="flex-1">
+                        <h4 id="statusTitle" class="text-sm font-medium text-white">Processing</h4>
+                        <p id="statusMessage" class="text-sm text-[#8a8d95] mt-1">Initializing stream...</p>
+                        
+                        <!-- Progress -->
+                        <div id="progressContainer" class="hidden mt-4">
+                            <div class="h-1 w-full bg-[#27282e] rounded-full overflow-hidden">
+                                <div id="progressBar" class="h-full bg-white transition-all duration-300" style="width: 0%"></div>
                             </div>
+                            <div class="flex justify-between mt-2">
+                                <span class="text-xs text-[#565961] font-mono">ENCODING</span>
+                                <span id="progressText" class="text-xs text-white font-mono">0%</span>
+                            </div>
+                        </div>
+
+                        <!-- Action -->
+                        <div id="actionArea" class="hidden mt-4">
+                            <a href="#" id="downloadBtn" class="btn btn-primary h-10 text-sm w-full">Download File</a>
+                        </div>
+                        
+                        <!-- Error -->
+                        <div id="errorArea" class="hidden mt-4 p-3 bg-red-900/10 border border-red-900/20 rounded text-red-400 text-xs font-mono">
+                            <span id="errorDetails"></span>
                         </div>
                     </div>
                 </div>
             </div>
 
-            
-            <div id="historySection" class="hidden">
-                <div class="relative">
-                    <div class="absolute -inset-1 bg-gradient-to-r from-accent-500/10 via-cyber-500/10 to-accent-500/10 rounded-2xl blur-xl opacity-30"></div>
-                    <div class="relative bg-dark-900/90 backdrop-blur-xl rounded-2xl border border-white/10 p-5">
-                        <div class="flex items-center justify-between mb-4">
-                            <div class="flex items-center gap-2">
-                                <svg class="w-5 h-5 text-accent-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                                </svg>
-                                <span class="text-sm font-semibold text-white">Today's Downloads</span>
-                            </div>
-                            <span class="text-xs text-gray-500">Resets at 00:00 WIB</span>
-                        </div>
-                        <div id="historyList" class="space-y-2 max-h-48 overflow-y-auto custom-scrollbar"></div>
-                        <div id="historyEmpty" class="hidden text-center py-4 text-gray-500 text-sm">No downloads yet today</div>
-                    </div>
-                </div>
-            </div>
-
-            
-            <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-6">
-                <div class="text-center p-4 rounded-xl bg-dark-900/50 border border-white/5 hover:border-accent-500/30 transition-all">
-                    <div class="w-10 h-10 mx-auto rounded-lg bg-accent-500/10 flex items-center justify-center mb-2">
-                        <svg class="w-5 h-5 text-accent-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9"/>
-                        </svg>
-                    </div>
-                    <p class="text-xs text-gray-400 font-medium">Multi-Platform</p>
-                </div>
-                <div class="text-center p-4 rounded-xl bg-dark-900/50 border border-white/5 hover:border-cyber-500/30 transition-all">
-                    <div class="w-10 h-10 mx-auto rounded-lg bg-cyber-500/10 flex items-center justify-center mb-2">
-                        <svg class="w-5 h-5 text-cyber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/>
-                        </svg>
-                    </div>
-                    <p class="text-xs text-gray-400 font-medium">Auto-Detect</p>
-                </div>
-                <div class="text-center p-4 rounded-xl bg-dark-900/50 border border-white/5 hover:border-emerald-500/30 transition-all">
-                    <div class="w-10 h-10 mx-auto rounded-lg bg-emerald-500/10 flex items-center justify-center mb-2">
-                        <svg class="w-5 h-5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
-                        </svg>
-                    </div>
-                    <p class="text-xs text-gray-400 font-medium">HD Quality</p>
-                </div>
-                <div class="text-center p-4 rounded-xl bg-dark-900/50 border border-white/5 hover:border-purple-500/30 transition-all">
-                    <div class="w-10 h-10 mx-auto rounded-lg bg-purple-500/10 flex items-center justify-center mb-2">
-                        <svg class="w-5 h-5 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
-                        </svg>
-                    </div>
-                    <p class="text-xs text-gray-400 font-medium">Fast Convert</p>
-                </div>
-            </div>
-
-            
-            <div class="text-center pt-4">
-                <p class="text-xs text-gray-500 mb-3">Supported Platforms</p>
-                <div class="flex flex-wrap justify-center gap-2">
-                    <span class="px-2.5 py-1 text-[10px] font-medium bg-dark-800/50 border border-white/5 rounded-full text-gray-400">YouTube</span>
-                    <span class="px-2.5 py-1 text-[10px] font-medium bg-dark-800/50 border border-white/5 rounded-full text-gray-400">TikTok</span>
-                    <span class="px-2.5 py-1 text-[10px] font-medium bg-dark-800/50 border border-white/5 rounded-full text-gray-400">Instagram</span>
-                    <span class="px-2.5 py-1 text-[10px] font-medium bg-dark-800/50 border border-white/5 rounded-full text-gray-400">Twitter/X</span>
-                    <span class="px-2.5 py-1 text-[10px] font-medium bg-dark-800/50 border border-white/5 rounded-full text-gray-400">Facebook</span>
-                    <span class="px-2.5 py-1 text-[10px] font-medium bg-dark-800/50 border border-white/5 rounded-full text-gray-400">M3U8/HLS</span>
-                    <span class="px-2.5 py-1 text-[10px] font-medium bg-dark-800/50 border border-white/5 rounded-full text-gray-400">+1000 more</span>
-                </div>
-            </div>
         </div>
     </main>
 
-    
-    <footer class="relative z-10 py-4 text-center border-t border-white/5 bg-dark-950/50">
-        <p class="text-gray-600 text-xs">&copy; <span id="year"></span> Fetchly. All rights reserved.</p>
-    </footer>
+    <!-- Right: Sticky History -->
+    <aside class="sidebar custom-scrollbar">
+        <div class="flex items-center justify-between mb-6">
+            <h2>History</h2>
+            <button onclick="window.location.reload()" class="text-xs text-[#565961] hover:text-white transition-colors">Refresh</button>
+        </div>
+        
+        <div id="historyListContainer" class="space-y-0">
+             <!-- JS injects here -->
+             <div id="historyList"></div>
+        </div>
+        
+        <div id="historyEmpty" class="text-center py-12">
+            <p class="text-sm text-[#565961]">No recent tasks.</p>
+        </div>
+    </aside>
 
-    <script>document.getElementById('year').textContent = new Date().getFullYear();</script>
-    <script>
-        (function() {
-            const threshold = 160;
-            let devtoolsOpen = false;
-            
-            const checkDevTools = () => {
-                const widthThreshold = window.outerWidth - window.innerWidth > threshold;
-                const heightThreshold = window.outerHeight - window.innerHeight > threshold;
-                
-                if (widthThreshold || heightThreshold) {
-                    if (!devtoolsOpen) {
-                        devtoolsOpen = true;
-                        document.body.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100vh;background:#0f0f23;color:#fff;font-family:Inter,sans-serif;text-align:center;padding:20px;"><div><h1 style="font-size:2rem;margin-bottom:1rem;">Access Denied</h1><p style="color:#888;">Please close Developer Tools to use this site.</p></div></div>';
-                    }
-                } else {
-                    if (devtoolsOpen) {
-                        location.reload();
-                    }
-                }
-            };
-            
-            setInterval(checkDevTools, 1000);
-            checkDevTools();
-            
-            document.addEventListener('contextmenu', e => e.preventDefault());
-            document.addEventListener('keydown', e => {
-                if (e.key === 'F12' || 
-                    (e.ctrlKey && e.shiftKey && (e.key === 'I' || e.key === 'J' || e.key === 'C')) ||
-                    (e.ctrlKey && e.key === 'U')) {
-                    e.preventDefault();
-                }
-            });
-        })();
-    </script>
-    <script src="{{ url_for('static', filename='js/toast.js') }}?v={{ cache_version }}"></script>
-    <script src="{{ url_for('static', filename='js/app.js') }}?v={{ cache_version }}"></script>
+</div>
+
+<!-- Footer -->
+<footer class="fixed bottom-4 left-6 text-[10px] text-[#27282e] font-mono pointer-events-none">
+    <span id="year"></span> © FETCHLY SYSTEMS
+</footer>
+
+<script>document.getElementById('year').textContent = new Date().getFullYear();</script>
+<script src="{{ url_for('static', filename='js/toast.js') }}?v={{ cache_version }}"></script>
+<script src="{{ url_for('static', filename='js/app.js') }}?v={{ cache_version }}"></script>
 </body>
 </html>
