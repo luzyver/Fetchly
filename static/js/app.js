@@ -390,11 +390,13 @@ const App = {
                 this.updateProgress(100);
                 this.updateStatusUI('completed');
                 this.setConvertLoading(false);
+                this.loadHistory();
                 Toast.success('Ready to download!');
             } else if (data.status === 'failed') {
                 this.stopPolling();
                 this.updateStatusUI('failed', data.error);
                 this.setConvertLoading(false);
+                this.loadHistory();
                 Toast.error('Download failed');
             }
         } catch (e) { console.error('Poll error:', e); }

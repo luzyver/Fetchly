@@ -157,3 +157,15 @@ def update_task_filesize(task_id, filesize):
             conn.commit()
     except Exception as e:
         logger.error(f"Failed to update filesize for {task_id}: {e}")
+
+
+def get_task_fingerprint(task_id):
+    try:
+        with get_db() as conn:
+            row = conn.execute(
+                'SELECT fingerprint FROM tasks WHERE id = ?',
+                (task_id,)
+            ).fetchone()
+            return row['fingerprint'] if row else None
+    except Exception:
+        return None

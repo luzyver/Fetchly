@@ -1,5 +1,6 @@
+import os
 import logging
-from core.database import update_task_status
+from core.database import update_task_status, update_task_filesize, add_usage, get_task_fingerprint
 from core.utils import is_tiktok_url, is_twitter_url, is_youtube_url, is_instagram_url
 from core.tiktok import download_tiktok
 from core.twitter import download_twitter
@@ -19,7 +20,17 @@ def process_download(task_id, url, output_path, referer=None, cookies=None, form
         result = _route_download(url, output_path, referer, cookies, format_id)
 
         if result["success"]:
-            update_task_status(task_id, 'completed', file=result.get('file', output_path))
+            file_path = result.get('file', output_path)
+            update_task_status(task_id, 'completed', file=file_path)
+
+            if os.path.exists(file_path):
+                filesize = os.path.getsize(file_path)
+                update_task_filesize(task_id, filesize)
+
+                fingerprint = get_task_fingerprint(task_id)
+                if fingerprint:
+                    add_usage(fingerprint, filesize)
+
             logger.info(f"Task {task_id}: Download successful")
         else:
             update_task_status(task_id, 'failed', error=result.get('error', 'Unknown error'))
