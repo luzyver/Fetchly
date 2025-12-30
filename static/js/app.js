@@ -351,6 +351,10 @@ const App = {
         const url = this.elements.input?.value.trim();
         if (!url) { Toast.warning('Enter a URL first'); return; }
 
+        // Get filesize from selected format
+        const selectedFormat = this.state.formats.find(f => f.format_id === this.state.selectedFormat);
+        const filesize = selectedFormat?.filesize_bytes || 0;
+
         this.setConvertLoading(true);
         this.state.progress = 0;
         // statusCard logic removed
@@ -367,7 +371,8 @@ const App = {
                     cookies: this.state.cookies,
                     referer: this.state.referer,
                     fingerprint: this.state.fingerprint,
-                    title: this.state.videoTitle
+                    title: this.state.videoTitle,
+                    filesize: filesize
                 })
             });
             const data = await res.json();

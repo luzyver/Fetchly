@@ -48,6 +48,15 @@ def convert():
     if not limit_info['allowed']:
         return jsonify({'error': 'Daily limit reached (1GB). Try again tomorrow.'}), 429
 
+    # Validate filesize against remaining quota
+    estimated_filesize = data.get('filesize', 0)
+    if estimated_filesize > 0 and estimated_filesize > limit_info['remaining']:
+        remaining_mb = round(limit_info['remaining'] / (1024 * 1024))
+        filesize_mb = round(estimated_filesize / (1024 * 1024))
+        return jsonify({
+            'error': f'File too large ({filesize_mb}MB). You only have {remaining_mb}MB remaining today.'
+        }), 429
+
     if not resolved_url:
         resolved_url = url
         needs_resolve = (

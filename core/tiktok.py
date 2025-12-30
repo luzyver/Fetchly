@@ -47,12 +47,13 @@ def fetch_tiktok_info(url):
 def fetch_tiktok_formats(url):
     info = fetch_tiktok_info(url)
     hd_size = format_size(info.get('size_hd') or info.get('size'))
+    hd_size_bytes = info.get('size_hd') or info.get('size') or 0
 
     return {
         'formats': [
-            {'format_id': 'tiktok_no_watermark', 'resolution': 'No Watermark (HD)', 'height': 9999, 'width': 0, 'ext': 'mp4', 'filesize': hd_size, 'bitrate': '', 'has_audio': True},
-            {'format_id': 'tiktok_watermark', 'resolution': 'With Watermark', 'height': 9998, 'width': 0, 'ext': 'mp4', 'filesize': hd_size, 'bitrate': '', 'has_audio': True},
-            {'format_id': 'tiktok_audio', 'resolution': 'Audio Only', 'height': 0, 'width': 0, 'ext': 'mp3', 'filesize': '', 'bitrate': '', 'has_audio': True}
+            {'format_id': 'tiktok_no_watermark', 'resolution': 'No Watermark (HD)', 'height': 9999, 'width': 0, 'ext': 'mp4', 'filesize': hd_size, 'filesize_bytes': hd_size_bytes, 'bitrate': '', 'has_audio': True},
+            {'format_id': 'tiktok_watermark', 'resolution': 'With Watermark', 'height': 9998, 'width': 0, 'ext': 'mp4', 'filesize': hd_size, 'filesize_bytes': hd_size_bytes, 'bitrate': '', 'has_audio': True},
+            {'format_id': 'tiktok_audio', 'resolution': 'Audio Only', 'height': 0, 'width': 0, 'ext': 'mp3', 'filesize': '', 'filesize_bytes': 0, 'bitrate': '', 'has_audio': True}
         ],
         'title': info.get('title') or 'TikTok Video',
         'duration': info.get('duration'),

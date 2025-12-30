@@ -85,12 +85,15 @@ def _parse_formats(video_info, direct_supported):
 
         filesize = fmt.get('filesize') or fmt.get('filesize_approx')
         tbr = fmt.get('tbr')
+        filesize_bytes = 0
 
         if filesize:
             size_str = format_size(filesize)
+            filesize_bytes = int(filesize)
         elif tbr and duration:
             estimated = (tbr * 1000 / 8) * duration
             size_str = f"~{format_size(estimated)}"
+            filesize_bytes = int(estimated)
         else:
             size_str = ""
 
@@ -101,6 +104,7 @@ def _parse_formats(video_info, direct_supported):
             'width': fmt.get('width', 0),
             'ext': fmt.get('ext', 'mp4'),
             'filesize': size_str,
+            'filesize_bytes': filesize_bytes,
             'bitrate': f"{int(tbr)}kbps" if tbr else "",
             'has_audio': direct_supported or fmt.get('acodec', 'none') != 'none'
         })
@@ -108,7 +112,7 @@ def _parse_formats(video_info, direct_supported):
     formats.sort(key=lambda x: x['height'], reverse=True)
     formats.insert(0, {
         'format_id': 'best', 'resolution': 'Best Quality', 'height': 9999, 'width': 0,
-        'ext': 'mp4', 'filesize': '', 'bitrate': '', 'has_audio': True
+        'ext': 'mp4', 'filesize': '', 'filesize_bytes': 0, 'bitrate': '', 'has_audio': True
     })
 
     return formats

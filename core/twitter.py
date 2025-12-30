@@ -61,12 +61,13 @@ def fetch_twitter_formats(url):
             'width': 0,
             'ext': 'mp4',
             'filesize': f"~{format_size(estimated_size)}" if estimated_size else '',
+            'filesize_bytes': estimated_size,
             'bitrate': '',
             'has_audio': True
         })
 
     return {
-        'formats': formats if formats else [{'format_id': 'twitter_0', 'resolution': 'Video 1', 'height': 10000, 'width': 0, 'ext': 'mp4', 'filesize': '', 'bitrate': '', 'has_audio': True}],
+        'formats': formats if formats else [{'format_id': 'twitter_0', 'resolution': 'Video 1', 'height': 10000, 'width': 0, 'ext': 'mp4', 'filesize': '', 'filesize_bytes': 0, 'bitrate': '', 'has_audio': True}],
         'title': video_info.get('title', 'Twitter Video'),
         'duration': duration,
         'video_count': len(entries)

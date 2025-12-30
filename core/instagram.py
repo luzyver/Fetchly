@@ -72,6 +72,7 @@ def fetch_instagram_formats(url):
             'width': 0,
             'ext': 'mp4',
             'filesize': '',
+            'filesize_bytes': 0,
             'bitrate': '',
             'has_audio': True
         }],
