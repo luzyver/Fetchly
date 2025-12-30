@@ -1,5 +1,6 @@
 import os
 import re
+import time
 import logging
 import requests
 import instaloader
@@ -8,6 +9,8 @@ from instaloader import Post
 logger = logging.getLogger(__name__)
 
 _loader = None
+_last_request_time = 0
+REQUEST_DELAY = 2
 
 
 def _get_loader():
@@ -23,7 +26,8 @@ def _get_loader():
         download_comments=False,
         save_metadata=False,
         compress_json=False,
-        quiet=True
+        quiet=True,
+        request_timeout=30
     )
 
     username = os.getenv('INSTAGRAM_USERNAME')
@@ -45,12 +49,23 @@ def _get_loader():
 
     if password:
         try:
+            time.sleep(3)
             _loader.login(username, password)
             _loader.save_session_to_file(session_file)
             logger.info(f"Logged in and saved session for {username}")
         except Exception as e:
             logger.error(f"Instagram login failed: {e}")
             raise Exception("Instagram login failed. Check credentials.")
+
+    return _loader
+
+
+def _rate_limit():
+    global _last_request_time
+    elapsed = time.time() - _last_request_time
+    if elapsed < REQUEST_DELAY:
+        time.sleep(REQUEST_DELAY - elapsed)
+    _last_request_time = time.time()
 
     return _loader
 
@@ -70,14 +85,26 @@ def _extract_shortcode(url):
 
 
 def fetch_instagram_formats(url):
+    _rate_limit()
     loader = _get_loader()
     shortcode = _extract_shortcode(url)
 
-    try:
-        post = Post.from_shortcode(loader.context, shortcode)
-    except Exception as e:
-        logger.error(f"Failed to fetch post {shortcode}: {e}")
-        raise Exception("Could not fetch Instagram post. It may be private or deleted.")
+    max_retries = 3
+    for attempt in range(max_retries):
+        try:
+            post = Post.from_shortcode(loader.context, shortcode)
+            break
+        except instaloader.exceptions.QueryReturnedBadRequestException as e:
+            logger.warning(f"Attempt {attempt + 1}/{max_retries} failed: {e}")
+            if attempt < max_retries - 1:
+                time.sleep(5 * (attempt + 1))
+            else:
+                raise Exception("Instagram rate limit. Please try again in a few minutes.")
+        except Exception as e:
+            logger.error(f"Failed to fetch post {shortcode}: {e}")
+            if "401" in str(e) or "rate" in str(e).lower():
+                raise Exception("Instagram rate limit. Please try again in a few minutes.")
+            raise Exception("Could not fetch Instagram post. It may be private or deleted.")
 
     if not post.is_video:
         raise Exception("This Instagram post is not a video")
