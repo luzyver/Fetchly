@@ -386,7 +386,6 @@ const App = {
             this.state.pollInterval = setInterval(() => this.checkStatus(), 1500);
         } catch (e) {
             this.setConvertLoading(false);
-            this.updateStatusUI('failed', e.message);
             Toast.error(e.message);
         }
     },
