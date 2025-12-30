@@ -391,6 +391,7 @@ const App = {
                 this.updateStatusUI('completed');
                 this.setConvertLoading(false);
                 this.loadHistory();
+                this.checkUsageLimit();
                 Toast.success('Ready to download!');
             } else if (data.status === 'failed') {
                 this.stopPolling();
