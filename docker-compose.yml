@@ -10,6 +10,7 @@ services:
       - INSTAGRAM_USERNAME=${INSTAGRAM_USERNAME}
       - INSTAGRAM_PASSWORD=${INSTAGRAM_PASSWORD}
       - INSTAGRAM_SESSION_FILE=/app/data/instagram_session
+      - INSTAGRAM_PROXY=socks5://warp:1080
     volumes:
       - ./downloads:/app/downloads
       - ./config/cookies.txt:/app/cookies.txt
@@ -20,6 +21,24 @@ services:
       options:
         max-size: "10m"
         max-file: "3"
+    networks:
+      - nginx_default
+    depends_on:
+      - warp
+
+  warp:
+    image: caomingjun/warp
+    container_name: warp
+    restart: unless-stopped
+    environment:
+      - WARP_SLEEP=2
+    cap_add:
+      - NET_ADMIN
+    sysctls:
+      - net.ipv6.conf.all.disable_ipv6=0
+      - net.ipv4.conf.all.src_valid_mark=1
+    volumes:
+      - ./data/warp:/var/lib/cloudflare-warp
     networks:
       - nginx_default
 

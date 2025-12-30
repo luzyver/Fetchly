@@ -13,6 +13,17 @@ _loader = None
 _last_request_time = 0
 REQUEST_DELAY = 2
 
+PROXY = os.getenv('INSTAGRAM_PROXY', '')
+
+
+def _get_proxy():
+    if PROXY:
+        return {
+            'http': PROXY,
+            'https': PROXY
+        }
+    return None
+
 
 def _get_loader():
     global _loader
@@ -30,6 +41,10 @@ def _get_loader():
         quiet=True,
         request_timeout=30
     )
+
+    if PROXY:
+        _loader.context._session.proxies = _get_proxy()
+        logger.info(f"Using proxy for Instagram: {PROXY}")
 
     username = os.getenv('INSTAGRAM_USERNAME')
     password = os.getenv('INSTAGRAM_PASSWORD')
@@ -118,6 +133,9 @@ def _fetch_with_ytdlp(url):
     if cookie_file:
         ydl_opts['cookiefile'] = cookie_file
 
+    if PROXY:
+        ydl_opts['proxy'] = PROXY
+
     with yt_dlp.YoutubeDL(ydl_opts) as ydl:
         info = ydl.extract_info(url, download=False)
 
@@ -159,7 +177,6 @@ def _export_cookies_to_file():
             for cookie in loader.context._session.cookies:
                 secure = "TRUE" if cookie.secure else "FALSE"
                 expires = str(int(cookie.expires)) if cookie.expires else "0"
-                http_only = "TRUE" if cookie.has_nonstandard_attr('HttpOnly') else "FALSE"
                 f.write(f".instagram.com\tTRUE\t{cookie.path}\t{secure}\t{expires}\t{cookie.name}\t{cookie.value}\n")
         
         logger.info("Exported Instagram cookies for yt-dlp")
@@ -174,7 +191,11 @@ def fetch_instagram_formats(url):
         info = _fetch_with_instaloader(url)
     except Exception as e:
         logger.warning(f"Instaloader failed: {e}, trying yt-dlp")
-        info = _fetch_with_ytdlp(url)
+        try:
+            info = _fetch_with_ytdlp(url)
+        except Exception as e2:
+            logger.error(f"yt-dlp also failed: {e2}")
+            raise Exception("Instagram is temporarily unavailable. Please try again in 15-30 minutes.")
 
     formats = [{
         'format_id': 'best',
@@ -201,7 +222,8 @@ def download_instagram(url, output_path):
         info = fetch_instagram_formats(url)
         video_url = info['video_url']
 
-        response = requests.get(video_url, stream=True, timeout=60, headers={
+        proxies = _get_proxy()
+        response = requests.get(video_url, stream=True, timeout=60, proxies=proxies, headers={
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
         })
         response.raise_for_status()
