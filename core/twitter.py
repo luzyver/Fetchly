@@ -32,18 +32,27 @@ def fetch_twitter_formats(url):
 
     video_info = json.loads(out.decode())
     entries = video_info.get('entries', [video_info])
+    duration = video_info.get('duration', 0)
 
     formats = []
     for idx, entry in enumerate(entries):
         entry_formats = entry.get('formats', [])
+        entry_duration = entry.get('duration', duration)
 
         best_height = 0
-        best_size = None
+        best_tbr = 0
+        
         for fmt in entry_formats:
             height = fmt.get('height', 0)
-            if height and height > best_height:
+            vcodec = fmt.get('vcodec', 'none')
+            
+            if vcodec != 'none' and height and height > best_height:
                 best_height = height
-                best_size = fmt.get('filesize') or fmt.get('filesize_approx')
+                best_tbr = fmt.get('tbr', 0)
+        
+        estimated_size = 0
+        if best_tbr and entry_duration:
+            estimated_size = int((best_tbr * 1000 / 8) * entry_duration)
 
         formats.append({
             'format_id': f'twitter_{idx}',
@@ -51,15 +60,15 @@ def fetch_twitter_formats(url):
             'height': 10000 - idx,
             'width': 0,
             'ext': 'mp4',
-            'filesize': format_size(best_size) if best_size else '',
+            'filesize': f"~{format_size(estimated_size)}" if estimated_size else '',
             'bitrate': '',
             'has_audio': True
         })
 
     return {
-        'formats': formats or [{'format_id': 'best', 'resolution': 'Best Quality', 'height': 9999, 'width': 0, 'ext': 'mp4', 'filesize': '', 'bitrate': '', 'has_audio': True}],
+        'formats': formats if formats else [{'format_id': 'twitter_0', 'resolution': 'Video 1', 'height': 10000, 'width': 0, 'ext': 'mp4', 'filesize': '', 'bitrate': '', 'has_audio': True}],
         'title': video_info.get('title', 'Twitter Video'),
-        'duration': video_info.get('duration'),
+        'duration': duration,
         'video_count': len(entries)
     }
 
