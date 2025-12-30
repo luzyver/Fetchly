@@ -7,10 +7,10 @@ services:
       - "5050"
     environment:
       - FLASK_ENV=production
+      - PROXY=socks5://warp:1080
       - INSTAGRAM_USERNAME=${INSTAGRAM_USERNAME}
       - INSTAGRAM_PASSWORD=${INSTAGRAM_PASSWORD}
       - INSTAGRAM_SESSION_FILE=/app/data/instagram_session
-      - INSTAGRAM_PROXY=socks5://warp:1080
     volumes:
       - ./downloads:/app/downloads
       - ./config/cookies.txt:/app/cookies.txt

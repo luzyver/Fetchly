@@ -13,7 +13,7 @@ _loader = None
 _last_request_time = 0
 REQUEST_DELAY = 2
 
-PROXY = os.getenv('INSTAGRAM_PROXY', '')
+PROXY = os.getenv('PROXY', '')
 
 
 def _get_proxy():
