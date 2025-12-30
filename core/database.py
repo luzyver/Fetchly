@@ -231,3 +231,27 @@ def remove_from_whitelist(user_id):
             conn.commit()
     except Exception as e:
         logger.error(f"Failed to remove from whitelist: {e}")
+
+
+def get_all_usage():
+    today = _get_today_wib()
+    
+    try:
+        with get_db() as conn:
+            rows = conn.execute('''
+                SELECT 
+                    u.fingerprint,
+                    u.bytes_used,
+                    u.last_reset,
+                    (SELECT COUNT(*) FROM tasks t WHERE t.fingerprint = u.fingerprint AND DATE(t.created_at) = ?) as today_downloads,
+                    (SELECT COUNT(*) FROM tasks t WHERE t.fingerprint = u.fingerprint) as total_downloads,
+                    (SELECT MAX(created_at) FROM tasks t WHERE t.fingerprint = u.fingerprint) as last_activity,
+                    (SELECT 1 FROM whitelist w WHERE w.user_id = u.fingerprint) as is_whitelisted
+                FROM usage u
+                ORDER BY u.bytes_used DESC
+            ''', (today,)).fetchall()
+            
+            return [dict(row) for row in rows]
+    except Exception as e:
+        logger.error(f"Failed to get all usage: {e}")
+        return []
