@@ -55,7 +55,6 @@ def init_db():
         conn.execute(SCHEMA)
         conn.execute(USAGE_SCHEMA)
         conn.execute(WHITELIST_SCHEMA)
-        _migrate_tasks_table(conn)
         conn.commit()
 
 
