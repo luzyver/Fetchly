@@ -355,6 +355,16 @@ tr:hover td {
     gap: 0.75rem;
     pointer-events: none;
     align-items: center;
+    transition: all 0.3s ease;
+}
+
+@media (min-width: 901px) {
+    .toast-container {
+        left: auto;
+        right: calc(var(--sidebar-width) + 2rem);
+        transform: none;
+        align-items: flex-end;
+    }
 }
 
 .toast {
