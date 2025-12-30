@@ -248,6 +248,17 @@ def remove_from_whitelist(user_id):
         logger.error(f"Failed to remove from whitelist: {e}")
 
 
+def _to_wib(utc_str):
+    if not utc_str:
+        return None
+    try:
+        utc_time = datetime.strptime(utc_str, '%Y-%m-%d %H:%M:%S')
+        wib_time = utc_time + timedelta(hours=7)
+        return wib_time.strftime('%Y-%m-%d %H:%M:%S')
+    except:
+        return utc_str
+
+
 def get_all_usage():
     today = _get_today_wib()
     
@@ -267,7 +278,12 @@ def get_all_usage():
                 ORDER BY u.bytes_used DESC
             ''', (today,)).fetchall()
             
-            return [dict(row) for row in rows]
+            result = []
+            for row in rows:
+                data = dict(row)
+                data['last_activity'] = _to_wib(data['last_activity'])
+                result.append(data)
+            return result
     except Exception as e:
         logger.error(f"Failed to get all usage: {e}")
         return []
