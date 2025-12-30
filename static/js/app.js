@@ -56,29 +56,39 @@ const App = {
     },
 
     async initFingerprint() {
-        try {
-            if (typeof Fingerprint !== 'undefined') {
-                const fp = await Fingerprint.load();
-                const result = await fp.get();
-                this.state.fingerprint = result.visitorId;
-            } else {
-                this.state.fingerprint = this.generateFallbackFingerprint();
-            }
-        } catch {
-            this.state.fingerprint = this.generateFallbackFingerprint();
-        }
+        this.state.fingerprint = this.generateFingerprint();
     },
 
-    generateFallbackFingerprint() {
+    generateFingerprint() {
         const canvas = document.createElement('canvas');
+        canvas.width = 200;
+        canvas.height = 50;
         const ctx = canvas.getContext('2d');
         ctx.textBaseline = 'top';
         ctx.font = '14px Arial';
-        ctx.fillText('fingerprint', 2, 2);
-        const data = canvas.toDataURL() + navigator.userAgent + screen.width + screen.height + new Date().getTimezoneOffset();
+        ctx.fillStyle = '#f60';
+        ctx.fillRect(125, 1, 62, 20);
+        ctx.fillStyle = '#069';
+        ctx.fillText('Fetchly', 2, 15);
+        ctx.fillStyle = 'rgba(102, 204, 0, 0.7)';
+        ctx.fillText('Fetchly', 4, 17);
+
+        const canvasData = canvas.toDataURL();
+        const data = [
+            canvasData,
+            navigator.userAgent,
+            navigator.language,
+            screen.width + 'x' + screen.height,
+            screen.colorDepth,
+            new Date().getTimezoneOffset(),
+            navigator.hardwareConcurrency || 0,
+            navigator.deviceMemory || 0
+        ].join('|');
+
         let hash = 0;
         for (let i = 0; i < data.length; i++) {
-            hash = ((hash << 5) - hash) + data.charCodeAt(i);
+            const char = data.charCodeAt(i);
+            hash = ((hash << 5) - hash) + char;
             hash = hash & hash;
         }
         return 'fp_' + Math.abs(hash).toString(16);

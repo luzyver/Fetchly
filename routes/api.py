@@ -1,4 +1,5 @@
 import logging
+import hashlib
 from flask import Blueprint, request, jsonify
 from core.utils import is_tiktok_url, is_twitter_url, is_instagram_url, is_direct_supported, get_user_error
 from core.tiktok import fetch_tiktok_formats
@@ -18,6 +19,20 @@ def set_executor(exec):
     executor = exec
 
 
+def get_client_ip():
+    if request.headers.get('X-Forwarded-For'):
+        return request.headers.get('X-Forwarded-For').split(',')[0].strip()
+    if request.headers.get('X-Real-IP'):
+        return request.headers.get('X-Real-IP')
+    return request.remote_addr or 'unknown'
+
+
+def get_user_id(fingerprint):
+    ip = get_client_ip()
+    combined = f"{fingerprint}:{ip}"
+    return hashlib.md5(combined.encode()).hexdigest()[:16]
+
+
 @api_bp.route('/check-limit', methods=['POST'])
 def check_usage_limit():
     data = request.json
@@ -26,7 +41,8 @@ def check_usage_limit():
     if not fingerprint:
         return jsonify({'error': 'Fingerprint required'}), 400
 
-    result = check_limit(fingerprint)
+    user_id = get_user_id(fingerprint)
+    result = check_limit(user_id)
     return jsonify(result)
 
 
@@ -38,7 +54,8 @@ def get_history():
     if not fingerprint:
         return jsonify({'error': 'Fingerprint required'}), 400
 
-    history = get_user_history(fingerprint)
+    user_id = get_user_id(fingerprint)
+    history = get_user_history(user_id)
     return jsonify({'history': history})
 
 

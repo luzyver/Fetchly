@@ -1,5 +1,6 @@
 import os
 import uuid
+import hashlib
 import logging
 from flask import Blueprint, request, jsonify, send_file
 from core.config import CONFIG
@@ -16,6 +17,20 @@ executor = None
 def set_executor(exec):
     global executor
     executor = exec
+
+
+def get_client_ip():
+    if request.headers.get('X-Forwarded-For'):
+        return request.headers.get('X-Forwarded-For').split(',')[0].strip()
+    if request.headers.get('X-Real-IP'):
+        return request.headers.get('X-Real-IP')
+    return request.remote_addr or 'unknown'
+
+
+def get_user_id(fingerprint):
+    ip = get_client_ip()
+    combined = f"{fingerprint}:{ip}"
+    return hashlib.md5(combined.encode()).hexdigest()[:16]
 
 
 @convert_bp.route('/convert', methods=['POST'])
@@ -35,8 +50,10 @@ def convert():
     if not url.startswith(('http://', 'https://')):
         return jsonify({'error': 'Invalid URL format'}), 400
 
-    if fingerprint:
-        limit_info = check_limit(fingerprint)
+    user_id = get_user_id(fingerprint) if fingerprint else ''
+
+    if user_id:
+        limit_info = check_limit(user_id)
         if not limit_info['allowed']:
             return jsonify({'error': 'Daily limit reached (1GB). Try again tomorrow.'}), 429
 
@@ -68,7 +85,7 @@ def convert():
         with get_db() as conn:
             conn.execute(
                 'INSERT INTO tasks (id, url, status, fingerprint, title) VALUES (?, ?, ?, ?, ?)',
-                (task_id, resolved_url, 'queued', fingerprint, title[:100])
+                (task_id, resolved_url, 'queued', user_id, title[:100])
             )
             conn.commit()
 
