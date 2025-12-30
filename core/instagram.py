@@ -114,12 +114,9 @@ def _fetch_with_ytdlp(url):
         'extract_flat': False,
     }
 
-    cookies = _get_session_cookies()
-    if cookies:
-        ydl_opts['http_headers'] = {
-            'Cookie': cookies,
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
-        }
+    cookie_file = _export_cookies_to_file()
+    if cookie_file:
+        ydl_opts['cookiefile'] = cookie_file
 
     with yt_dlp.YoutubeDL(ydl_opts) as ydl:
         info = ydl.extract_info(url, download=False)
@@ -150,15 +147,25 @@ def _fetch_with_ytdlp(url):
     }
 
 
-def _get_session_cookies():
+def _export_cookies_to_file():
     try:
         loader = _get_loader()
-        if loader.context._session and loader.context._session.cookies:
-            cookies = loader.context._session.cookies
-            cookie_str = '; '.join([f"{c.name}={c.value}" for c in cookies])
-            return cookie_str
+        if not loader.context._session or not loader.context._session.cookies:
+            return None
+        
+        cookie_file = 'instagram_cookies.txt'
+        with open(cookie_file, 'w') as f:
+            f.write("# Netscape HTTP Cookie File\n")
+            for cookie in loader.context._session.cookies:
+                secure = "TRUE" if cookie.secure else "FALSE"
+                expires = str(int(cookie.expires)) if cookie.expires else "0"
+                http_only = "TRUE" if cookie.has_nonstandard_attr('HttpOnly') else "FALSE"
+                f.write(f".instagram.com\tTRUE\t{cookie.path}\t{secure}\t{expires}\t{cookie.name}\t{cookie.value}\n")
+        
+        logger.info("Exported Instagram cookies for yt-dlp")
+        return cookie_file
     except Exception as e:
-        logger.warning(f"Could not get session cookies: {e}")
+        logger.warning(f"Could not export cookies: {e}")
     return None
 
 
