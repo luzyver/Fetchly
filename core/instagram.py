@@ -124,15 +124,14 @@ def _fetch_with_instaloader(url):
 def _fetch_with_ytdlp(url):
     logger.info("Falling back to yt-dlp for Instagram")
     
+    _export_cookies_to_file()
+    
     ydl_opts = {
         'quiet': True,
         'no_warnings': True,
         'extract_flat': False,
+        'cookiefile': CONFIG['COOKIE_FILE'],
     }
-
-    cookie_file = _export_cookies_to_file()
-    if cookie_file:
-        ydl_opts['cookiefile'] = cookie_file
 
     if PROXY:
         ydl_opts['proxy'] = PROXY
