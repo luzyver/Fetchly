@@ -115,7 +115,7 @@
                                         {{ (user.bytes_used / 1024 / 1024)|round(1) }} MB
                                     </span>
                                     <div class="w-16 h-1 bg-[#27282e] rounded-full overflow-hidden">
-                                        <div class="h-full bg-white" style="width: {{ ((user.bytes_used / daily_limit) * 100)|round(1) }}%"></div>
+                                        <div class="h-full bg-white progress-bar" data-width="{{ ((user.bytes_used / daily_limit) * 100)|round(1) }}"></div>
                                     </div>
                                 </div>
                             </td>
@@ -139,6 +139,10 @@
     </div>
 
     <script>
+        document.querySelectorAll('.progress-bar').forEach(el => {
+            el.style.width = el.dataset.width + '%';
+        });
+
         async function addToWhitelist() {
             const userId = document.getElementById('userId').value.trim();
             const note = document.getElementById('note').value.trim();
