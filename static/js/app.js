@@ -409,10 +409,9 @@ const App = {
                 Toast.success('Ready to download!');
             } else if (data.status === 'failed') {
                 this.stopPolling();
-                this.updateStatusUI('failed', data.error);
                 this.setConvertLoading(false);
                 this.loadHistory();
-                Toast.error('Download failed');
+                Toast.error(data.error || 'Download failed');
             }
         } catch (e) { console.error('Poll error:', e); }
     },
