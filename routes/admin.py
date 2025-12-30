@@ -1,11 +1,16 @@
 import os
 import logging
 from datetime import datetime, timedelta
-from flask import Blueprint, render_template, jsonify, request
+from flask import Blueprint, render_template, jsonify, request, redirect, url_for
 from core.database import get_db, get_whitelist, add_to_whitelist, remove_from_whitelist, get_all_usage, DAILY_LIMIT_BYTES
 
 logger = logging.getLogger(__name__)
 admin_bp = Blueprint('admin', __name__)
+
+
+@admin_bp.route('/admin')
+def admin_index():
+    return redirect(url_for('admin.admin_tasks'))
 
 
 @admin_bp.route('/admin/tasks')
@@ -80,18 +85,6 @@ def remove_whitelist(user_id):
         return jsonify({'status': 'success'})
     except Exception as e:
         return jsonify({'error': str(e)}), 500
-
-
-@admin_bp.route('/admin/usage')
-def usage_page():
-    try:
-        usage_data = get_all_usage()
-        return render_template('admin_usage.html', 
-                             usage_data=usage_data, 
-                             daily_limit=DAILY_LIMIT_BYTES)
-    except Exception as e:
-        logger.error(f"Usage page error: {e}")
-        return "Server Error", 500
 
 
 def _format_task(task):
