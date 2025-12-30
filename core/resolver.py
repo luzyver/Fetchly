@@ -16,7 +16,6 @@ M3U8_PATTERN = re.compile(r'(https?://[^"\\]+\.m3u8)')
 IFRAME_KEYWORDS = ['embed', 'video', 'stream', 'player', 'id']
 NETWORK_KEYWORDS = ['.m3u8', '/stream/', '/variant/', 'master.m3u8']
 
-
 def resolve_source_url(url):
     logger.info(f"Resolving: {url}")
     driver = _create_driver()
@@ -46,7 +45,6 @@ def resolve_source_url(url):
     finally:
         _quit_driver(driver)
 
-
 def _create_driver():
     options = Options()
     options.add_argument("--headless=new")
@@ -61,12 +59,10 @@ def _create_driver():
     service = Service(driver_path) if driver_path else None
     return webdriver.Chrome(service=service, options=options)
 
-
 def _get_chromedriver_path():
     if os.path.exists("/usr/bin/chromedriver"):
         return "/usr/bin/chromedriver"
     return shutil.which("chromedriver")
-
 
 def _quit_driver(driver):
     try:
@@ -74,13 +70,11 @@ def _quit_driver(driver):
     except:
         pass
 
-
 def _extract_result(driver, m3u8_url):
     cookies = "; ".join([f"{c['name']}={c['value']}" for c in driver.get_cookies()])
     user_agent = driver.execute_script("return navigator.userAgent")
     referer = driver.execute_script("return window.location.href")
     return m3u8_url, cookies, user_agent, referer
-
 
 def _find_m3u8_in_page(driver):
     source = driver.page_source.replace(r'\/', '/')
@@ -88,7 +82,6 @@ def _find_m3u8_in_page(driver):
     if matches:
         return _extract_result(driver, matches[0])
     return None
-
 
 def _find_m3u8_in_network(driver):
     try:
@@ -100,7 +93,6 @@ def _find_m3u8_in_network(driver):
     except:
         pass
     return None
-
 
 def _find_m3u8_in_iframes(driver, original_url):
     iframes = driver.find_elements(By.TAG_NAME, "iframe")
@@ -162,7 +154,6 @@ def _find_m3u8_in_iframes(driver, original_url):
 
     return None
 
-
 def _search_nested_iframes(driver, parent_src):
     nested_iframes = driver.find_elements(By.TAG_NAME, "iframe")
 
@@ -193,7 +184,6 @@ def _search_nested_iframes(driver, parent_src):
 
     return None
 
-
 def _navigate_to_iframe_url(driver, iframe_url):
     logger.info(f"Navigating to iframe URL: {iframe_url}")
     driver.get(iframe_url)
@@ -204,7 +194,6 @@ def _navigate_to_iframe_url(driver, iframe_url):
         return result
 
     return _find_m3u8_in_network(driver)
-
 
 def _find_jwplayer_url(driver):
     try:

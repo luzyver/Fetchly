@@ -9,12 +9,10 @@ logger = logging.getLogger(__name__)
 
 PROXY = os.getenv('PROXY', '')
 
-
 def _get_proxy():
     if PROXY:
         return {'http': PROXY, 'https': PROXY}
     return None
-
 
 def _fetch_with_ytdlp(url):
     logger.info("Fetching Instagram with yt-dlp")
@@ -55,7 +53,6 @@ def _fetch_with_ytdlp(url):
         'video_url': video_url
     }
 
-
 def fetch_instagram_formats(url):
     try:
         info = _fetch_with_ytdlp(url)
@@ -81,7 +78,6 @@ def fetch_instagram_formats(url):
         'video_url': info['video_url'],
         'thumbnail': ''
     }
-
 
 def download_instagram(url, output_path):
     try:

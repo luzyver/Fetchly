@@ -10,8 +10,7 @@ from core.generic import download_generic
 
 logger = logging.getLogger(__name__)
 
-MAX_FILE_SIZE = 1 * 1024 * 1024 * 1024  # 1GB max per file
-
+MAX_FILE_SIZE = 1 * 1024 * 1024 * 1024
 
 def process_download(task_id, url, output_path, referer=None, cookies=None, format_id=None):
     logger.info(f"Task {task_id}: Starting download for {url} (format: {format_id or 'best'})")
@@ -30,15 +29,14 @@ def process_download(task_id, url, output_path, referer=None, cookies=None, form
                 limit_info = check_limit(fingerprint, ip)
                 is_whitelisted = limit_info.get('whitelisted', False)
 
-                # Skip all limits for whitelisted users
                 if not is_whitelisted:
-                    # Check if file exceeds max size limit or remaining quota
+
                     exceeds_limit = filesize > MAX_FILE_SIZE or filesize > limit_info['remaining']
                     
                     if exceeds_limit:
                         os.remove(file_path)
                         
-                        # Record abuse attempt and penalize if 3+ attempts
+
                         should_penalize = record_abuse_attempt(fingerprint, ip)
                         if should_penalize:
                             set_full_usage(fingerprint, ip)
@@ -67,7 +65,6 @@ def process_download(task_id, url, output_path, referer=None, cookies=None, form
     except Exception as e:
         logger.critical(f"Task {task_id}: Critical error: {e}")
         update_task_status(task_id, 'failed', error=str(e))
-
 
 def _route_download(url, output_path, referer, cookies, format_id):
     if is_tiktok_url(url):

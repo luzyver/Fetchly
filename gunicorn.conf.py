@@ -10,7 +10,6 @@ preload_app = False
 
 _cleanup_started = False
 
-
 def _setup_logging():
     os.makedirs('logs', exist_ok=True)
     
@@ -26,7 +25,6 @@ def _setup_logging():
     cleanup_logger = logging.getLogger('core.cleanup')
     cleanup_logger.setLevel(logging.INFO)
     cleanup_logger.addHandler(handler)
-
 
 def when_ready(server):
     global _cleanup_started

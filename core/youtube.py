@@ -5,7 +5,6 @@ from core.utils import get_cookie_file
 
 logger = logging.getLogger(__name__)
 
-
 def download_youtube(url, output_path, format_id='best'):
     logger.info(f"YouTube download: {url[:60]} (format: {format_id})")
 

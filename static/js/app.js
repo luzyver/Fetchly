@@ -35,7 +35,7 @@ const App = {
             historyEmpty: document.getElementById('historyEmpty')
         };
 
-        this.initTheme(); // Initialize theme
+        this.initTheme();
 
         if (!this.elements.input) return;
 
@@ -252,7 +252,7 @@ const App = {
         this.elements.formatSection?.classList.add('hidden');
         this.elements.convertBtn?.classList.add('hidden');
         this.elements.fetchBtn?.classList.remove('hidden');
-        // statusCard references removed
+
     },
 
     setFetchLoading(loading) {
@@ -278,7 +278,7 @@ const App = {
         if (!url.startsWith('http')) { Toast.warning('Enter a valid URL'); return; }
 
         this.setFetchLoading(true);
-        // statusCard hidden logic removed
+
         Toast.info('Fetching formats...');
 
         try {
@@ -302,7 +302,7 @@ const App = {
             Toast.success(`Found ${this.state.formats.length} formats`);
         } catch (e) {
             Toast.error(e.message);
-            // statusCard error logic removed
+
             this.updateStatusUI('failed', e.message);
         } finally {
             this.setFetchLoading(false);
@@ -351,13 +351,12 @@ const App = {
         const url = this.elements.input?.value.trim();
         if (!url) { Toast.warning('Enter a URL first'); return; }
 
-        // Get filesize from selected format
         const selectedFormat = this.state.formats.find(f => f.format_id === this.state.selectedFormat);
         const filesize = selectedFormat?.filesize_bytes || 0;
 
         this.setConvertLoading(true);
         this.state.progress = 0;
-        // statusCard logic removed
+
         Toast.info('Starting download...');
 
         try {
@@ -379,7 +378,7 @@ const App = {
             if (!res.ok) throw new Error(data.error || 'Failed');
 
             this.state.currentTaskId = data.task_id;
-            // statusCard logic removed
+
             this.updateStatusUI('processing');
 
             if (this.state.pollInterval) clearInterval(this.state.pollInterval);
@@ -425,7 +424,7 @@ const App = {
 
     updateProgress(percent) {
         this.state.progress = percent;
-        // progressBar removed
+
     },
 
     stopPolling() {

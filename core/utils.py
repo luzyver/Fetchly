@@ -2,7 +2,6 @@ import os
 from urllib.parse import urlparse
 from core.config import CONFIG, SUPPORTED_DOMAINS, DIRECT_SUPPORTED_DOMAINS
 
-
 def format_size(size_bytes):
     if not size_bytes:
         return ''
@@ -14,44 +13,34 @@ def format_size(size_bytes):
         return f"{size_bytes / 1024:.1f} KB"
     return f"{size_bytes} B"
 
-
 def get_domain(url):
     return urlparse(url).netloc
-
 
 def is_domain_match(url, domains):
     netloc = get_domain(url)
     return any(domain in netloc for domain in domains)
 
-
 def is_youtube_url(url):
     return is_domain_match(url, SUPPORTED_DOMAINS['youtube'])
-
 
 def is_tiktok_url(url):
     return is_domain_match(url, SUPPORTED_DOMAINS['tiktok'])
 
-
 def is_twitter_url(url):
     return is_domain_match(url, SUPPORTED_DOMAINS['twitter'])
-
 
 def is_instagram_url(url):
     return is_domain_match(url, SUPPORTED_DOMAINS['instagram'])
 
-
 def is_direct_supported(url):
     return is_domain_match(url, DIRECT_SUPPORTED_DOMAINS)
-
 
 def has_cookie_file():
     cookie_file = CONFIG.get('COOKIE_FILE')
     return cookie_file and os.path.exists(cookie_file) and os.path.getsize(cookie_file) > 100
 
-
 def get_cookie_file():
     return CONFIG.get('COOKIE_FILE') if has_cookie_file() else None
-
 
 def get_user_error(error_msg):
     if not error_msg:

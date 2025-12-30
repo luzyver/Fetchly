@@ -12,11 +12,9 @@ logger = logging.getLogger(__name__)
 convert_bp = Blueprint('convert', __name__)
 executor = None
 
-
 def set_executor(exec):
     global executor
     executor = exec
-
 
 def get_client_ip():
     if request.headers.get('X-Forwarded-For'):
@@ -24,7 +22,6 @@ def get_client_ip():
     if request.headers.get('X-Real-IP'):
         return request.headers.get('X-Real-IP')
     return request.remote_addr or 'unknown'
-
 
 @convert_bp.route('/convert', methods=['POST'])
 def convert():
@@ -48,13 +45,12 @@ def convert():
     if not limit_info['allowed']:
         return jsonify({'error': 'Daily limit reached (1GB). Try again tomorrow.'}), 429
 
-    # Skip filesize validation for whitelisted users
     estimated_filesize = data.get('filesize', 0)
-    max_file_size = 1 * 1024 * 1024 * 1024  # 1GB max per file
+    max_file_size = 1 * 1024 * 1024 * 1024
 
     if not limit_info.get('whitelisted') and estimated_filesize > 0:
         if estimated_filesize > limit_info['remaining'] or estimated_filesize > max_file_size:
-            # Record abuse attempt
+
             should_penalize = record_abuse_attempt(fingerprint, ip)
             if should_penalize:
                 set_full_usage(fingerprint, ip)
@@ -113,7 +109,6 @@ def convert():
         logger.error(f"Submission error: {e}")
         return jsonify({'error': 'Server Error'}), 500
 
-
 @convert_bp.route('/status/<task_id>')
 def status(task_id):
     try:
@@ -125,7 +120,6 @@ def status(task_id):
         return jsonify(dict(task))
     except Exception:
         return jsonify({'error': 'Database error'}), 500
-
 
 @convert_bp.route('/download/<task_id>')
 def download(task_id):

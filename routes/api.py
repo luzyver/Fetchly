@@ -12,11 +12,9 @@ logger = logging.getLogger(__name__)
 api_bp = Blueprint('api', __name__)
 executor = None
 
-
 def set_executor(exec):
     global executor
     executor = exec
-
 
 def get_client_ip():
     if request.headers.get('X-Forwarded-For'):
@@ -24,7 +22,6 @@ def get_client_ip():
     if request.headers.get('X-Real-IP'):
         return request.headers.get('X-Real-IP')
     return request.remote_addr or 'unknown'
-
 
 @api_bp.route('/check-limit', methods=['POST'])
 def check_usage_limit():
@@ -35,7 +32,6 @@ def check_usage_limit():
     result = check_limit(fingerprint, ip)
     return jsonify(result)
 
-
 @api_bp.route('/history', methods=['POST'])
 def get_history():
     data = request.json
@@ -44,7 +40,6 @@ def get_history():
 
     history = get_user_history(fingerprint, ip)
     return jsonify({'history': history})
-
 
 @api_bp.route('/fetch-formats', methods=['POST'])
 def fetch_formats():
@@ -73,7 +68,6 @@ def fetch_formats():
         logger.error(f"Fetch formats error: {e}")
         return jsonify({'error': get_user_error(str(e))}), 400
 
-
 def _handle_tiktok(url):
     info = fetch_tiktok_formats(url)
     return jsonify({
@@ -84,7 +78,6 @@ def _handle_tiktok(url):
         'cookies': None,
         'referer': url
     })
-
 
 def _handle_twitter(url):
     info = fetch_twitter_formats(url)
@@ -99,7 +92,6 @@ def _handle_twitter(url):
         'video_count': info['video_count']
     })
 
-
 def _handle_instagram(url):
     info = fetch_instagram_formats(url)
     return jsonify({
@@ -112,7 +104,6 @@ def _handle_instagram(url):
         'is_instagram': True,
         'video_url': info['video_url']
     })
-
 
 def _handle_generic(url):
     resolved_url = url

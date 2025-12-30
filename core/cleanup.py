@@ -8,7 +8,6 @@ logger = logging.getLogger(__name__)
 
 ALLOWED_EXTENSIONS = ('.mp4', '.mp3')
 
-
 def cleanup_old_files():
     is_first_run = True
 
@@ -24,11 +23,9 @@ def cleanup_old_files():
         except Exception as e:
             logger.error(f"Cleanup error: {e}")
 
-
 def _wait(is_first_run):
     delay = 5 if is_first_run else CONFIG['CLEANUP_INTERVAL']
     time.sleep(delay)
-
 
 def _cleanup_files():
     cutoff_time = time.time() - CONFIG['RETENTION_PERIOD']
@@ -48,7 +45,6 @@ def _cleanup_files():
             logger.warning(f"Error deleting {filename}: {e}")
 
     return deleted
-
 
 def _cleanup_database():
     with get_db() as conn:

@@ -7,7 +7,6 @@ logger = logging.getLogger(__name__)
 
 TWITTER_USER_AGENT = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
 
-
 def fetch_twitter_formats(url):
     cookie_file = get_cookie_file()
 
@@ -72,7 +71,6 @@ def fetch_twitter_formats(url):
         'duration': duration,
         'video_count': len(entries)
     }
-
 
 def download_twitter(url, output_path, format_id='twitter_0'):
     logger.info(f"Twitter download: {url[:60]} (format: {format_id})")

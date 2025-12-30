@@ -7,7 +7,6 @@ from core.utils import format_size, is_direct_supported, get_cookie_file
 
 logger = logging.getLogger(__name__)
 
-
 def fetch_generic_formats(url, resolved_url, cookies=None, user_agent=None, referer=None):
     current_referer = referer or url
     parsed_url = urlparse(resolved_url)
@@ -46,7 +45,6 @@ def fetch_generic_formats(url, resolved_url, cookies=None, user_agent=None, refe
 
     return formats, video_info
 
-
 def _build_fetch_cmd(ua, resolved_url, referer, origin, cookies, cookie_file):
     cmd = ['yt-dlp', '--user-agent', ua, '--add-header', f'Referer: {referer}',
            '--add-header', f'Origin: {origin}', '--no-check-certificate', '-J', resolved_url]
@@ -66,7 +64,6 @@ def _build_fetch_cmd(ua, resolved_url, referer, origin, cookies, cookie_file):
         cmd[1:1] = ['--cookies', cookie_file]
 
     return cmd
-
 
 def _parse_formats(video_info, direct_supported):
     duration = video_info.get('duration')
@@ -117,7 +114,6 @@ def _parse_formats(video_info, direct_supported):
 
     return formats
 
-
 def download_generic(url, output_path, referer=None, cookies=None, format_id=None):
     logger.info(f"Generic download: {url[:60]} (format: {format_id})")
 
@@ -145,7 +141,6 @@ def download_generic(url, output_path, referer=None, cookies=None, format_id=Non
         logger.warning(f"Generic attempt {i+1} failed: {last_error}")
 
     return {"success": False, "error": last_error}
-
 
 def _build_download_cmd(ua, url, output_path, referer, domain, cookies, cookie_file, direct_supported, format_id):
     cmd = ['yt-dlp', '--user-agent', ua, '--no-check-certificate', '--no-playlist', '-o', output_path]

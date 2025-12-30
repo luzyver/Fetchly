@@ -1,15 +1,15 @@
 :root {
-    /* Color Palette - Premium Dark SaaS (Linear-inspired) */
-    --bg-body: #141517;       /* Lighter charcoal instead of pitch black */
-    --bg-surface: #1d1e22;    /* Distinct surface color */
+    
+    --bg-body: #141517;       
+    --bg-surface: #1d1e22;    
     --bg-surface-hover: #26272c;
     --bg-input: #1a1b1e;
     
-    --border-subtle: #2e3036; /* More visible borders */
+    --border-subtle: #2e3036; 
     --border-focus: #555861;
     
     --text-main: #f2f2f3;
-    --text-muted: #9fa2ac;    /* Lighter muted text for readability */
+    --text-muted: #9fa2ac;    
     --text-faint: #656870;
     
     --accent-primary: #ffffff;
@@ -20,7 +20,7 @@
     --status-error: #cf5b5b;
     --status-processing: #d6d6d6;
     
-    /* Spacing & Layout */
+    
     --sidebar-width: 380px;
     --radius-sm: 4px;
     --radius-md: 6px;
@@ -67,7 +67,6 @@ body {
     line-height: 1.5;
 }
 
-/* --- Layout Grid --- */
 .app-layout {
     display: grid;
     grid-template-columns: 1fr var(--sidebar-width);
@@ -95,7 +94,6 @@ body {
     flex-direction: column;
 }
 
-/* --- Typography --- */
 h1 {
     font-size: 2.5rem;
     font-weight: 600;
@@ -118,7 +116,6 @@ p {
     color: var(--text-muted);
 }
 
-/* --- Components: Input --- */
 .input-group {
     position: relative;
     margin-bottom: 1.5rem;
@@ -133,7 +130,7 @@ p {
     font-size: 1.125rem;
     border-radius: var(--radius-md);
     transition: border-color 0.15s ease;
-    font-family: monospace; /* For URL feeling */
+    font-family: monospace; 
 }
 
 .hero-input:focus {
@@ -144,7 +141,6 @@ p {
     color: var(--text-faint);
 }
 
-/* --- Components: Buttons --- */
 .btn {
     display: inline-flex;
     align-items: center;
@@ -190,7 +186,6 @@ p {
     background-color: var(--bg-surface-hover);
 }
 
-/* --- Components: Format Selector --- */
 .format-selector {
     display: flex;
     gap: 0.5rem;
@@ -228,7 +223,6 @@ p {
     margin-top: 0.25rem;
 }
 
-/* --- Sidebar History Items --- */
 .history-item {
     padding: 1rem;
     border-bottom: 1px solid var(--border-subtle);
@@ -260,7 +254,6 @@ p {
     gap: 0.5rem;
 }
 
-/* --- Status Indicators --- */
 .status-badge {
     display: inline-flex;
     align-items: center;
@@ -285,7 +278,6 @@ p {
     100% { opacity: 0.4; }
 }
 
-/* --- Scrollbar --- */
 ::-webkit-scrollbar {
     width: 6px;
 }
@@ -300,7 +292,6 @@ p {
     background: var(--border-focus);
 }
 
-/* --- Mobile Responsive --- */
 @media (max-width: 900px) {
     .app-layout {
         grid-template-columns: 1fr;
@@ -318,7 +309,6 @@ p {
     }
 }
 
-/* --- Admin Specific Overrides --- */
 .table-container {
     border: 1px solid var(--border-subtle);
     border-radius: var(--radius-md);
@@ -355,7 +345,6 @@ tr:hover td {
     background-color: var(--bg-surface-hover);
 }
 
-/* --- Animations --- */
 @keyframes fadeIn {
     from { opacity: 0; transform: translateY(5px); }
     to { opacity: 1; transform: translateY(0); }
@@ -365,7 +354,6 @@ tr:hover td {
     animation: fadeIn 0.4s ease-out forwards;
 }
 
-/* --- Toast Notification --- */
 .toast-container {
     position: fixed;
     top: 2rem;

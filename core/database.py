@@ -51,7 +51,6 @@ ABUSE_SCHEMA = '''
 
 MAX_ABUSE_ATTEMPTS = 3
 
-
 @contextmanager
 def get_db():
     conn = sqlite3.connect(CONFIG['DB_PATH'])
@@ -61,7 +60,6 @@ def get_db():
     finally:
         conn.close()
 
-
 def init_db():
     with get_db() as conn:
         conn.execute(SCHEMA)
@@ -69,7 +67,6 @@ def init_db():
         conn.execute(WHITELIST_SCHEMA)
         conn.execute(ABUSE_SCHEMA)
         conn.commit()
-
 
 def update_task_status(task_id, status, file=None, error=None):
     try:
@@ -88,10 +85,8 @@ def update_task_status(task_id, status, file=None, error=None):
     except Exception as e:
         logger.error(f"Failed to update task {task_id}: {e}")
 
-
 def _get_today_wib():
     return datetime.now(WIB).strftime('%Y-%m-%d')
-
 
 def _get_usage_single(conn, identifier):
     today = _get_today_wib()
@@ -112,14 +107,12 @@ def _get_usage_single(conn, identifier):
 
     return row['bytes_used']
 
-
 def get_usage(fingerprint, ip):
     with get_db() as conn:
         fp_used = _get_usage_single(conn, fingerprint) if fingerprint else 0
         ip_used = _get_usage_single(conn, ip) if ip else 0
         conn.commit()
         return max(fp_used, ip_used)
-
 
 def add_usage(fingerprint, ip, bytes_count):
     today = _get_today_wib()
@@ -151,7 +144,6 @@ def add_usage(fingerprint, ip, bytes_count):
                 )
         conn.commit()
 
-
 def check_limit(fingerprint, ip):
     if is_whitelisted(fingerprint) or is_whitelisted(ip):
         return {
@@ -171,9 +163,8 @@ def check_limit(fingerprint, ip):
         'remaining': remaining
     }
 
-
 def record_abuse_attempt(fingerprint, ip):
-    """Record an abuse attempt. Returns True if user should be penalized (3+ attempts)."""
+    
     today = _get_today_wib()
     should_penalize = False
 
@@ -193,7 +184,7 @@ def record_abuse_attempt(fingerprint, ip):
                     (identifier, today)
                 )
             elif row['last_attempt'] != today:
-                # Reset for new day
+
                 conn.execute(
                     'UPDATE abuse_attempts SET attempts = 1, last_attempt = ? WHERE identifier = ?',
                     (today, identifier)
@@ -211,9 +202,8 @@ def record_abuse_attempt(fingerprint, ip):
 
     return should_penalize
 
-
 def set_full_usage(fingerprint, ip):
-    """Set user's usage to full daily limit as penalty."""
+    
     today = _get_today_wib()
 
     with get_db() as conn:
@@ -241,7 +231,6 @@ def set_full_usage(fingerprint, ip):
     
     logger.warning(f"Penalty applied: full usage set for fp={fingerprint}, ip={ip}")
 
-
 def get_user_history(fingerprint, ip):
     today = _get_today_wib()
 
@@ -256,7 +245,6 @@ def get_user_history(fingerprint, ip):
 
         return [dict(row) for row in rows]
 
-
 def update_task_filesize(task_id, filesize):
     try:
         with get_db() as conn:
@@ -267,7 +255,6 @@ def update_task_filesize(task_id, filesize):
             conn.commit()
     except Exception as e:
         logger.error(f"Failed to update filesize for {task_id}: {e}")
-
 
 def get_task_info(task_id):
     try:
@@ -282,7 +269,6 @@ def get_task_info(task_id):
     except Exception:
         return None, None
 
-
 def is_whitelisted(identifier):
     if not identifier:
         return False
@@ -296,7 +282,6 @@ def is_whitelisted(identifier):
     except Exception:
         return False
 
-
 def get_whitelist():
     try:
         with get_db() as conn:
@@ -306,7 +291,6 @@ def get_whitelist():
             return [dict(row) for row in rows]
     except Exception:
         return []
-
 
 def add_to_whitelist(user_id, note=''):
     try:
@@ -319,7 +303,6 @@ def add_to_whitelist(user_id, note=''):
     except Exception as e:
         logger.error(f"Failed to add to whitelist: {e}")
 
-
 def remove_from_whitelist(user_id):
     try:
         with get_db() as conn:
@@ -327,7 +310,6 @@ def remove_from_whitelist(user_id):
             conn.commit()
     except Exception as e:
         logger.error(f"Failed to remove from whitelist: {e}")
-
 
 def _to_wib(utc_str):
     if not utc_str:
@@ -338,7 +320,6 @@ def _to_wib(utc_str):
         return wib_time.strftime('%Y-%m-%d %H:%M:%S')
     except:
         return utc_str
-
 
 def get_all_usage():
     today = _get_today_wib()

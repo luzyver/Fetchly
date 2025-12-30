@@ -25,7 +25,7 @@
 
 <div class="app-layout">
     
-    <!-- Left: Main Action Area -->
+    
     <main class="main-content">
         <header class="mb-12 flex justify-between items-start">
             <div>
@@ -44,7 +44,7 @@
                 </p>
             </div>
             
-            <!-- Theme Toggle -->
+            
             <button id="themeToggle" class="btn btn-icon" title="Toggle Theme">
                 <svg id="iconMoon" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/></svg>
                 <svg id="iconSun" class="hidden w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
@@ -52,7 +52,7 @@
         </header>
 
         <div class="w-full max-w-3xl">
-            <!-- URL Input -->
+            
             <div class="input-group relative group">
                 <input type="text" id="url" 
                     class="hero-input font-mono" 
@@ -69,7 +69,7 @@
                 </div>
             </div>
 
-            <!-- Fetch Button -->
+            
             <button id="fetchBtn" class="btn btn-primary w-full sm:w-auto min-w-[160px]">
                 <span id="fetchContent">Analyze Stream</span>
                 <span id="fetchLoader" class="hidden flex items-center gap-2">
@@ -78,10 +78,10 @@
                 </span>
             </button>
 
-            <!-- Usage Info -->
+            
             <div id="usageInfo" class="mt-4 text-xs text-[var(--text-faint)] font-mono"></div>
 
-            <!-- Format Selection Area -->
+            
             <div id="formatSection" class="hidden mt-10 border-t border-[var(--border-subtle)] pt-8 animate-fadeIn">
                 <div class="flex items-center justify-between mb-4">
                     <h3 class="text-xs font-medium uppercase tracking-wider text-[var(--text-muted)]">Available Formats</h3>
@@ -89,7 +89,7 @@
                 </div>
                 
                 <div id="formatList" class="format-selector">
-                    <!-- Populated by JS -->
+                    
                 </div>
 
                 <button id="convertBtn" class="hidden btn btn-primary w-full sm:w-auto min-w-[200px]">
@@ -104,7 +104,7 @@
         </div>
     </main>
 
-    <!-- Right: Sticky History -->
+    
     <aside id="historySection" class="sidebar custom-scrollbar">
         <div class="flex items-center justify-between mb-6">
             <h2>History</h2>
@@ -112,7 +112,7 @@
         </div>
         
         <div id="historyListContainer" class="space-y-0">
-             <!-- JS injects here -->
+             
              <div id="historyList"></div>
         </div>
         
@@ -123,7 +123,6 @@
 
 </div>
 
-<!-- Footer -->
 <footer class="fixed bottom-4 left-6 text-[10px] text-[var(--text-faint)] font-mono pointer-events-none">
     <span id="year"></span> © FETCHLY SYSTEMS
 </footer>

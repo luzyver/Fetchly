@@ -7,11 +7,9 @@ from core.database import get_db, get_whitelist, add_to_whitelist, remove_from_w
 logger = logging.getLogger(__name__)
 admin_bp = Blueprint('admin', __name__)
 
-
 @admin_bp.route('/admin')
 def admin_index():
     return redirect(url_for('admin.admin_tasks'))
-
 
 @admin_bp.route('/admin/tasks')
 def admin_tasks():
@@ -25,7 +23,6 @@ def admin_tasks():
     except Exception as e:
         logger.error(f"Admin error: {e}")
         return "Server Error", 500
-
 
 @admin_bp.route('/admin/delete_task/<task_id>', methods=['DELETE'])
 def delete_task(task_id):
@@ -47,7 +44,6 @@ def delete_task(task_id):
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-
 @admin_bp.route('/admin/whitelist')
 def whitelist_page():
     try:
@@ -60,7 +56,6 @@ def whitelist_page():
     except Exception as e:
         logger.error(f"Whitelist error: {e}")
         return "Server Error", 500
-
 
 @admin_bp.route('/admin/whitelist/add', methods=['POST'])
 def add_whitelist():
@@ -77,7 +72,6 @@ def add_whitelist():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-
 @admin_bp.route('/admin/whitelist/remove/<user_id>', methods=['DELETE'])
 def remove_whitelist(user_id):
     try:
@@ -85,7 +79,6 @@ def remove_whitelist(user_id):
         return jsonify({'status': 'success'})
     except Exception as e:
         return jsonify({'error': str(e)}), 500
-
 
 def _format_task(task):
     if task.get('created_at'):

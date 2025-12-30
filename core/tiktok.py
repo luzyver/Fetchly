@@ -6,7 +6,6 @@ logger = logging.getLogger(__name__)
 
 TIKWM_API = "https://www.tikwm.com/api/"
 
-
 def fetch_tiktok_info(url):
     session = requests.Session()
     session.headers.update({
@@ -43,7 +42,6 @@ def fetch_tiktok_info(url):
         "size_hd": video_data.get("hd_size"),
     }
 
-
 def fetch_tiktok_formats(url):
     info = fetch_tiktok_info(url)
     hd_size = format_size(info.get('size_hd') or info.get('size'))
@@ -58,7 +56,6 @@ def fetch_tiktok_formats(url):
         'title': info.get('title') or 'TikTok Video',
         'duration': info.get('duration'),
     }
-
 
 def download_tiktok(url, output_path, format_id='tiktok_no_watermark'):
     logger.info(f"TikTok download: {url[:60]} (format: {format_id})")
