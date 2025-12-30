@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Fetchly</title>
+    <title>Fetchly Pro</title>
     <meta name="theme-color" content="#141517">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}?v={{ cache_version }}">
@@ -27,19 +27,28 @@
     
     <!-- Left: Main Action Area -->
     <main class="main-content">
-        <header class="mb-12">
-            <div class="flex items-center gap-2 mb-6">
-                <svg class="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
-                </svg>
-                <span class="font-bold tracking-tight text-white">Fetchly</span>
+        <header class="mb-12 flex justify-between items-start">
+            <div>
+                <div class="flex items-center gap-2 mb-6">
+                    <svg class="w-5 h-5 text-[var(--text-main)]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+                    </svg>
+                    <span class="font-bold tracking-tight text-[var(--text-main)]">Fetchly</span>
+                    <span class="px-1.5 py-0.5 text-[10px] font-medium bg-[var(--bg-surface-hover)] text-[var(--text-muted)] rounded border border-[var(--border-subtle)]">PRO</span>
+                </div>
+                
+                <h1 class="text-4xl sm:text-5xl text-[var(--text-main)] mb-4 tracking-tight">Media Extraction<br>Utility</h1>
+                <p class="text-lg text-[var(--text-muted)] max-w-xl">
+                    Professional-grade downloader for YouTube, Twitter, TikTok, and Instagram. 
+                    Optimized for high-bitrate archival.
+                </p>
             </div>
             
-            <h1 class="text-4xl sm:text-5xl text-white mb-4 tracking-tight">Media Extraction<br>Utility</h1>
-            <p class="text-lg text-[#9fa2ac] max-w-xl">
-                Professional-grade downloader for YouTube, Twitter, TikTok, and Instagram. 
-                Optimized for high-bitrate archival.
-            </p>
+            <!-- Theme Toggle -->
+            <button id="themeToggle" class="btn btn-icon" title="Toggle Theme">
+                <svg id="iconMoon" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/></svg>
+                <svg id="iconSun" class="hidden w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
+            </button>
         </header>
 
         <div class="w-full max-w-3xl">
@@ -51,10 +60,10 @@
                     autocomplete="off">
                 
                 <div class="absolute right-4 top-1/2 -translate-y-1/2 flex items-center gap-2">
-                    <button id="clearBtn" class="hidden p-1 text-[#9fa2ac] hover:text-white transition-colors" title="Clear">
+                    <button id="clearBtn" class="hidden p-1 text-[var(--text-muted)] hover:text-[var(--text-main)] transition-colors" title="Clear">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
                     </button>
-                    <button id="pasteBtn" class="p-1 text-[#9fa2ac] hover:text-white transition-colors" title="Paste">
+                    <button id="pasteBtn" class="p-1 text-[var(--text-muted)] hover:text-[var(--text-main)] transition-colors" title="Paste">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
                     </button>
                 </div>
@@ -70,13 +79,13 @@
             </button>
 
             <!-- Usage Info -->
-            <div id="usageInfo" class="mt-4 text-xs text-[#656870] font-mono"></div>
+            <div id="usageInfo" class="mt-4 text-xs text-[var(--text-faint)] font-mono"></div>
 
             <!-- Format Selection Area -->
-            <div id="formatSection" class="hidden mt-10 border-t border-[#2e3036] pt-8 animate-fadeIn">
+            <div id="formatSection" class="hidden mt-10 border-t border-[var(--border-subtle)] pt-8 animate-fadeIn">
                 <div class="flex items-center justify-between mb-4">
-                    <h3 class="text-xs font-medium uppercase tracking-wider text-[#9fa2ac]">Available Formats</h3>
-                    <span id="videoTitle" class="text-xs text-[#9fa2ac] font-mono truncate max-w-[300px]"></span>
+                    <h3 class="text-xs font-medium uppercase tracking-wider text-[var(--text-muted)]">Available Formats</h3>
+                    <span id="videoTitle" class="text-xs text-[var(--text-muted)] font-mono truncate max-w-[300px]"></span>
                 </div>
                 
                 <div id="formatList" class="format-selector">
@@ -99,7 +108,7 @@
     <aside id="historySection" class="sidebar custom-scrollbar">
         <div class="flex items-center justify-between mb-6">
             <h2>History</h2>
-            <button onclick="window.location.reload()" class="text-xs text-[#656870] hover:text-white transition-colors">Refresh</button>
+            <button onclick="window.location.reload()" class="text-xs text-[var(--text-muted)] hover:text-[var(--text-main)] transition-colors">Refresh</button>
         </div>
         
         <div id="historyListContainer" class="space-y-0">
@@ -108,14 +117,14 @@
         </div>
         
         <div id="historyEmpty" class="text-center py-12">
-            <p class="text-sm text-[#656870]">No recent tasks.</p>
+            <p class="text-sm text-[var(--text-muted)]">No recent tasks.</p>
         </div>
     </aside>
 
 </div>
 
 <!-- Footer -->
-<footer class="fixed bottom-4 left-6 text-[10px] text-[#656870] font-mono pointer-events-none">
+<footer class="fixed bottom-4 left-6 text-[10px] text-[var(--text-faint)] font-mono pointer-events-none">
     <span id="year"></span> © FETCHLY SYSTEMS
 </footer>
 

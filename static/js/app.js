@@ -35,6 +35,8 @@ const App = {
             historyEmpty: document.getElementById('historyEmpty')
         };
 
+        this.initTheme(); // Initialize theme
+
         if (!this.elements.input) return;
 
         await this.initFingerprint();
@@ -42,6 +44,42 @@ const App = {
         this.checkInputState();
         this.checkUsageLimit();
         this.loadHistory();
+    },
+
+    initTheme() {
+        const savedTheme = localStorage.getItem('theme') || 'dark';
+        document.documentElement.setAttribute('data-theme', savedTheme);
+        this.updateThemeIcon(savedTheme);
+        this.updateMetaColor(savedTheme);
+        
+        document.getElementById('themeToggle')?.addEventListener('click', () => this.toggleTheme());
+    },
+
+    toggleTheme() {
+        const currentTheme = document.documentElement.getAttribute('data-theme');
+        const newTheme = currentTheme === 'light' ? 'dark' : 'light';
+        
+        document.documentElement.setAttribute('data-theme', newTheme);
+        localStorage.setItem('theme', newTheme);
+        this.updateThemeIcon(newTheme);
+        this.updateMetaColor(newTheme);
+    },
+
+    updateThemeIcon(theme) {
+        const moon = document.getElementById('iconMoon');
+        const sun = document.getElementById('iconSun');
+        if (theme === 'light') {
+            moon?.classList.add('hidden');
+            sun?.classList.remove('hidden');
+        } else {
+            moon?.classList.remove('hidden');
+            sun?.classList.add('hidden');
+        }
+    },
+
+    updateMetaColor(theme) {
+        const metaColor = theme === 'light' ? '#ffffff' : '#141517';
+        document.querySelector('meta[name="theme-color"]')?.setAttribute('content', metaColor);
     },
 
     async initFingerprint() {
@@ -106,11 +144,11 @@ const App = {
 
         if (this.elements.usageInfo) {
             this.elements.usageInfo.innerHTML = `
-                <div class="text-xs text-gray-500">
+                <div class="text-xs text-[var(--text-muted)]">
                     Daily usage: ${usedMB}MB / ${limitMB}MB (${remainingMB}MB remaining)
                 </div>
-                <div class="h-1 bg-dark-700 rounded-full overflow-hidden mt-1">
-                    <div class="h-full ${percent > 80 ? 'bg-red-500' : 'bg-accent-500'} rounded-full" style="width: ${percent}%"></div>
+                <div class="h-1 bg-[var(--border-subtle)] rounded-full overflow-hidden mt-1">
+                    <div class="h-full ${percent > 80 ? 'bg-red-500' : 'bg-emerald-500'} rounded-full" style="width: ${percent}%"></div>
                 </div>
             `;
         }
@@ -155,13 +193,13 @@ const App = {
                 <div class="flex justify-between items-start">
                     <div class="history-title" title="${item.title || 'Unknown'}">${item.title || 'Untitled Video'}</div>
                     ${item.status === 'completed' ? 
-                        `<a href="/download/${item.id}?fingerprint=${this.state.fingerprint}" class="text-xs text-white hover:underline">Download</a>` : 
-                        `<span class="text-xs text-[#565961]">${item.status}</span>`}
+                        `<a href="/download/${item.id}?fingerprint=${this.state.fingerprint}" class="text-xs text-[var(--text-main)] hover:underline">Download</a>` : 
+                        `<span class="text-xs text-[var(--text-faint)]">${item.status}</span>`}
                 </div>
                 <div class="history-meta mt-1">
                     <span class="status-dot ${item.status === 'completed' ? 'success' : item.status === 'failed' ? 'error' : 'processing'}"></span>
                     <span>${formatSize(item.filesize)}</span>
-                    <span class="ml-auto font-mono text-[10px] text-[#565961]">${item.id.substring(0,6)}</span>
+                    <span class="ml-auto font-mono text-[10px] text-[var(--text-faint)]">${item.id.substring(0,6)}</span>
                 </div>
             </div>
         `).join('');
@@ -214,7 +252,7 @@ const App = {
         this.elements.formatSection?.classList.add('hidden');
         this.elements.convertBtn?.classList.add('hidden');
         this.elements.fetchBtn?.classList.remove('hidden');
-        this.elements.statusCard?.classList.add('hidden');
+        // statusCard references removed
     },
 
     setFetchLoading(loading) {
@@ -240,7 +278,7 @@ const App = {
         if (!url.startsWith('http')) { Toast.warning('Enter a valid URL'); return; }
 
         this.setFetchLoading(true);
-        this.elements.statusCard?.classList.add('hidden');
+        // statusCard hidden logic removed
         Toast.info('Fetching formats...');
 
         try {
@@ -264,7 +302,7 @@ const App = {
             Toast.success(`Found ${this.state.formats.length} formats`);
         } catch (e) {
             Toast.error(e.message);
-            this.elements.statusCard?.classList.remove('hidden');
+            // statusCard error logic removed
             this.updateStatusUI('failed', e.message);
         } finally {
             this.setFetchLoading(false);
@@ -289,8 +327,8 @@ const App = {
                 <label class="format-option ${i === 0 ? 'selected' : ''}">
                     <input type="radio" name="format" value="${fmt.format_id}" ${i === 0 ? 'checked' : ''} class="hidden">
                     <div class="flex justify-between items-center w-full">
-                        <span class="font-medium text-white">${fmt.resolution || 'Auto'}</span>
-                        ${isBest ? '<span class="text-[10px] bg-[#27282e] text-white px-1.5 rounded">BEST</span>' : ''}
+                        <span class="font-medium text-[var(--text-main)]">${fmt.resolution || 'Auto'}</span>
+                        ${isBest ? '<span class="text-[10px] bg-[var(--bg-surface-hover)] text-[var(--text-main)] px-1.5 rounded border border-[var(--border-subtle)]">BEST</span>' : ''}
                     </div>
                     <div class="format-meta">
                         ${fmt.ext.toUpperCase()} ${fmt.filesize ? '• ' + fmt.filesize : ''}
@@ -315,8 +353,7 @@ const App = {
 
         this.setConvertLoading(true);
         this.state.progress = 0;
-        this.elements.statusCard?.classList.add('hidden');
-        this.elements.errorArea?.classList.add('hidden');
+        // statusCard logic removed
         Toast.info('Starting download...');
 
         try {
@@ -337,14 +374,13 @@ const App = {
             if (!res.ok) throw new Error(data.error || 'Failed');
 
             this.state.currentTaskId = data.task_id;
-            this.elements.statusCard?.classList.remove('hidden');
+            // statusCard logic removed
             this.updateStatusUI('processing');
 
             if (this.state.pollInterval) clearInterval(this.state.pollInterval);
             this.state.pollInterval = setInterval(() => this.checkStatus(), 1500);
         } catch (e) {
             this.setConvertLoading(false);
-            this.elements.statusCard?.classList.remove('hidden');
             this.updateStatusUI('failed', e.message);
             Toast.error(e.message);
         }
@@ -386,8 +422,7 @@ const App = {
 
     updateProgress(percent) {
         this.state.progress = percent;
-        if (this.elements.progressBar) this.elements.progressBar.style.width = `${percent}%`;
-        if (this.elements.progressText) this.elements.progressText.textContent = `${Math.round(percent)}%`;
+        // progressBar removed
     },
 
     stopPolling() {
@@ -398,8 +433,6 @@ const App = {
     },
 
     updateStatusUI(status, message = '') {
-        // Status card removed per user request. 
-        // Logic is now handled by Toasts and History updates.
         if (status === 'failed' && message) {
             Toast.error(message);
         }

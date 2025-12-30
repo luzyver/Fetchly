@@ -28,6 +28,28 @@
     --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
 }
 
+[data-theme="light"] {
+    --bg-body: #f9fafb;
+    --bg-surface: #ffffff;
+    --bg-surface-hover: #f3f4f6;
+    --bg-input: #ffffff;
+    
+    --border-subtle: #e5e7eb;
+    --border-focus: #9ca3af;
+    
+    --text-main: #111827;
+    --text-muted: #6b7280;
+    --text-faint: #9ca3af;
+    
+    --accent-primary: #111827;
+    --accent-text: #ffffff;
+    --accent-hover: #374151;
+    
+    --status-success: #059669;
+    --status-error: #dc2626;
+    --status-processing: #9ca3af;
+}
+
 * {
     box-sizing: border-box;
     outline: none;
