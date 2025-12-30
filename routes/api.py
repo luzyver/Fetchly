@@ -6,6 +6,7 @@ from core.twitter import fetch_twitter_formats
 from core.instagram import fetch_instagram_formats
 from core.generic import fetch_generic_formats
 from core.resolver import resolve_source_url
+from core.database import check_limit, get_user_history
 
 logger = logging.getLogger(__name__)
 api_bp = Blueprint('api', __name__)
@@ -15,6 +16,30 @@ executor = None
 def set_executor(exec):
     global executor
     executor = exec
+
+
+@api_bp.route('/check-limit', methods=['POST'])
+def check_usage_limit():
+    data = request.json
+    fingerprint = data.get('fingerprint', '')
+
+    if not fingerprint:
+        return jsonify({'error': 'Fingerprint required'}), 400
+
+    result = check_limit(fingerprint)
+    return jsonify(result)
+
+
+@api_bp.route('/history', methods=['POST'])
+def get_history():
+    data = request.json
+    fingerprint = data.get('fingerprint', '')
+
+    if not fingerprint:
+        return jsonify({'error': 'Fingerprint required'}), 400
+
+    history = get_user_history(fingerprint)
+    return jsonify({'history': history})
 
 
 @api_bp.route('/fetch-formats', methods=['POST'])

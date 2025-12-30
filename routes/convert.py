@@ -3,7 +3,7 @@ import uuid
 import logging
 from flask import Blueprint, request, jsonify, send_file
 from core.config import CONFIG
-from core.database import get_db
+from core.database import get_db, check_limit, add_usage, update_task_filesize
 from core.resolver import resolve_source_url
 from core.converter import process_download
 from core.utils import is_tiktok_url, is_twitter_url, is_direct_supported
@@ -26,12 +26,19 @@ def convert():
     resolved_url = data.get('resolved_url')
     cookies = data.get('cookies')
     referer = data.get('referer', url)
+    fingerprint = data.get('fingerprint', '')
+    title = data.get('title', 'Video')
 
     if not url:
         return jsonify({'error': 'URL is required'}), 400
 
     if not url.startswith(('http://', 'https://')):
         return jsonify({'error': 'Invalid URL format'}), 400
+
+    if fingerprint:
+        limit_info = check_limit(fingerprint)
+        if not limit_info['allowed']:
+            return jsonify({'error': 'Daily limit reached (1GB). Try again tomorrow.'}), 429
 
     if not resolved_url:
         resolved_url = url
@@ -59,8 +66,10 @@ def convert():
 
     try:
         with get_db() as conn:
-            conn.execute('INSERT INTO tasks (id, url, status) VALUES (?, ?, ?)',
-                         (task_id, resolved_url, 'queued'))
+            conn.execute(
+                'INSERT INTO tasks (id, url, status, fingerprint, title) VALUES (?, ?, ?, ?, ?)',
+                (task_id, resolved_url, 'queued', fingerprint, title[:100])
+            )
             conn.commit()
 
         executor.submit(process_download, task_id, resolved_url, output_path, referer, cookies, format_id)
@@ -86,6 +95,8 @@ def status(task_id):
 
 @convert_bp.route('/download/<task_id>')
 def download(task_id):
+    fingerprint = request.args.get('fingerprint', '')
+
     try:
         with get_db() as conn:
             task = conn.execute('SELECT * FROM tasks WHERE id = ?', (task_id,)).fetchone()
@@ -98,6 +109,21 @@ def download(task_id):
 
         if not task['file'] or not os.path.exists(task['file']):
             return jsonify({'error': 'File expired or removed'}), 404
+
+        file_size = os.path.getsize(task['file'])
+
+        if fingerprint:
+            limit_info = check_limit(fingerprint)
+            if not limit_info['allowed']:
+                return jsonify({'error': 'Daily limit reached (1GB). Try again tomorrow.'}), 429
+
+            if file_size > limit_info['remaining']:
+                return jsonify({
+                    'error': f'File size exceeds remaining quota. Remaining: {limit_info["remaining"] // (1024*1024)}MB'
+                }), 429
+
+            add_usage(fingerprint, file_size)
+            update_task_filesize(task_id, file_size)
 
         ext = 'mp3' if task['file'].endswith('.mp3') else 'mp4'
         return send_file(task['file'], as_attachment=True, download_name=f"{task_id}.{ext}")

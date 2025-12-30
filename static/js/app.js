@@ -9,12 +9,13 @@ const App = {
         resolvedUrl: null,
         cookies: null,
         referer: null,
-        videoTitle: null
+        videoTitle: null,
+        fingerprint: null
     },
 
     elements: {},
 
-    init() {
+    async init() {
         this.elements = {
             input: document.getElementById('url'),
             pasteBtn: document.getElementById('pasteBtn'),
@@ -38,12 +39,151 @@ const App = {
             actionArea: document.getElementById('actionArea'),
             downloadBtn: document.getElementById('downloadBtn'),
             errorArea: document.getElementById('errorArea'),
-            errorDetails: document.getElementById('errorDetails')
+            errorDetails: document.getElementById('errorDetails'),
+            usageInfo: document.getElementById('usageInfo'),
+            historySection: document.getElementById('historySection'),
+            historyList: document.getElementById('historyList'),
+            historyEmpty: document.getElementById('historyEmpty')
         };
 
         if (!this.elements.input) return;
+
+        await this.initFingerprint();
         this.bindEvents();
         this.checkInputState();
+        this.checkUsageLimit();
+        this.loadHistory();
+    },
+
+    async initFingerprint() {
+        try {
+            if (typeof Fingerprint !== 'undefined') {
+                const fp = await Fingerprint.load();
+                const result = await fp.get();
+                this.state.fingerprint = result.visitorId;
+            } else {
+                this.state.fingerprint = this.generateFallbackFingerprint();
+            }
+        } catch {
+            this.state.fingerprint = this.generateFallbackFingerprint();
+        }
+    },
+
+    generateFallbackFingerprint() {
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+        ctx.textBaseline = 'top';
+        ctx.font = '14px Arial';
+        ctx.fillText('fingerprint', 2, 2);
+        const data = canvas.toDataURL() + navigator.userAgent + screen.width + screen.height + new Date().getTimezoneOffset();
+        let hash = 0;
+        for (let i = 0; i < data.length; i++) {
+            hash = ((hash << 5) - hash) + data.charCodeAt(i);
+            hash = hash & hash;
+        }
+        return 'fp_' + Math.abs(hash).toString(16);
+    },
+
+    async checkUsageLimit() {
+        if (!this.state.fingerprint) return;
+        try {
+            const res = await fetch('/check-limit', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ fingerprint: this.state.fingerprint })
+            });
+            const data = await res.json();
+            this.updateUsageDisplay(data);
+        } catch (e) {
+            console.error('Failed to check limit:', e);
+        }
+    },
+
+    updateUsageDisplay(data) {
+        const usedMB = Math.round(data.used / (1024 * 1024));
+        const limitMB = Math.round(data.limit / (1024 * 1024));
+        const remainingMB = Math.round(data.remaining / (1024 * 1024));
+        const percent = Math.round((data.used / data.limit) * 100);
+
+        if (this.elements.usageInfo) {
+            this.elements.usageInfo.innerHTML = `
+                <div class="text-xs text-gray-500">
+                    Daily usage: ${usedMB}MB / ${limitMB}MB (${remainingMB}MB remaining)
+                </div>
+                <div class="h-1 bg-dark-700 rounded-full overflow-hidden mt-1">
+                    <div class="h-full ${percent > 80 ? 'bg-red-500' : 'bg-accent-500'} rounded-full" style="width: ${percent}%"></div>
+                </div>
+            `;
+        }
+    },
+
+    async loadHistory() {
+        if (!this.state.fingerprint) return;
+        try {
+            const res = await fetch('/history', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ fingerprint: this.state.fingerprint })
+            });
+            const data = await res.json();
+            this.renderHistory(data.history || []);
+        } catch (e) {
+            console.error('Failed to load history:', e);
+        }
+    },
+
+    renderHistory(history) {
+        if (!this.elements.historySection) return;
+
+        if (history.length === 0) {
+            this.elements.historySection.classList.add('hidden');
+            return;
+        }
+
+        this.elements.historySection.classList.remove('hidden');
+        this.elements.historyEmpty?.classList.add('hidden');
+        this.elements.historyList?.classList.remove('hidden');
+
+        const formatSize = (bytes) => {
+            if (!bytes) return '-';
+            if (bytes > 1024 * 1024) return `${(bytes / (1024 * 1024)).toFixed(1)}MB`;
+            if (bytes > 1024) return `${(bytes / 1024).toFixed(1)}KB`;
+            return `${bytes}B`;
+        };
+
+        const statusColors = {
+            completed: 'text-emerald-400',
+            failed: 'text-red-400',
+            processing: 'text-accent-400',
+            queued: 'text-gray-400'
+        };
+
+        const statusIcons = {
+            completed: '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>',
+            failed: '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>',
+            processing: '<svg class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>',
+            queued: '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>'
+        };
+
+        this.elements.historyList.innerHTML = history.map(item => `
+            <div class="flex items-center gap-3 p-3 rounded-lg bg-dark-800/30 border border-white/5">
+                <div class="${statusColors[item.status] || 'text-gray-400'}">
+                    ${statusIcons[item.status] || statusIcons.queued}
+                </div>
+                <div class="flex-1 min-w-0">
+                    <p class="text-sm text-white truncate">${item.title || 'Video'}</p>
+                    <p class="text-xs text-gray-500">${formatSize(item.filesize)}</p>
+                </div>
+                ${item.status === 'completed' ? `
+                    <a href="/download/${item.id}?fingerprint=${this.state.fingerprint}" 
+                       class="p-2 text-emerald-400 hover:bg-emerald-500/10 rounded-lg transition-all" title="Download">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+                        </svg>
+                    </a>
+                ` : ''}
+            </div>
+        `).join('');
     },
 
     bindEvents() {
@@ -214,7 +354,9 @@ const App = {
                     format_id: this.state.selectedFormat,
                     resolved_url: this.state.resolvedUrl,
                     cookies: this.state.cookies,
-                    referer: this.state.referer
+                    referer: this.state.referer,
+                    fingerprint: this.state.fingerprint,
+                    title: this.state.videoTitle
                 })
             });
             const data = await res.json();
@@ -314,7 +456,15 @@ const App = {
             this.elements.progressContainer?.classList.add('hidden');
             this.elements.actionArea?.classList.remove('hidden');
             this.elements.errorArea?.classList.add('hidden');
-            if (this.elements.downloadBtn) this.elements.downloadBtn.href = `/download/${this.state.currentTaskId}`;
+            if (this.elements.downloadBtn) {
+                this.elements.downloadBtn.href = `/download/${this.state.currentTaskId}?fingerprint=${this.state.fingerprint}`;
+                this.elements.downloadBtn.onclick = () => {
+                    setTimeout(() => {
+                        this.checkUsageLimit();
+                        this.loadHistory();
+                    }, 1000);
+                };
+            }
             const btnText = document.getElementById('downloadBtnText');
             if (btnText) btnText.textContent = isAudio ? 'Download MP3' : 'Download MP4';
         } else if (status === 'failed') {
