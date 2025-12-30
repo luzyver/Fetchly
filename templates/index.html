@@ -256,6 +256,40 @@
     </footer>
 
     <script>document.getElementById('year').textContent = new Date().getFullYear();</script>
+    <script>
+        (function() {
+            const threshold = 160;
+            let devtoolsOpen = false;
+            
+            const checkDevTools = () => {
+                const widthThreshold = window.outerWidth - window.innerWidth > threshold;
+                const heightThreshold = window.outerHeight - window.innerHeight > threshold;
+                
+                if (widthThreshold || heightThreshold) {
+                    if (!devtoolsOpen) {
+                        devtoolsOpen = true;
+                        document.body.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100vh;background:#0f0f23;color:#fff;font-family:Inter,sans-serif;text-align:center;padding:20px;"><div><h1 style="font-size:2rem;margin-bottom:1rem;">Access Denied</h1><p style="color:#888;">Please close Developer Tools to use this site.</p></div></div>';
+                    }
+                } else {
+                    if (devtoolsOpen) {
+                        location.reload();
+                    }
+                }
+            };
+            
+            setInterval(checkDevTools, 1000);
+            checkDevTools();
+            
+            document.addEventListener('contextmenu', e => e.preventDefault());
+            document.addEventListener('keydown', e => {
+                if (e.key === 'F12' || 
+                    (e.ctrlKey && e.shiftKey && (e.key === 'I' || e.key === 'J' || e.key === 'C')) ||
+                    (e.ctrlKey && e.key === 'U')) {
+                    e.preventDefault();
+                }
+            });
+        })();
+    </script>
     <script src="{{ url_for('static', filename='js/toast.js') }}?v={{ cache_version }}"></script>
     <script src="{{ url_for('static', filename='js/app.js') }}?v={{ cache_version }}"></script>
 </body>
