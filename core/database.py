@@ -249,9 +249,9 @@ def get_user_history(fingerprint, ip):
         rows = conn.execute('''
             SELECT id, title, status, filesize, created_at 
             FROM tasks 
-            WHERE (fingerprint = ? OR ip_address = ?) AND DATE(created_at) = ?
+            WHERE fingerprint = ? AND ip_address = ? AND DATE(created_at) = ?
             ORDER BY created_at DESC
-            LIMIT 20
+            LIMIT 100
         ''', (fingerprint, ip, today)).fetchall()
 
         return [dict(row) for row in rows]
