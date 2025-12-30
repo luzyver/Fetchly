@@ -1,8 +1,8 @@
 import os
 import logging
 from datetime import datetime, timedelta
-from flask import Blueprint, render_template, jsonify
-from core.database import get_db
+from flask import Blueprint, render_template, jsonify, request
+from core.database import get_db, get_whitelist, add_to_whitelist, remove_from_whitelist
 
 logger = logging.getLogger(__name__)
 admin_bp = Blueprint('admin', __name__)
@@ -38,6 +38,44 @@ def delete_task(task_id):
             conn.commit()
 
         return jsonify({'status': 'success'})
+
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@admin_bp.route('/admin/whitelist')
+def whitelist_page():
+    try:
+        whitelist = get_whitelist()
+        return render_template('admin_whitelist.html', whitelist=whitelist)
+    except Exception as e:
+        logger.error(f"Whitelist error: {e}")
+        return "Server Error", 500
+
+
+@admin_bp.route('/admin/whitelist/add', methods=['POST'])
+def add_whitelist():
+    try:
+        data = request.json
+        user_id = data.get('user_id', '').strip()
+        note = data.get('note', '').strip()
+
+        if not user_id:
+            return jsonify({'error': 'User ID required'}), 400
+
+        add_to_whitelist(user_id, note)
+        return jsonify({'status': 'success'})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@admin_bp.route('/admin/whitelist/remove/<user_id>', methods=['DELETE'])
+def remove_whitelist(user_id):
+    try:
+        remove_from_whitelist(user_id)
+        return jsonify({'status': 'success'})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
     except Exception as e:
         return jsonify({'error': str(e)}), 500

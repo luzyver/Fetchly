@@ -31,6 +31,14 @@ USAGE_SCHEMA = '''
     )
 '''
 
+WHITELIST_SCHEMA = '''
+    CREATE TABLE IF NOT EXISTS whitelist (
+        user_id TEXT PRIMARY KEY,
+        note TEXT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )
+'''
+
 
 @contextmanager
 def get_db():
@@ -46,6 +54,8 @@ def init_db():
     with get_db() as conn:
         conn.execute(SCHEMA)
         conn.execute(USAGE_SCHEMA)
+        conn.execute(WHITELIST_SCHEMA)
+        _migrate_tasks_table(conn)
         conn.commit()
 
 
@@ -122,6 +132,15 @@ def add_usage(fingerprint, bytes_count):
 
 
 def check_limit(fingerprint):
+    if is_whitelisted(fingerprint):
+        return {
+            'allowed': True,
+            'used': 0,
+            'limit': DAILY_LIMIT_BYTES,
+            'remaining': DAILY_LIMIT_BYTES,
+            'whitelisted': True
+        }
+
     used = get_usage(fingerprint)
     remaining = max(0, DAILY_LIMIT_BYTES - used)
     return {
@@ -169,3 +188,47 @@ def get_task_fingerprint(task_id):
             return row['fingerprint'] if row else None
     except Exception:
         return None
+
+
+def is_whitelisted(user_id):
+    try:
+        with get_db() as conn:
+            row = conn.execute(
+                'SELECT 1 FROM whitelist WHERE user_id = ?',
+                (user_id,)
+            ).fetchone()
+            return row is not None
+    except Exception:
+        return False
+
+
+def get_whitelist():
+    try:
+        with get_db() as conn:
+            rows = conn.execute(
+                'SELECT user_id, note, created_at FROM whitelist ORDER BY created_at DESC'
+            ).fetchall()
+            return [dict(row) for row in rows]
+    except Exception:
+        return []
+
+
+def add_to_whitelist(user_id, note=''):
+    try:
+        with get_db() as conn:
+            conn.execute(
+                'INSERT OR REPLACE INTO whitelist (user_id, note) VALUES (?, ?)',
+                (user_id, note)
+            )
+            conn.commit()
+    except Exception as e:
+        logger.error(f"Failed to add to whitelist: {e}")
+
+
+def remove_from_whitelist(user_id):
+    try:
+        with get_db() as conn:
+            conn.execute('DELETE FROM whitelist WHERE user_id = ?', (user_id,))
+            conn.commit()
+    except Exception as e:
+        logger.error(f"Failed to remove from whitelist: {e}")
