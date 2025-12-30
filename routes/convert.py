@@ -1,6 +1,5 @@
 import os
 import uuid
-import hashlib
 import logging
 from flask import Blueprint, request, jsonify, send_file
 from core.config import CONFIG
@@ -27,12 +26,6 @@ def get_client_ip():
     return request.remote_addr or 'unknown'
 
 
-def get_user_id(fingerprint):
-    ip = get_client_ip()
-    combined = f"{fingerprint}:{ip}"
-    return hashlib.md5(combined.encode()).hexdigest()[:16]
-
-
 @convert_bp.route('/convert', methods=['POST'])
 def convert():
     data = request.json
@@ -43,6 +36,7 @@ def convert():
     referer = data.get('referer', url)
     fingerprint = data.get('fingerprint', '')
     title = data.get('title', 'Video')
+    ip = get_client_ip()
 
     if not url:
         return jsonify({'error': 'URL is required'}), 400
@@ -50,12 +44,9 @@ def convert():
     if not url.startswith(('http://', 'https://')):
         return jsonify({'error': 'Invalid URL format'}), 400
 
-    user_id = get_user_id(fingerprint) if fingerprint else ''
-
-    if user_id:
-        limit_info = check_limit(user_id)
-        if not limit_info['allowed']:
-            return jsonify({'error': 'Daily limit reached (1GB). Try again tomorrow.'}), 429
+    limit_info = check_limit(fingerprint, ip)
+    if not limit_info['allowed']:
+        return jsonify({'error': 'Daily limit reached (1GB). Try again tomorrow.'}), 429
 
     if not resolved_url:
         resolved_url = url
@@ -84,8 +75,8 @@ def convert():
     try:
         with get_db() as conn:
             conn.execute(
-                'INSERT INTO tasks (id, url, status, fingerprint, title) VALUES (?, ?, ?, ?, ?)',
-                (task_id, resolved_url, 'queued', user_id, title[:100])
+                'INSERT INTO tasks (id, url, status, fingerprint, ip_address, title) VALUES (?, ?, ?, ?, ?, ?)',
+                (task_id, resolved_url, 'queued', fingerprint, ip, title[:100])
             )
             conn.commit()
 

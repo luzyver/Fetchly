@@ -17,6 +17,7 @@ SCHEMA = '''
         file TEXT,
         error TEXT,
         fingerprint TEXT,
+        ip_address TEXT,
         title TEXT,
         filesize INTEGER,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -25,7 +26,8 @@ SCHEMA = '''
 
 USAGE_SCHEMA = '''
     CREATE TABLE IF NOT EXISTS usage (
-        fingerprint TEXT PRIMARY KEY,
+        identifier TEXT PRIMARY KEY,
+        id_type TEXT,
         bytes_used INTEGER DEFAULT 0,
         last_reset TEXT
     )
@@ -80,58 +82,67 @@ def _get_today_wib():
     return datetime.now(WIB).strftime('%Y-%m-%d')
 
 
-def get_usage(fingerprint):
+def _get_usage_single(conn, identifier):
+    today = _get_today_wib()
+    row = conn.execute(
+        'SELECT bytes_used, last_reset FROM usage WHERE identifier = ?',
+        (identifier,)
+    ).fetchone()
+
+    if not row:
+        return 0
+
+    if row['last_reset'] != today:
+        conn.execute(
+            'UPDATE usage SET bytes_used = 0, last_reset = ? WHERE identifier = ?',
+            (today, identifier)
+        )
+        return 0
+
+    return row['bytes_used']
+
+
+def get_usage(fingerprint, ip):
+    with get_db() as conn:
+        fp_used = _get_usage_single(conn, fingerprint) if fingerprint else 0
+        ip_used = _get_usage_single(conn, ip) if ip else 0
+        conn.commit()
+        return max(fp_used, ip_used)
+
+
+def add_usage(fingerprint, ip, bytes_count):
     today = _get_today_wib()
 
     with get_db() as conn:
-        row = conn.execute(
-            'SELECT bytes_used, last_reset FROM usage WHERE fingerprint = ?',
-            (fingerprint,)
-        ).fetchone()
+        for identifier, id_type in [(fingerprint, 'fingerprint'), (ip, 'ip')]:
+            if not identifier:
+                continue
+                
+            row = conn.execute(
+                'SELECT bytes_used, last_reset FROM usage WHERE identifier = ?',
+                (identifier,)
+            ).fetchone()
 
-        if not row:
-            return 0
-
-        if row['last_reset'] != today:
-            conn.execute(
-                'UPDATE usage SET bytes_used = 0, last_reset = ? WHERE fingerprint = ?',
-                (today, fingerprint)
-            )
-            conn.commit()
-            return 0
-
-        return row['bytes_used']
-
-
-def add_usage(fingerprint, bytes_count):
-    today = _get_today_wib()
-
-    with get_db() as conn:
-        row = conn.execute(
-            'SELECT bytes_used, last_reset FROM usage WHERE fingerprint = ?',
-            (fingerprint,)
-        ).fetchone()
-
-        if not row:
-            conn.execute(
-                'INSERT INTO usage (fingerprint, bytes_used, last_reset) VALUES (?, ?, ?)',
-                (fingerprint, bytes_count, today)
-            )
-        elif row['last_reset'] != today:
-            conn.execute(
-                'UPDATE usage SET bytes_used = ?, last_reset = ? WHERE fingerprint = ?',
-                (bytes_count, today, fingerprint)
-            )
-        else:
-            conn.execute(
-                'UPDATE usage SET bytes_used = bytes_used + ? WHERE fingerprint = ?',
-                (bytes_count, fingerprint)
-            )
+            if not row:
+                conn.execute(
+                    'INSERT INTO usage (identifier, id_type, bytes_used, last_reset) VALUES (?, ?, ?, ?)',
+                    (identifier, id_type, bytes_count, today)
+                )
+            elif row['last_reset'] != today:
+                conn.execute(
+                    'UPDATE usage SET bytes_used = ?, last_reset = ? WHERE identifier = ?',
+                    (bytes_count, today, identifier)
+                )
+            else:
+                conn.execute(
+                    'UPDATE usage SET bytes_used = bytes_used + ? WHERE identifier = ?',
+                    (bytes_count, identifier)
+                )
         conn.commit()
 
 
-def check_limit(fingerprint):
-    if is_whitelisted(fingerprint):
+def check_limit(fingerprint, ip):
+    if is_whitelisted(fingerprint) or is_whitelisted(ip):
         return {
             'allowed': True,
             'used': 0,
@@ -140,7 +151,7 @@ def check_limit(fingerprint):
             'whitelisted': True
         }
 
-    used = get_usage(fingerprint)
+    used = get_usage(fingerprint, ip)
     remaining = max(0, DAILY_LIMIT_BYTES - used)
     return {
         'allowed': used < DAILY_LIMIT_BYTES,
@@ -150,17 +161,17 @@ def check_limit(fingerprint):
     }
 
 
-def get_user_history(fingerprint):
+def get_user_history(fingerprint, ip):
     today = _get_today_wib()
 
     with get_db() as conn:
         rows = conn.execute('''
             SELECT id, title, status, filesize, created_at 
             FROM tasks 
-            WHERE fingerprint = ? AND DATE(created_at) = ?
+            WHERE (fingerprint = ? OR ip_address = ?) AND DATE(created_at) = ?
             ORDER BY created_at DESC
             LIMIT 20
-        ''', (fingerprint, today)).fetchall()
+        ''', (fingerprint, ip, today)).fetchall()
 
         return [dict(row) for row in rows]
 
@@ -177,24 +188,28 @@ def update_task_filesize(task_id, filesize):
         logger.error(f"Failed to update filesize for {task_id}: {e}")
 
 
-def get_task_fingerprint(task_id):
+def get_task_info(task_id):
     try:
         with get_db() as conn:
             row = conn.execute(
-                'SELECT fingerprint FROM tasks WHERE id = ?',
+                'SELECT fingerprint, ip_address FROM tasks WHERE id = ?',
                 (task_id,)
             ).fetchone()
-            return row['fingerprint'] if row else None
+            if row:
+                return row['fingerprint'], row['ip_address']
+            return None, None
     except Exception:
-        return None
+        return None, None
 
 
-def is_whitelisted(user_id):
+def is_whitelisted(identifier):
+    if not identifier:
+        return False
     try:
         with get_db() as conn:
             row = conn.execute(
                 'SELECT 1 FROM whitelist WHERE user_id = ?',
-                (user_id,)
+                (identifier,)
             ).fetchone()
             return row is not None
     except Exception:
@@ -240,13 +255,14 @@ def get_all_usage():
         with get_db() as conn:
             rows = conn.execute('''
                 SELECT 
-                    u.fingerprint,
+                    u.identifier,
+                    u.id_type,
                     u.bytes_used,
                     u.last_reset,
-                    (SELECT COUNT(*) FROM tasks t WHERE t.fingerprint = u.fingerprint AND DATE(t.created_at) = ?) as today_downloads,
-                    (SELECT COUNT(*) FROM tasks t WHERE t.fingerprint = u.fingerprint) as total_downloads,
-                    (SELECT MAX(created_at) FROM tasks t WHERE t.fingerprint = u.fingerprint) as last_activity,
-                    (SELECT 1 FROM whitelist w WHERE w.user_id = u.fingerprint) as is_whitelisted
+                    (SELECT COUNT(*) FROM tasks t WHERE (t.fingerprint = u.identifier OR t.ip_address = u.identifier) AND DATE(t.created_at) = ?) as today_downloads,
+                    (SELECT COUNT(*) FROM tasks t WHERE t.fingerprint = u.identifier OR t.ip_address = u.identifier) as total_downloads,
+                    (SELECT MAX(created_at) FROM tasks t WHERE t.fingerprint = u.identifier OR t.ip_address = u.identifier) as last_activity,
+                    (SELECT 1 FROM whitelist w WHERE w.user_id = u.identifier) as is_whitelisted
                 FROM usage u
                 ORDER BY u.bytes_used DESC
             ''', (today,)).fetchall()
