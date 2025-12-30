@@ -6,6 +6,7 @@ import requests
 import yt_dlp
 import instaloader
 from instaloader import Post
+from core.config import CONFIG
 
 logger = logging.getLogger(__name__)
 
@@ -171,15 +172,26 @@ def _export_cookies_to_file():
         if not loader.context._session or not loader.context._session.cookies:
             return None
         
-        cookie_file = 'instagram_cookies.txt'
+        cookie_file = CONFIG['COOKIE_FILE']
+        
+        existing_cookies = []
+        if os.path.exists(cookie_file):
+            with open(cookie_file, 'r') as f:
+                for line in f:
+                    if not line.startswith('.instagram.com') and not line.startswith('# Instagram'):
+                        existing_cookies.append(line)
+        
         with open(cookie_file, 'w') as f:
-            f.write("# Netscape HTTP Cookie File\n")
+            for line in existing_cookies:
+                f.write(line)
+            
+            f.write("# Instagram cookies\n")
             for cookie in loader.context._session.cookies:
                 secure = "TRUE" if cookie.secure else "FALSE"
                 expires = str(int(cookie.expires)) if cookie.expires else "0"
                 f.write(f".instagram.com\tTRUE\t{cookie.path}\t{secure}\t{expires}\t{cookie.name}\t{cookie.value}\n")
         
-        logger.info("Exported Instagram cookies for yt-dlp")
+        logger.info(f"Exported Instagram cookies to {cookie_file}")
         return cookie_file
     except Exception as e:
         logger.warning(f"Could not export cookies: {e}")
