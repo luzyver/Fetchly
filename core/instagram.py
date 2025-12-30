@@ -3,6 +3,7 @@ import re
 import time
 import logging
 import requests
+import yt_dlp
 import instaloader
 from instaloader import Post
 
@@ -55,7 +56,6 @@ def _get_loader():
             logger.info(f"Logged in and saved session for {username}")
         except Exception as e:
             logger.error(f"Instagram login failed: {e}")
-            raise Exception("Instagram login failed. Check credentials.")
 
     return _loader
 
@@ -66,8 +66,6 @@ def _rate_limit():
     if elapsed < REQUEST_DELAY:
         time.sleep(REQUEST_DELAY - elapsed)
     _last_request_time = time.time()
-
-    return _loader
 
 
 def _extract_shortcode(url):
@@ -84,27 +82,12 @@ def _extract_shortcode(url):
     raise ValueError("Invalid Instagram URL")
 
 
-def fetch_instagram_formats(url):
+def _fetch_with_instaloader(url):
     _rate_limit()
     loader = _get_loader()
     shortcode = _extract_shortcode(url)
 
-    max_retries = 3
-    for attempt in range(max_retries):
-        try:
-            post = Post.from_shortcode(loader.context, shortcode)
-            break
-        except instaloader.exceptions.QueryReturnedBadRequestException as e:
-            logger.warning(f"Attempt {attempt + 1}/{max_retries} failed: {e}")
-            if attempt < max_retries - 1:
-                time.sleep(5 * (attempt + 1))
-            else:
-                raise Exception("Instagram rate limit. Please try again in a few minutes.")
-        except Exception as e:
-            logger.error(f"Failed to fetch post {shortcode}: {e}")
-            if "401" in str(e) or "rate" in str(e).lower():
-                raise Exception("Instagram rate limit. Please try again in a few minutes.")
-            raise Exception("Could not fetch Instagram post. It may be private or deleted.")
+    post = Post.from_shortcode(loader.context, shortcode)
 
     if not post.is_video:
         raise Exception("This Instagram post is not a video")
@@ -114,6 +97,77 @@ def fetch_instagram_formats(url):
         title = post.caption[:50].replace('\n', ' ').strip()
         if len(post.caption) > 50:
             title += "..."
+
+    return {
+        'title': title,
+        'duration': post.video_duration,
+        'video_url': post.video_url
+    }
+
+
+def _fetch_with_ytdlp(url):
+    logger.info("Falling back to yt-dlp for Instagram")
+    
+    ydl_opts = {
+        'quiet': True,
+        'no_warnings': True,
+        'extract_flat': False,
+    }
+
+    cookies = _get_session_cookies()
+    if cookies:
+        ydl_opts['http_headers'] = {
+            'Cookie': cookies,
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+        }
+
+    with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+        info = ydl.extract_info(url, download=False)
+
+    if not info:
+        raise Exception("Could not fetch Instagram video")
+
+    title = info.get('title', 'Instagram Video')
+    if len(title) > 50:
+        title = title[:50] + "..."
+
+    video_url = None
+    if info.get('url'):
+        video_url = info['url']
+    elif info.get('formats'):
+        for fmt in reversed(info['formats']):
+            if fmt.get('url') and fmt.get('vcodec') != 'none':
+                video_url = fmt['url']
+                break
+
+    if not video_url:
+        raise Exception("Could not find video URL")
+
+    return {
+        'title': title,
+        'duration': info.get('duration'),
+        'video_url': video_url
+    }
+
+
+def _get_session_cookies():
+    try:
+        loader = _get_loader()
+        if loader.context._session and loader.context._session.cookies:
+            cookies = loader.context._session.cookies
+            cookie_str = '; '.join([f"{c.name}={c.value}" for c in cookies])
+            return cookie_str
+    except Exception as e:
+        logger.warning(f"Could not get session cookies: {e}")
+    return None
+
+
+def fetch_instagram_formats(url):
+    try:
+        info = _fetch_with_instaloader(url)
+    except Exception as e:
+        logger.warning(f"Instaloader failed: {e}, trying yt-dlp")
+        info = _fetch_with_ytdlp(url)
 
     formats = [{
         'format_id': 'best',
@@ -128,19 +182,21 @@ def fetch_instagram_formats(url):
 
     return {
         'formats': formats,
-        'title': title,
-        'duration': post.video_duration,
-        'video_url': post.video_url,
-        'thumbnail': post.url
+        'title': info['title'],
+        'duration': info['duration'],
+        'video_url': info['video_url'],
+        'thumbnail': ''
     }
 
 
 def download_instagram(url, output_path):
-    info = fetch_instagram_formats(url)
-    video_url = info['video_url']
-
     try:
-        response = requests.get(video_url, stream=True, timeout=60)
+        info = fetch_instagram_formats(url)
+        video_url = info['video_url']
+
+        response = requests.get(video_url, stream=True, timeout=60, headers={
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+        })
         response.raise_for_status()
 
         with open(output_path, 'wb') as f:
