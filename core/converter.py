@@ -1,9 +1,10 @@
 import logging
 from core.database import update_task_status
-from core.utils import is_tiktok_url, is_twitter_url, is_youtube_url
+from core.utils import is_tiktok_url, is_twitter_url, is_youtube_url, is_instagram_url
 from core.tiktok import download_tiktok
 from core.twitter import download_twitter
 from core.youtube import download_youtube
+from core.instagram import download_instagram
 from core.generic import download_generic
 
 logger = logging.getLogger(__name__)
@@ -39,5 +40,8 @@ def _route_download(url, output_path, referer, cookies, format_id):
 
     if is_youtube_url(url):
         return download_youtube(url, output_path, format_id=format_id)
+
+    if is_instagram_url(url):
+        return download_instagram(url, output_path)
 
     return download_generic(url, output_path, referer=referer, cookies=cookies, format_id=format_id)

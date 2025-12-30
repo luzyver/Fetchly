@@ -1,5 +1,8 @@
 downloads
 config
+data
 *.log
 .vscode
 .dockerignore
+.env
+instagram_session

@@ -36,6 +36,10 @@ def is_twitter_url(url):
     return is_domain_match(url, SUPPORTED_DOMAINS['twitter'])
 
 
+def is_instagram_url(url):
+    return is_domain_match(url, SUPPORTED_DOMAINS['instagram'])
+
+
 def is_direct_supported(url):
     return is_domain_match(url, DIRECT_SUPPORTED_DOMAINS)
 

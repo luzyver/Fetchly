@@ -1,8 +1,9 @@
 import logging
 from flask import Blueprint, request, jsonify
-from core.utils import is_tiktok_url, is_twitter_url, is_direct_supported, get_user_error
+from core.utils import is_tiktok_url, is_twitter_url, is_instagram_url, is_direct_supported, get_user_error
 from core.tiktok import fetch_tiktok_formats
 from core.twitter import fetch_twitter_formats
+from core.instagram import fetch_instagram_formats
 from core.generic import fetch_generic_formats
 from core.resolver import resolve_source_url
 
@@ -34,6 +35,9 @@ def fetch_formats():
         if is_twitter_url(url):
             return _handle_twitter(url)
 
+        if is_instagram_url(url):
+            return _handle_instagram(url)
+
         return _handle_generic(url)
 
     except Exception as e:
@@ -64,6 +68,20 @@ def _handle_twitter(url):
         'referer': url,
         'is_twitter': True,
         'video_count': info['video_count']
+    })
+
+
+def _handle_instagram(url):
+    info = fetch_instagram_formats(url)
+    return jsonify({
+        'formats': info['formats'],
+        'resolved_url': url,
+        'title': info['title'],
+        'duration': info['duration'],
+        'cookies': None,
+        'referer': url,
+        'is_instagram': True,
+        'video_url': info['video_url']
     })
 
 
