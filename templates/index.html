@@ -93,38 +93,6 @@
                 </button>
             </div>
 
-            <!-- Status / Progress -->
-            <div id="statusCard" class="hidden mt-6 bg-[#1d1e22] border border-[#2e3036] rounded-lg p-6 animate-fadeIn">
-                <div class="flex items-start gap-4">
-                    <div id="statusIcon" class="mt-1"></div>
-                    <div class="flex-1">
-                        <h4 id="statusTitle" class="text-sm font-medium text-white">Processing</h4>
-                        <p id="statusMessage" class="text-sm text-[#9fa2ac] mt-1">Initializing stream...</p>
-                        
-                        <!-- Progress -->
-                        <div id="progressContainer" class="hidden mt-4">
-                            <div class="h-1 w-full bg-[#2e3036] rounded-full overflow-hidden">
-                                <div id="progressBar" class="h-full bg-white transition-all duration-300" style="width: 0%"></div>
-                            </div>
-                            <div class="flex justify-between mt-2">
-                                <span class="text-xs text-[#656870] font-mono">ENCODING</span>
-                                <span id="progressText" class="text-xs text-white font-mono">0%</span>
-                            </div>
-                        </div>
-
-                        <!-- Action -->
-                        <div id="actionArea" class="hidden mt-4">
-                            <a href="#" id="downloadBtn" class="btn btn-primary h-10 text-sm w-full">Download File</a>
-                        </div>
-                        
-                        <!-- Error -->
-                        <div id="errorArea" class="hidden mt-4 p-3 bg-red-900/10 border border-red-900/20 rounded text-red-400 text-xs font-mono">
-                            <span id="errorDetails"></span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
         </div>
     </main>
 

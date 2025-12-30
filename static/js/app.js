@@ -28,17 +28,6 @@ const App = {
             fetchLoader: document.getElementById('fetchLoader'),
             formatSection: document.getElementById('formatSection'),
             formatList: document.getElementById('formatList'),
-            videoTitle: document.getElementById('videoTitle'),
-            statusCard: document.getElementById('statusCard'),
-            statusIcon: document.getElementById('statusIcon'),
-            statusTitle: document.getElementById('statusTitle'),
-            statusMessage: document.getElementById('statusMessage'),
-            progressContainer: document.getElementById('progressContainer'),
-            progressBar: document.getElementById('progressBar'),
-            progressText: document.getElementById('progressText'),
-            actionArea: document.getElementById('actionArea'),
-            downloadBtn: document.getElementById('downloadBtn'),
-            errorArea: document.getElementById('errorArea'),
             errorDetails: document.getElementById('errorDetails'),
             usageInfo: document.getElementById('usageInfo'),
             historySection: document.getElementById('historySection'),
@@ -409,46 +398,10 @@ const App = {
     },
 
     updateStatusUI(status, message = '') {
-        const icons = {
-            processing: `<div class="status-dot processing w-4 h-4 bg-[#d6d6d6] rounded-full"></div>`,
-            completed: `<svg class="w-5 h-5 text-[#499d79]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>`,
-            failed: `<svg class="w-5 h-5 text-[#cf5b5b]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>`
-        };
-
-        if (this.elements.statusIcon) this.elements.statusIcon.innerHTML = icons[status] || icons.processing;
-
-        if (status === 'processing') {
-            const isAudio = this.state.selectedFormat === 'tiktok_audio';
-            this.elements.statusTitle && (this.elements.statusTitle.textContent = 'Processing...');
-            this.elements.statusMessage && (this.elements.statusMessage.textContent = isAudio ? 'Downloading audio...' : 'Downloading and converting to MP4');
-            this.elements.progressContainer?.classList.remove('hidden');
-            this.elements.actionArea?.classList.add('hidden');
-            this.elements.errorArea?.classList.add('hidden');
-        } else if (status === 'completed') {
-            const isAudio = this.state.selectedFormat === 'tiktok_audio';
-            this.elements.statusTitle && (this.elements.statusTitle.textContent = 'Ready!');
-            this.elements.statusMessage && (this.elements.statusMessage.textContent = isAudio ? 'Your audio is ready for download' : 'Your video is ready for download');
-            this.elements.progressContainer?.classList.add('hidden');
-            this.elements.actionArea?.classList.remove('hidden');
-            this.elements.errorArea?.classList.add('hidden');
-            if (this.elements.downloadBtn) {
-                this.elements.downloadBtn.href = `/download/${this.state.currentTaskId}?fingerprint=${this.state.fingerprint}`;
-                this.elements.downloadBtn.onclick = () => {
-                    setTimeout(() => {
-                        this.checkUsageLimit();
-                        this.loadHistory();
-                    }, 1000);
-                };
-            }
-            const btnText = document.getElementById('downloadBtnText');
-            if (btnText) btnText.textContent = isAudio ? 'Download MP3' : 'Download MP4';
-        } else if (status === 'failed') {
-            this.elements.statusTitle && (this.elements.statusTitle.textContent = 'Failed');
-            this.elements.statusMessage && (this.elements.statusMessage.textContent = 'Something went wrong');
-            this.elements.progressContainer?.classList.add('hidden');
-            this.elements.actionArea?.classList.add('hidden');
-            this.elements.errorArea?.classList.remove('hidden');
-            if (this.elements.errorDetails) this.elements.errorDetails.textContent = message || 'Unknown error';
+        // Status card removed per user request. 
+        // Logic is now handled by Toasts and History updates.
+        if (status === 'failed' && message) {
+            Toast.error(message);
         }
     }
 };
