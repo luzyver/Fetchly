@@ -41,6 +41,16 @@ WHITELIST_SCHEMA = '''
     )
 '''
 
+ABUSE_SCHEMA = '''
+    CREATE TABLE IF NOT EXISTS abuse_attempts (
+        identifier TEXT PRIMARY KEY,
+        attempts INTEGER DEFAULT 0,
+        last_attempt TEXT
+    )
+'''
+
+MAX_ABUSE_ATTEMPTS = 3
+
 
 @contextmanager
 def get_db():
@@ -57,6 +67,7 @@ def init_db():
         conn.execute(SCHEMA)
         conn.execute(USAGE_SCHEMA)
         conn.execute(WHITELIST_SCHEMA)
+        conn.execute(ABUSE_SCHEMA)
         conn.commit()
 
 
@@ -159,6 +170,76 @@ def check_limit(fingerprint, ip):
         'limit': DAILY_LIMIT_BYTES,
         'remaining': remaining
     }
+
+
+def record_abuse_attempt(fingerprint, ip):
+    """Record an abuse attempt. Returns True if user should be penalized (3+ attempts)."""
+    today = _get_today_wib()
+    should_penalize = False
+
+    with get_db() as conn:
+        for identifier in [fingerprint, ip]:
+            if not identifier:
+                continue
+
+            row = conn.execute(
+                'SELECT attempts, last_attempt FROM abuse_attempts WHERE identifier = ?',
+                (identifier,)
+            ).fetchone()
+
+            if not row:
+                conn.execute(
+                    'INSERT INTO abuse_attempts (identifier, attempts, last_attempt) VALUES (?, 1, ?)',
+                    (identifier, today)
+                )
+            elif row['last_attempt'] != today:
+                # Reset for new day
+                conn.execute(
+                    'UPDATE abuse_attempts SET attempts = 1, last_attempt = ? WHERE identifier = ?',
+                    (today, identifier)
+                )
+            else:
+                new_attempts = row['attempts'] + 1
+                conn.execute(
+                    'UPDATE abuse_attempts SET attempts = ? WHERE identifier = ?',
+                    (new_attempts, identifier)
+                )
+                if new_attempts >= MAX_ABUSE_ATTEMPTS:
+                    should_penalize = True
+
+        conn.commit()
+
+    return should_penalize
+
+
+def set_full_usage(fingerprint, ip):
+    """Set user's usage to full daily limit as penalty."""
+    today = _get_today_wib()
+
+    with get_db() as conn:
+        for identifier, id_type in [(fingerprint, 'fingerprint'), (ip, 'ip')]:
+            if not identifier:
+                continue
+
+            row = conn.execute(
+                'SELECT 1 FROM usage WHERE identifier = ?',
+                (identifier,)
+            ).fetchone()
+
+            if not row:
+                conn.execute(
+                    'INSERT INTO usage (identifier, id_type, bytes_used, last_reset) VALUES (?, ?, ?, ?)',
+                    (identifier, id_type, DAILY_LIMIT_BYTES, today)
+                )
+            else:
+                conn.execute(
+                    'UPDATE usage SET bytes_used = ?, last_reset = ? WHERE identifier = ?',
+                    (DAILY_LIMIT_BYTES, today, identifier)
+                )
+
+        conn.commit()
+    
+    logger.warning(f"Penalty applied: full usage set for fp={fingerprint}, ip={ip}")
 
 
 def get_user_history(fingerprint, ip):

@@ -1,6 +1,6 @@
 import os
 import logging
-from core.database import update_task_status, update_task_filesize, add_usage, get_task_info, check_limit, DAILY_LIMIT_BYTES
+from core.database import update_task_status, update_task_filesize, add_usage, get_task_info, check_limit, record_abuse_attempt, set_full_usage, DAILY_LIMIT_BYTES
 from core.utils import is_tiktok_url, is_twitter_url, is_youtube_url, is_instagram_url
 from core.tiktok import download_tiktok
 from core.twitter import download_twitter
@@ -32,21 +32,25 @@ def process_download(task_id, url, output_path, referer=None, cookies=None, form
 
                 # Skip all limits for whitelisted users
                 if not is_whitelisted:
-                    # Check if file exceeds max size limit
-                    if filesize > MAX_FILE_SIZE:
+                    # Check if file exceeds max size limit or remaining quota
+                    exceeds_limit = filesize > MAX_FILE_SIZE or filesize > limit_info['remaining']
+                    
+                    if exceeds_limit:
                         os.remove(file_path)
-                        filesize_mb = round(filesize / (1024 * 1024))
-                        error_msg = f'File too large ({filesize_mb}MB). Maximum allowed is 1GB.'
-                        update_task_status(task_id, 'failed', error=error_msg)
-                        logger.warning(f"Task {task_id}: {error_msg}")
-                        return
-
-                    # Check if file exceeds remaining quota
-                    if filesize > limit_info['remaining']:
-                        os.remove(file_path)
-                        filesize_mb = round(filesize / (1024 * 1024))
-                        remaining_mb = round(limit_info['remaining'] / (1024 * 1024))
-                        error_msg = f'File ({filesize_mb}MB) exceeds remaining quota ({remaining_mb}MB).'
+                        
+                        # Record abuse attempt and penalize if 3+ attempts
+                        should_penalize = record_abuse_attempt(fingerprint, ip)
+                        if should_penalize:
+                            set_full_usage(fingerprint, ip)
+                            error_msg = 'Too many oversized downloads. Daily limit fully consumed as penalty.'
+                        elif filesize > MAX_FILE_SIZE:
+                            filesize_mb = round(filesize / (1024 * 1024))
+                            error_msg = f'File too large ({filesize_mb}MB). Maximum allowed is 1GB.'
+                        else:
+                            filesize_mb = round(filesize / (1024 * 1024))
+                            remaining_mb = round(limit_info['remaining'] / (1024 * 1024))
+                            error_msg = f'File ({filesize_mb}MB) exceeds remaining quota ({remaining_mb}MB).'
+                        
                         update_task_status(task_id, 'failed', error=error_msg)
                         logger.warning(f"Task {task_id}: {error_msg}")
                         return

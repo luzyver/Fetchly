@@ -3,7 +3,7 @@ import uuid
 import logging
 from flask import Blueprint, request, jsonify, send_file
 from core.config import CONFIG
-from core.database import get_db, check_limit
+from core.database import get_db, check_limit, record_abuse_attempt, set_full_usage
 from core.resolver import resolve_source_url
 from core.converter import process_download
 from core.utils import is_tiktok_url, is_twitter_url, is_direct_supported
@@ -53,17 +53,26 @@ def convert():
     max_file_size = 1 * 1024 * 1024 * 1024  # 1GB max per file
 
     if not limit_info.get('whitelisted') and estimated_filesize > 0:
-        if estimated_filesize > limit_info['remaining']:
+        if estimated_filesize > limit_info['remaining'] or estimated_filesize > max_file_size:
+            # Record abuse attempt
+            should_penalize = record_abuse_attempt(fingerprint, ip)
+            if should_penalize:
+                set_full_usage(fingerprint, ip)
+                return jsonify({
+                    'error': 'Too many attempts with oversized files. Daily limit has been fully consumed as penalty.'
+                }), 429
+
             remaining_mb = round(limit_info['remaining'] / (1024 * 1024))
             filesize_mb = round(estimated_filesize / (1024 * 1024))
-            return jsonify({
-                'error': f'File too large ({filesize_mb}MB). You only have {remaining_mb}MB remaining today.'
-            }), 429
-        if estimated_filesize > max_file_size:
-            filesize_mb = round(estimated_filesize / (1024 * 1024))
-            return jsonify({
-                'error': f'File too large ({filesize_mb}MB). Maximum file size is 1GB.'
-            }), 429
+            
+            if estimated_filesize > max_file_size:
+                return jsonify({
+                    'error': f'File too large ({filesize_mb}MB). Maximum file size is 1GB.'
+                }), 429
+            else:
+                return jsonify({
+                    'error': f'File too large ({filesize_mb}MB). You only have {remaining_mb}MB remaining today.'
+                }), 429
 
     if not resolved_url:
         resolved_url = url
