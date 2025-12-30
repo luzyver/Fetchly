@@ -3,4 +3,3 @@ requests
 gunicorn
 selenium
 yt-dlp
-instaloader
