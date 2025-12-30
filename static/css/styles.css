@@ -346,7 +346,7 @@ tr:hover td {
 /* --- Toast Notification --- */
 .toast-container {
     position: fixed;
-    bottom: 2rem;
+    top: 2rem;
     left: 50%;
     transform: translateX(-50%);
     z-index: 9999;
@@ -368,7 +368,7 @@ tr:hover td {
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
     color: var(--text-main);
     pointer-events: auto;
-    animation: toastSlideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    animation: toastSlideDown 0.3s cubic-bezier(0.16, 1, 0.3, 1);
     min-width: 300px;
     max-width: 400px;
 }
@@ -413,8 +413,8 @@ tr:hover td {
     animation: toastFadeOut 0.2s ease-out forwards;
 }
 
-@keyframes toastSlideUp {
-    from { opacity: 0; transform: translateY(10px); }
+@keyframes toastSlideDown {
+    from { opacity: 0; transform: translateY(-10px); }
     to { opacity: 1; transform: translateY(0); }
 }
 
