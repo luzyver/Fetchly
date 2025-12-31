@@ -3,24 +3,31 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Task Manager - Fetchly</title>
+    <title>Tasks - Fetchly</title>
     <meta name="theme-color" content="#0b0c0e">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}?v={{ cache_version }}">
     <script src="https://cdn.tailwindcss.com"></script>
-    <style>.hidden { display: none !important; }</style>
+    <style>
+        .hidden { display: none !important; }
+        .card { background: var(--bg-surface); border: 1px solid var(--border-subtle); border-radius: 8px; }
+        .section-title { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted); margin-bottom: 12px; }
+        .stat-card { background: var(--bg-surface); border: 1px solid var(--border-subtle); border-radius: 8px; padding: 12px; text-align: center; }
+        .stat-value { font-size: 24px; font-weight: 600; color: white; line-height: 1; }
+        .stat-label { font-size: 10px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted); margin-top: 4px; }
+    </style>
 </head>
-<body>
-    <div class="main-content mx-auto max-w-6xl px-4 sm:px-6">
-        <header class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
-            <div>
-                <h1>Task Manager</h1>
-                <p>System-wide conversion status monitoring.</p>
+<body class="bg-[var(--bg-body)]">
+    <div class="max-w-4xl mx-auto px-4 py-6">
+        <header class="mb-6">
+            <div class="flex items-center justify-between mb-2">
+                <h1 class="text-xl font-semibold text-white">Tasks</h1>
+                <div class="flex gap-2">
+                    <a href="/admin/whitelist" class="px-3 py-1.5 text-xs text-[var(--text-muted)] hover:text-white border border-[var(--border-subtle)] rounded-md hover:bg-[var(--bg-surface)]">Whitelist</a>
+                    <a href="/" class="px-3 py-1.5 text-xs text-[var(--text-muted)] hover:text-white border border-[var(--border-subtle)] rounded-md hover:bg-[var(--bg-surface)]">Exit</a>
+                </div>
             </div>
-            <div class="flex items-center gap-2">
-                <a href="/admin/whitelist" class="btn btn-icon text-xs">Whitelist</a>
-                <a href="/" class="btn btn-icon text-xs">Exit Admin</a>
-            </div>
+            <p class="text-sm text-[var(--text-muted)]">Monitor conversion status</p>
         </header>
 
         {% set completed = tasks|selectattr('status', 'equalto', 'completed')|list|length %}
@@ -28,120 +35,72 @@
         {% set failed = tasks|selectattr('status', 'equalto', 'failed')|list|length %}
         {% set queued = tasks|selectattr('status', 'equalto', 'queued')|list|length %}
 
-        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 mb-8">
-            <div class="p-3 sm:p-4 border border-[#27282e] rounded bg-[#15171b]">
-                <div class="text-xl sm:text-2xl font-semibold text-white">{{ completed }}</div>
-                <div class="text-[10px] sm:text-xs text-[#8a8d95] uppercase tracking-wider mt-1">Completed</div>
+        <div class="grid grid-cols-4 gap-2 mb-6">
+            <div class="stat-card">
+                <div class="stat-value">{{ completed }}</div>
+                <div class="stat-label">Done</div>
             </div>
-            <div class="p-3 sm:p-4 border border-[#27282e] rounded bg-[#15171b]">
-                <div class="text-xl sm:text-2xl font-semibold text-white">{{ processing }}</div>
-                <div class="text-[10px] sm:text-xs text-[#8a8d95] uppercase tracking-wider mt-1">Active</div>
+            <div class="stat-card">
+                <div class="stat-value">{{ processing }}</div>
+                <div class="stat-label">Active</div>
             </div>
-            <div class="p-3 sm:p-4 border border-[#27282e] rounded bg-[#15171b]">
-                <div class="text-xl sm:text-2xl font-semibold text-white">{{ failed }}</div>
-                <div class="text-[10px] sm:text-xs text-[#8a8d95] uppercase tracking-wider mt-1">Failed</div>
+            <div class="stat-card">
+                <div class="stat-value">{{ failed }}</div>
+                <div class="stat-label">Failed</div>
             </div>
-            <div class="p-3 sm:p-4 border border-[#27282e] rounded bg-[#15171b]">
-                <div class="text-xl sm:text-2xl font-semibold text-white">{{ queued }}</div>
-                <div class="text-[10px] sm:text-xs text-[#8a8d95] uppercase tracking-wider mt-1">Queue</div>
+            <div class="stat-card">
+                <div class="stat-value">{{ queued }}</div>
+                <div class="stat-label">Queue</div>
             </div>
         </div>
 
-        <div class="sm:hidden space-y-2">
-            {% for task in tasks %}
-            <div class="p-3 border border-[#27282e] rounded bg-[#15171b]" data-task-id="{{ task.id }}">
-                <div class="flex items-start gap-3">
-                    <div class="mt-1">
-                        {% if task.status == 'completed' %}
-                            <div class="status-dot success"></div>
-                        {% elif task.status == 'processing' %}
-                            <div class="status-dot processing"></div>
-                        {% elif task.status == 'failed' %}
-                            <div class="status-dot error"></div>
-                        {% else %}
-                            <div class="w-1.5 h-1.5 rounded-full bg-gray-600"></div>
-                        {% endif %}
-                    </div>
-                    <div class="flex-1 min-w-0">
-                        <div class="text-xs font-medium text-white break-all" title="{{ task.url }}">{{ task.url }}</div>
-                        <div class="text-[10px] text-[#565961] font-mono mt-1">{{ task.id }}</div>
-                        <div class="text-[10px] text-[#8a8d95] font-mono mt-0.5">{{ task.created_at.split(' ')[1] if ' ' in task.created_at else task.created_at }}</div>
-                        {% if task.error %}
-                            <div class="text-[10px] text-red-400 mt-1 break-all">{{ task.error }}</div>
-                        {% endif %}
-                    </div>
-                    <div class="flex gap-2 shrink-0">
-                        {% if task.status == 'completed' %}
-                        <a href="/download/{{ task.id }}" class="text-white hover:text-[#499d79]" title="Download">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
-                        </a>
-                        {% endif %}
-                        <button onclick="deleteTask('{{ task.id }}')" class="text-[#8a8d95] hover:text-red-400" title="Delete">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
-                        </button>
+        <section>
+            <div class="section-title">Recent Tasks</div>
+            {% if tasks %}
+            <div class="space-y-2">
+                {% for task in tasks %}
+                <div class="card p-3" data-task-id="{{ task.id }}">
+                    <div class="flex items-start gap-3">
+                        <div class="mt-1">
+                            {% if task.status == 'completed' %}
+                            <div class="w-2 h-2 rounded-full bg-emerald-500"></div>
+                            {% elif task.status == 'processing' %}
+                            <div class="w-2 h-2 rounded-full bg-white animate-pulse"></div>
+                            {% elif task.status == 'failed' %}
+                            <div class="w-2 h-2 rounded-full bg-red-500"></div>
+                            {% else %}
+                            <div class="w-2 h-2 rounded-full bg-[var(--text-faint)]"></div>
+                            {% endif %}
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <div class="text-sm text-white break-all leading-relaxed mb-1">{{ task.url }}</div>
+                            <div class="flex items-center gap-2 text-[11px] text-[var(--text-faint)]">
+                                <span class="font-mono">{{ task.id[:8] }}</span>
+                                <span>•</span>
+                                <span>{{ task.created_at.split(' ')[1] if ' ' in task.created_at else task.created_at }}</span>
+                            </div>
+                            {% if task.error %}
+                            <div class="text-[11px] text-red-400 mt-1.5 break-all">{{ task.error }}</div>
+                            {% endif %}
+                        </div>
+                        <div class="flex items-center gap-1">
+                            {% if task.status == 'completed' %}
+                            <a href="/download/{{ task.id }}" class="p-1.5 text-emerald-500 hover:bg-emerald-500/10 rounded transition-colors" title="Download">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+                            </a>
+                            {% endif %}
+                            <button onclick="deleteTask('{{ task.id }}')" class="p-1.5 text-[var(--text-faint)] hover:text-red-400 hover:bg-red-400/10 rounded transition-colors" title="Delete">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                            </button>
+                        </div>
                     </div>
                 </div>
+                {% endfor %}
             </div>
-            {% endfor %}
-            {% if not tasks %}
-            <div class="text-center py-8 text-[#565961] border border-[#27282e] rounded bg-[#15171b]">No active tasks.</div>
+            {% else %}
+            <div class="card p-6 text-center text-sm text-[var(--text-faint)]">No tasks</div>
             {% endif %}
-        </div>
-
-        <div class="hidden sm:block table-container bg-[#15171b]">
-            <table class="w-full">
-                <thead>
-                    <tr>
-                        <th class="w-16">Status</th>
-                        <th>URL / ID</th>
-                        <th class="w-32">Time</th>
-                        <th class="w-24 text-right">Action</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for task in tasks %}
-                    <tr class="group" data-task-id="{{ task.id }}">
-                        <td>
-                            {% if task.status == 'completed' %}
-                                <div class="status-dot success mx-auto"></div>
-                            {% elif task.status == 'processing' %}
-                                <div class="status-dot processing mx-auto"></div>
-                            {% elif task.status == 'failed' %}
-                                <div class="status-dot error mx-auto"></div>
-                            {% else %}
-                                <div class="w-1.5 h-1.5 rounded-full bg-gray-600 mx-auto"></div>
-                            {% endif %}
-                        </td>
-                        <td>
-                            <div class="text-sm font-medium text-white truncate max-w-md" title="{{ task.url }}">{{ task.url }}</div>
-                            <div class="text-xs text-[#565961] font-mono mt-0.5">{{ task.id }}</div>
-                            {% if task.error %}
-                                <div class="text-xs text-red-400 mt-1 truncate max-w-md">{{ task.error }}</div>
-                            {% endif %}
-                        </td>
-                        <td class="text-xs text-[#8a8d95] font-mono">{{ task.created_at.split(' ')[1] if ' ' in task.created_at else task.created_at }}</td>
-                        <td class="text-right">
-                            <div class="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                {% if task.status == 'completed' %}
-                                <a href="/download/{{ task.id }}" class="text-white hover:text-[#499d79]" title="Download">
-                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
-                                </a>
-                                {% endif %}
-                                <button onclick="deleteTask('{{ task.id }}')" class="text-[#8a8d95] hover:text-red-400" title="Delete">
-                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
-                                </button>
-                            </div>
-                        </td>
-                    </tr>
-                    {% endfor %}
-                    {% if not tasks %}
-                    <tr>
-                        <td colspan="4" class="text-center py-8 text-[#565961]">No active tasks.</td>
-                    </tr>
-                    {% endif %}
-                </tbody>
-            </table>
-        </div>
+        </section>
     </div>
 
     <script src="{{ url_for('static', filename='js/toast.js') }}?v=2.0"></script>
