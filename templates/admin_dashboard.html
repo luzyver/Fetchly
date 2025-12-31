@@ -7,12 +7,10 @@
     <meta name="theme-color" content="#0b0c0e">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}?v={{ cache_version }}">
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/admin/admin.css') }}?v={{ cache_version }}">
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body class="bg-[var(--bg-body)]">
     <div class="max-w-5xl mx-auto px-4 py-6">
-        <!-- Header -->
         <header class="mb-6">
             <div class="flex items-center justify-between mb-2">
                 <div class="flex items-center gap-3">
@@ -28,7 +26,6 @@
             </div>
         </header>
 
-        <!-- Stats Grid -->
         <div class="grid grid-cols-3 sm:grid-cols-6 gap-2 mb-6">
             <div class="card stat-card">
                 <div class="stat-value">{{ stats.total }}</div>
@@ -56,7 +53,6 @@
             </div>
         </div>
 
-        <!-- Tabs -->
         <div class="flex gap-2 mb-4 border-b border-[var(--border-subtle)] pb-4">
             <button class="tab-btn active" data-tab="tasks">Tasks</button>
             <button class="tab-btn" data-tab="whitelist">Whitelist</button>
@@ -64,7 +60,6 @@
             <button class="tab-btn" data-tab="usage">Usage</button>
         </div>
 
-        <!-- Tasks Tab -->
         <div id="tasks" class="tab-content active">
             <div class="section-title mb-3">All Tasks</div>
             {% if tasks %}
@@ -110,7 +105,6 @@
             {% endif %}
         </div>
 
-        <!-- Whitelist Tab -->
         <div id="whitelist" class="tab-content">
             <div class="card p-4 mb-4">
                 <div class="section-title mb-3">Add to Whitelist</div>
@@ -143,7 +137,6 @@
             {% endif %}
         </div>
 
-        <!-- Blacklist Tab -->
         <div id="blacklist" class="tab-content">
             <div class="card p-4 mb-4">
                 <div class="section-title mb-3">Add to Blacklist</div>
@@ -176,7 +169,6 @@
             {% endif %}
         </div>
 
-        <!-- Usage Tab -->
         <div id="usage" class="tab-content">
             <div class="flex items-center justify-between mb-3">
                 <div class="section-title">Usage Monitor</div>
@@ -227,7 +219,6 @@
         </div>
     </div>
 
-    <!-- Admin JS Modules -->
     <script src="{{ url_for('static', filename='js/admin/api.js') }}?v={{ cache_version }}"></script>
     <script src="{{ url_for('static', filename='js/admin/ui.js') }}?v={{ cache_version }}"></script>
     <script src="{{ url_for('static', filename='js/admin/tabs.js') }}?v={{ cache_version }}"></script>
