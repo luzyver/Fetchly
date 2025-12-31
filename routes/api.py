@@ -127,7 +127,10 @@ def _handle_generic(url: str):
     user_agent = None
     referer = None
 
-    if not is_direct_supported(url) and '.m3u8' not in url.lower():
+    VIDEO_EXTENSIONS = ('.mp4', '.webm', '.mkv', '.avi', '.mov', '.flv', '.wmv', '.m3u8')
+    is_direct_video = any(url.lower().split('?')[0].endswith(ext) for ext in VIDEO_EXTENSIONS)
+
+    if not is_direct_video and not is_direct_supported(url):
         result = resolve_source_url(url)
         if not result or not result[0]:
             raise Exception("Could not find video stream")

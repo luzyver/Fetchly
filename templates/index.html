@@ -39,11 +39,10 @@
                         <span class="font-bold tracking-tight text-[var(--text-main)]">Fetchly</span>
                     </div>
 
-                    <h1 class="text-4xl sm:text-5xl text-[var(--text-main)] mb-4 tracking-tight">Media
-                        Extraction<br>Utility</h1>
+                    <h1 class="text-4xl sm:text-5xl text-[var(--text-main)] mb-4 tracking-tight">Video
+                        Downloader</h1>
                     <p class="text-lg text-[var(--text-muted)] max-w-xl">
-                        Professional-grade downloader for YouTube, Twitter, TikTok, and Instagram.
-                        Optimized for high-bitrate archival.
+                        YouTube, Twitter, TikTok, Instagram, and more. 1GB daily limit.
                     </p>
                 </div>
 
@@ -63,7 +62,7 @@
             <div class="w-full max-w-3xl">
 
                 <div class="input-group relative group">
-                    <input type="text" id="url" class="hero-input font-mono" placeholder="Paste URL here (cmd+v)"
+                    <input type="text" id="url" class="hero-input font-mono" placeholder="Paste video link here"
                         autocomplete="off">
 
                     <div class="absolute right-4 top-1/2 -translate-y-1/2 flex items-center gap-2">
@@ -96,7 +95,7 @@
                 </div>
 
                 <button id="fetchBtn" class="btn btn-primary w-full sm:w-auto min-w-[160px]">
-                    <span id="fetchContent">Analyze Stream</span>
+                    <span id="fetchContent">Get Video</span>
                     <span id="fetchLoader" class="hidden flex items-center gap-2">
                         <svg class="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
                             <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4">
@@ -105,7 +104,7 @@
                                 d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z">
                             </path>
                         </svg>
-                        Processing...
+                        Fetching...
                     </span>
                 </button>
 
@@ -114,8 +113,8 @@
 
                 <div id="formatSection" class="hidden mt-10 border-t border-[var(--border-subtle)] pt-8 animate-fadeIn">
                     <div class="flex items-center justify-between mb-4">
-                        <h3 class="text-xs font-medium uppercase tracking-wider text-[var(--text-muted)]">Available
-                            Formats</h3>
+                        <h3 class="text-xs font-medium uppercase tracking-wider text-[var(--text-muted)]">Select Quality
+                        </h3>
                         <span id="videoTitle"
                             class="text-xs text-[var(--text-muted)] font-mono truncate max-w-[300px]"></span>
                     </div>
@@ -125,7 +124,7 @@
                     </div>
 
                     <button id="convertBtn" class="hidden btn btn-primary w-full sm:w-auto min-w-[200px]">
-                        <span id="btnContent">Start Download</span>
+                        <span id="btnContent">Download</span>
                         <span id="btnLoader" class="hidden flex items-center gap-2">
                             <svg class="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
                                 <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor"
@@ -134,7 +133,7 @@
                                     d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z">
                                 </path>
                             </svg>
-                            Encoding...
+                            Processing...
                         </span>
                     </button>
                 </div>
@@ -156,7 +155,7 @@
             </div>
 
             <div id="historyEmpty" class="text-center py-12">
-                <p class="text-sm text-[var(--text-muted)]">No recent tasks.</p>
+                <p class="text-sm text-[var(--text-muted)]">No downloads yet.</p>
             </div>
         </aside>
 

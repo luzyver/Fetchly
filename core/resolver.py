@@ -13,9 +13,10 @@ from core.config import USER_AGENTS
 
 logger = logging.getLogger(__name__)
 
-M3U8_PATTERN = re.compile(r'(https?://[^"\\]+\.m3u8)')
+M3U8_PATTERN = re.compile(r'(https?://[^"\\\s]+\.m3u8[^"\\\s]*)')
+VIDEO_PATTERN = re.compile(r'(https?://[^"\\\s]+\.(mp4|webm|mkv|avi|mov|flv|wmv)[^"\\\s]*)', re.IGNORECASE)
 IFRAME_KEYWORDS = ['embed', 'video', 'stream', 'player', 'id']
-NETWORK_KEYWORDS = ['.m3u8', '/stream/', '/variant/', 'master.m3u8']
+NETWORK_KEYWORDS = ['.m3u8', '.mp4', '.webm', '.mkv', '/stream/', '/variant/', 'master.m3u8']
 
 ResolverResult = Tuple[Optional[str], Optional[str], Optional[str], Optional[str]]
 
@@ -29,7 +30,7 @@ def resolve_source_url(url: str) -> ResolverResult:
         driver.get(url)
         time.sleep(3)
 
-        for finder in [_find_m3u8_in_page, lambda d: _find_m3u8_in_iframes(d, url), _find_jwplayer_url]:
+        for finder in [_find_video_in_page, _find_m3u8_in_page, lambda d: _find_m3u8_in_iframes(d, url), _find_jwplayer_url]:
             result = finder(driver)
             if result:
                 return result
@@ -83,6 +84,27 @@ def _find_m3u8_in_page(driver: webdriver.Chrome) -> Optional[ResolverResult]:
     matches = M3U8_PATTERN.findall(source)
     if matches:
         return _extract_result(driver, matches[0])
+    return None
+
+
+def _find_video_in_page(driver: webdriver.Chrome) -> Optional[ResolverResult]:
+    source = driver.page_source.replace(r'\/', '/')
+    matches = VIDEO_PATTERN.findall(source)
+    
+    quality_order = ['1080', '720', '480', '360', 'high', 'hd', 'source']
+    
+    if matches:
+        urls = [m[0] for m in matches]
+        
+        for quality in quality_order:
+            for url in urls:
+                if quality in url.lower():
+                    logger.info(f"Found video with quality '{quality}': {url[:100]}")
+                    return _extract_result(driver, url)
+        
+        logger.info(f"Found video: {urls[0][:100]}")
+        return _extract_result(driver, urls[0])
+    
     return None
 
 
