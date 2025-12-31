@@ -1,21 +1,17 @@
 import subprocess
 import logging
+from typing import Dict, Any, Optional
 from core.config import USER_AGENTS
 from core.utils import get_cookie_file
 
 logger = logging.getLogger(__name__)
 
-def download_youtube(url, output_path, format_id='best'):
+
+def download_youtube(url: str, output_path: str, format_id: str = 'best') -> Dict[str, Any]:
     logger.info(f"YouTube download: {url[:60]} (format: {format_id})")
 
     cookie_file = get_cookie_file()
-    
-    # Build format string - strict format selection without fallback to best
-    if format_id and format_id != 'best':
-        # Try exact format + best audio, fallback to format only
-        fmt = f'{format_id}+bestaudio/{format_id}'
-    else:
-        fmt = 'bestvideo+bestaudio/best'
+    fmt = _build_format_string(format_id)
 
     base_cmd = ['yt-dlp', '--no-check-certificate', '--no-playlist',
                 '-f', fmt, '--merge-output-format', 'mp4', '-o', output_path, url]
@@ -41,3 +37,9 @@ def download_youtube(url, output_path, format_id='best'):
         logger.warning(f"YouTube attempt {i+1} failed: {last_error}")
 
     return {"success": False, "error": last_error}
+
+
+def _build_format_string(format_id: Optional[str]) -> str:
+    if format_id and format_id != 'best':
+        return f'{format_id}+bestaudio/{format_id}'
+    return 'bestvideo+bestaudio/best'

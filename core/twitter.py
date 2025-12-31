@@ -1,13 +1,15 @@
 import json
 import subprocess
 import logging
+from typing import Dict, Any, List, Tuple
 from core.utils import format_size, get_cookie_file
 
 logger = logging.getLogger(__name__)
 
 TWITTER_USER_AGENT = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
 
-def fetch_twitter_formats(url):
+
+def fetch_twitter_formats(url: str) -> Dict[str, Any]:
     cookie_file = get_cookie_file()
 
     cmd = ['yt-dlp', '--no-check-certificate', '--user-agent', TWITTER_USER_AGENT, '-J', url]
@@ -22,36 +24,40 @@ def fetch_twitter_formats(url):
         raise Exception("Request timeout")
 
     if process.returncode != 0:
-        error_msg = err.decode().strip()[-200:]
-        if 'protected' in error_msg.lower():
-            raise Exception("This account's tweets are protected")
-        if 'not exist' in error_msg.lower() or '404' in error_msg:
-            raise Exception("Tweet not found or deleted")
-        raise Exception(error_msg)
+        _handle_twitter_error(err.decode().strip()[-200:])
 
     video_info = json.loads(out.decode())
     entries = video_info.get('entries', [video_info])
     duration = video_info.get('duration', 0)
 
+    formats = _build_twitter_formats(entries, duration)
+
+    return {
+        'formats': formats or [_default_twitter_format()],
+        'title': video_info.get('title', 'Twitter Video'),
+        'duration': duration,
+        'video_count': len(entries)
+    }
+
+
+def _handle_twitter_error(error_msg: str) -> None:
+    error_lower = error_msg.lower()
+    if 'protected' in error_lower:
+        raise Exception("This account's tweets are protected")
+    if 'not exist' in error_lower or '404' in error_msg:
+        raise Exception("Tweet not found or deleted")
+    raise Exception(error_msg)
+
+
+def _build_twitter_formats(entries: List[Dict], default_duration: int) -> List[Dict]:
     formats = []
+    
     for idx, entry in enumerate(entries):
         entry_formats = entry.get('formats', [])
-        entry_duration = entry.get('duration', duration)
+        entry_duration = entry.get('duration', default_duration)
 
-        best_height = 0
-        best_tbr = 0
-        
-        for fmt in entry_formats:
-            height = fmt.get('height', 0)
-            vcodec = fmt.get('vcodec', 'none')
-            
-            if vcodec != 'none' and height and height > best_height:
-                best_height = height
-                best_tbr = fmt.get('tbr', 0)
-        
-        estimated_size = 0
-        if best_tbr and entry_duration:
-            estimated_size = int((best_tbr * 1000 / 8) * entry_duration)
+        best_height, best_tbr = _find_best_quality(entry_formats)
+        estimated_size = _estimate_size(best_tbr, entry_duration)
 
         formats.append({
             'format_id': f'twitter_{idx}',
@@ -65,14 +71,38 @@ def fetch_twitter_formats(url):
             'has_audio': True
         })
 
+    return formats
+
+
+def _find_best_quality(formats: List[Dict]) -> Tuple[int, int]:
+    best_height = 0
+    best_tbr = 0
+    
+    for fmt in formats:
+        height = fmt.get('height', 0)
+        vcodec = fmt.get('vcodec', 'none')
+        
+        if vcodec != 'none' and height and height > best_height:
+            best_height = height
+            best_tbr = fmt.get('tbr', 0)
+    
+    return best_height, best_tbr
+
+
+def _estimate_size(tbr: int, duration: int) -> int:
+    if tbr and duration:
+        return int((tbr * 1000 / 8) * duration)
+    return 0
+
+
+def _default_twitter_format() -> Dict:
     return {
-        'formats': formats if formats else [{'format_id': 'twitter_0', 'resolution': 'Video 1', 'height': 10000, 'width': 0, 'ext': 'mp4', 'filesize': '', 'filesize_bytes': 0, 'bitrate': '', 'has_audio': True}],
-        'title': video_info.get('title', 'Twitter Video'),
-        'duration': duration,
-        'video_count': len(entries)
+        'format_id': 'twitter_0', 'resolution': 'Video 1', 'height': 10000, 'width': 0,
+        'ext': 'mp4', 'filesize': '', 'filesize_bytes': 0, 'bitrate': '', 'has_audio': True
     }
 
-def download_twitter(url, output_path, format_id='twitter_0'):
+
+def download_twitter(url: str, output_path: str, format_id: str = 'twitter_0') -> Dict[str, Any]:
     logger.info(f"Twitter download: {url[:60]} (format: {format_id})")
 
     video_index = int(format_id.replace('twitter_', '')) if format_id.startswith('twitter_') else 0

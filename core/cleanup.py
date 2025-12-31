@@ -1,6 +1,7 @@
 import os
 import time
 import logging
+from typing import Tuple
 from core.config import CONFIG
 from core.database import get_db
 
@@ -8,26 +9,28 @@ logger = logging.getLogger(__name__)
 
 ALLOWED_EXTENSIONS = ('.mp4', '.mp3')
 
-def cleanup_old_files():
+
+def cleanup_old_files() -> None:
     is_first_run = True
 
     while True:
-        _wait(is_first_run)
+        delay = 5 if is_first_run else CONFIG['CLEANUP_INTERVAL']
+        time.sleep(delay)
         is_first_run = False
 
         try:
             logger.info("Running cleanup task...")
-            files_deleted = _cleanup_files()
-            db_deleted = _cleanup_database()
+            files_deleted, db_deleted = _run_cleanup()
             logger.info(f"Cleanup complete: {files_deleted} files, {db_deleted} DB records deleted")
         except Exception as e:
             logger.error(f"Cleanup error: {e}")
 
-def _wait(is_first_run):
-    delay = 5 if is_first_run else CONFIG['CLEANUP_INTERVAL']
-    time.sleep(delay)
 
-def _cleanup_files():
+def _run_cleanup() -> Tuple[int, int]:
+    return _cleanup_files(), _cleanup_database()
+
+
+def _cleanup_files() -> int:
     cutoff_time = time.time() - CONFIG['RETENTION_PERIOD']
     deleted = 0
 
@@ -46,7 +49,8 @@ def _cleanup_files():
 
     return deleted
 
-def _cleanup_database():
+
+def _cleanup_database() -> int:
     with get_db() as conn:
         cursor = conn.execute("DELETE FROM tasks WHERE created_at < datetime('now', '-1 day')")
         deleted = cursor.rowcount

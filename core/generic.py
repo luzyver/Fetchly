@@ -1,13 +1,19 @@
 import json
 import subprocess
 import logging
+from typing import Dict, List, Optional, Tuple, Any
 from urllib.parse import urlparse
 from core.config import USER_AGENTS
 from core.utils import format_size, is_direct_supported, get_cookie_file
 
 logger = logging.getLogger(__name__)
 
-def fetch_generic_formats(url, resolved_url, cookies=None, user_agent=None, referer=None):
+FormatInfo = Dict[str, Any]
+VideoInfo = Dict[str, Any]
+
+
+def fetch_generic_formats(url: str, resolved_url: str, cookies: Optional[str] = None, 
+                          user_agent: Optional[str] = None, referer: Optional[str] = None) -> Tuple[List[FormatInfo], VideoInfo]:
     current_referer = referer or url
     parsed_url = urlparse(resolved_url)
     domain = f"{parsed_url.scheme}://{parsed_url.netloc}/"
@@ -16,26 +22,9 @@ def fetch_generic_formats(url, resolved_url, cookies=None, user_agent=None, refe
     origin_domain = f"{parsed_ref.scheme}://{parsed_ref.netloc}" if current_referer else domain
     
     cookie_file = get_cookie_file()
-    stdout = None
-    last_error = None
-
     user_agents = [user_agent] if user_agent else [USER_AGENTS['DESKTOP'], USER_AGENTS['MOBILE']]
 
-    for ua in user_agents:
-        cmd = _build_fetch_cmd(ua, resolved_url, current_referer, origin_domain, cookies, cookie_file)
-
-        try:
-            process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-            out, err = process.communicate(timeout=30)
-
-            if process.returncode == 0:
-                stdout = out
-                break
-            last_error = err.decode().strip()[-200:]
-        except subprocess.TimeoutExpired:
-            last_error = "Timeout"
-        except Exception as e:
-            last_error = str(e)
+    stdout, last_error = _try_fetch_with_agents(user_agents, resolved_url, current_referer, origin_domain, cookies, cookie_file)
 
     if not stdout:
         raise Exception(last_error or "Failed to fetch formats")
@@ -45,11 +34,35 @@ def fetch_generic_formats(url, resolved_url, cookies=None, user_agent=None, refe
 
     return formats, video_info
 
-def _build_fetch_cmd(ua, resolved_url, referer, origin, cookies, cookie_file):
-    cmd = ['yt-dlp', '--user-agent', ua, '--add-header', f'Referer: {referer}',
-           '--add-header', f'Origin: {origin}', '--no-check-certificate', '-J', resolved_url]
 
-    if '.m3u8' in resolved_url.lower():
+def _try_fetch_with_agents(user_agents: List[str], url: str, referer: str, origin: str, 
+                           cookies: Optional[str], cookie_file: Optional[str]) -> Tuple[Optional[bytes], Optional[str]]:
+    last_error = None
+
+    for ua in user_agents:
+        cmd = _build_fetch_cmd(ua, url, referer, origin, cookies, cookie_file)
+
+        try:
+            process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            out, err = process.communicate(timeout=30)
+
+            if process.returncode == 0:
+                return out, None
+            last_error = err.decode().strip()[-200:]
+        except subprocess.TimeoutExpired:
+            last_error = "Timeout"
+        except Exception as e:
+            last_error = str(e)
+
+    return None, last_error
+
+
+def _build_fetch_cmd(ua: str, url: str, referer: str, origin: str, 
+                     cookies: Optional[str], cookie_file: Optional[str]) -> List[str]:
+    cmd = ['yt-dlp', '--user-agent', ua, '--add-header', f'Referer: {referer}',
+           '--add-header', f'Origin: {origin}', '--no-check-certificate', '-J', url]
+
+    if '.m3u8' in url.lower():
         cmd[5:5] = [
             '--add-header', 'Accept: */*',
             '--add-header', 'Accept-Language: en-US,en;q=0.9',
@@ -65,7 +78,8 @@ def _build_fetch_cmd(ua, resolved_url, referer, origin, cookies, cookie_file):
 
     return cmd
 
-def _parse_formats(video_info, direct_supported):
+
+def _parse_formats(video_info: VideoInfo, direct_supported: bool) -> List[FormatInfo]:
     duration = video_info.get('duration')
     formats = []
     seen = set()
@@ -80,19 +94,7 @@ def _parse_formats(video_info, direct_supported):
             continue
         seen.add(resolution)
 
-        filesize = fmt.get('filesize') or fmt.get('filesize_approx')
-        tbr = fmt.get('tbr')
-        filesize_bytes = 0
-
-        if filesize:
-            size_str = format_size(filesize)
-            filesize_bytes = int(filesize)
-        elif tbr and duration:
-            estimated = (tbr * 1000 / 8) * duration
-            size_str = f"~{format_size(estimated)}"
-            filesize_bytes = int(estimated)
-        else:
-            size_str = ""
+        filesize_bytes, size_str = _calculate_filesize(fmt, duration)
 
         formats.append({
             'format_id': fmt.get('format_id', ''),
@@ -102,7 +104,7 @@ def _parse_formats(video_info, direct_supported):
             'ext': fmt.get('ext', 'mp4'),
             'filesize': size_str,
             'filesize_bytes': filesize_bytes,
-            'bitrate': f"{int(tbr)}kbps" if tbr else "",
+            'bitrate': f"{int(fmt.get('tbr'))}kbps" if fmt.get('tbr') else "",
             'has_audio': direct_supported or fmt.get('acodec', 'none') != 'none'
         })
 
@@ -116,7 +118,21 @@ def _parse_formats(video_info, direct_supported):
 
     return formats
 
-def download_generic(url, output_path, referer=None, cookies=None, format_id=None):
+
+def _calculate_filesize(fmt: Dict, duration: Optional[int]) -> Tuple[int, str]:
+    filesize = fmt.get('filesize') or fmt.get('filesize_approx')
+    tbr = fmt.get('tbr')
+
+    if filesize:
+        return int(filesize), format_size(filesize)
+    if tbr and duration:
+        estimated = int((tbr * 1000 / 8) * duration)
+        return estimated, f"~{format_size(estimated)}"
+    return 0, ""
+
+
+def download_generic(url: str, output_path: str, referer: Optional[str] = None, 
+                     cookies: Optional[str] = None, format_id: Optional[str] = None) -> Dict[str, Any]:
     logger.info(f"Generic download: {url[:60]} (format: {format_id})")
 
     parsed_url = urlparse(url)
@@ -128,8 +144,7 @@ def download_generic(url, output_path, referer=None, cookies=None, format_id=Non
     last_error = None
 
     for i, ua in enumerate([USER_AGENTS['DESKTOP'], USER_AGENTS['MOBILE']]):
-        cmd = _build_download_cmd(ua, url, output_path, current_referer, domain, 
-                                   cookies, cookie_file, direct_supported, format_id)
+        cmd = _build_download_cmd(ua, url, output_path, current_referer, domain, cookies, cookie_file, direct_supported, format_id)
 
         logger.info(f"Generic attempt {i+1}/2")
         process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
@@ -144,7 +159,10 @@ def download_generic(url, output_path, referer=None, cookies=None, format_id=Non
 
     return {"success": False, "error": last_error}
 
-def _build_download_cmd(ua, url, output_path, referer, domain, cookies, cookie_file, direct_supported, format_id):
+
+def _build_download_cmd(ua: str, url: str, output_path: str, referer: str, domain: str,
+                        cookies: Optional[str], cookie_file: Optional[str], 
+                        direct_supported: bool, format_id: Optional[str]) -> List[str]:
     cmd = ['yt-dlp', '--user-agent', ua, '--no-check-certificate', '--no-playlist', '-o', output_path]
 
     if cookie_file:

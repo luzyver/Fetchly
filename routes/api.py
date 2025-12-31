@@ -1,4 +1,6 @@
 import logging
+from typing import Any
+from concurrent.futures import ThreadPoolExecutor
 from flask import Blueprint, request, jsonify
 from core.utils import is_tiktok_url, is_twitter_url, is_instagram_url, is_direct_supported, get_user_error
 from core.tiktok import fetch_tiktok_formats
@@ -9,21 +11,18 @@ from core.resolver import resolve_source_url
 from core.database import check_limit, get_user_history
 from core.captcha import verify_captcha, is_captcha_enabled
 from core.config import CONFIG
+from routes.helpers import get_client_ip
 
 logger = logging.getLogger(__name__)
 api_bp = Blueprint('api', __name__)
-executor = None
 
-def set_executor(exec):
+executor: ThreadPoolExecutor = None
+
+
+def set_executor(exec: ThreadPoolExecutor) -> None:
     global executor
     executor = exec
 
-def get_client_ip():
-    if request.headers.get('X-Forwarded-For'):
-        return request.headers.get('X-Forwarded-For').split(',')[0].strip()
-    if request.headers.get('X-Real-IP'):
-        return request.headers.get('X-Real-IP')
-    return request.remote_addr or 'unknown'
 
 @api_bp.route('/check-limit', methods=['POST'])
 def check_usage_limit():
@@ -36,6 +35,7 @@ def check_usage_limit():
     result['turnstile_site_key'] = CONFIG['TURNSTILE_SITE_KEY'] if is_captcha_enabled() else ''
     return jsonify(result)
 
+
 @api_bp.route('/history', methods=['POST'])
 def get_history():
     data = request.json
@@ -44,6 +44,7 @@ def get_history():
 
     history = get_user_history(fingerprint, ip)
     return jsonify({'history': history})
+
 
 @api_bp.route('/fetch-formats', methods=['POST'])
 def fetch_formats():
@@ -61,22 +62,27 @@ def fetch_formats():
         return jsonify({'error': 'Please complete the captcha', 'captcha_required': True}), 400
 
     try:
-        if is_tiktok_url(url):
-            return _handle_tiktok(url)
-
-        if is_twitter_url(url):
-            return _handle_twitter(url)
-
-        if is_instagram_url(url):
-            return _handle_instagram(url)
-
-        return _handle_generic(url)
-
+        return _handle_fetch(url)
     except Exception as e:
         logger.error(f"Fetch formats error: {e}")
         return jsonify({'error': get_user_error(str(e))}), 400
 
-def _handle_tiktok(url):
+
+def _handle_fetch(url: str) -> Any:
+    handlers = [
+        (is_tiktok_url, _handle_tiktok),
+        (is_twitter_url, _handle_twitter),
+        (is_instagram_url, _handle_instagram),
+    ]
+
+    for check_fn, handler_fn in handlers:
+        if check_fn(url):
+            return handler_fn(url)
+
+    return _handle_generic(url)
+
+
+def _handle_tiktok(url: str):
     info = fetch_tiktok_formats(url)
     return jsonify({
         'formats': info['formats'],
@@ -87,7 +93,8 @@ def _handle_tiktok(url):
         'referer': url
     })
 
-def _handle_twitter(url):
+
+def _handle_twitter(url: str):
     info = fetch_twitter_formats(url)
     return jsonify({
         'formats': info['formats'],
@@ -100,7 +107,8 @@ def _handle_twitter(url):
         'video_count': info['video_count']
     })
 
-def _handle_instagram(url):
+
+def _handle_instagram(url: str):
     info = fetch_instagram_formats(url)
     return jsonify({
         'formats': info['formats'],
@@ -112,7 +120,8 @@ def _handle_instagram(url):
         'is_instagram': True
     })
 
-def _handle_generic(url):
+
+def _handle_generic(url: str):
     resolved_url = url
     cookies = None
     user_agent = None
