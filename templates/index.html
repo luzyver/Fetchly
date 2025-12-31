@@ -125,10 +125,6 @@
 
 </div>
 
-<footer class="fixed bottom-4 left-6 text-[10px] text-[var(--text-faint)] font-mono pointer-events-none">
-    <span id="year"></span> © FETCHLY SYSTEMS
-</footer>
-
 <script>document.getElementById('year').textContent = new Date().getFullYear();</script>
 <script src="{{ url_for('static', filename='js/protection.js') }}?v={{ cache_version }}"></script>
 <script src="{{ url_for('static', filename='js/toast.js') }}?v={{ cache_version }}"></script>
