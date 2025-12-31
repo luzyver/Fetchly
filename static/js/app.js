@@ -140,28 +140,28 @@ const App = {
 
     loadTurnstile() {
         if (document.getElementById('turnstile-script')) return;
-        
+
         const script = document.createElement('script');
         script.id = 'turnstile-script';
         script.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js?onload=onTurnstileLoad';
         script.async = true;
-        
+
         window.onTurnstileLoad = () => {
             const container = document.createElement('div');
             container.id = 'turnstile-container';
-            container.style.cssText = 'position: fixed; bottom: 20px; right: 20px; z-index: 1000;';
+            container.style.cssText = 'position: fixed; bottom: 20px; right: 20px; z-index: -1; opacity: 0; pointer-events: none;';
             document.body.appendChild(container);
-            
+
             this.state.turnstileWidgetId = turnstile.render('#turnstile-container', {
                 sitekey: this.state.turnstileSiteKey,
                 theme: 'dark',
-                size: 'compact',
+                size: 'invisible',
                 callback: (token) => {
                     this.state.turnstileToken = token;
                 }
             });
         };
-        
+
         document.head.appendChild(script);
     },
 
