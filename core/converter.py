@@ -25,7 +25,16 @@ def process_download(task_id: str, url: str, output_path: str,
 
     try:
         update_task_status(task_id, 'processing')
-        result = _route_download(url, output_path, referer, cookies, format_id)
+        
+        fingerprint, ip = get_task_info(task_id)
+        limit_info = check_limit(fingerprint, ip)
+        
+        if limit_info.get('whitelisted'):
+            max_size = None
+        else:
+            max_size = min(MAX_FILE_SIZE, limit_info['remaining'])
+        
+        result = _route_download(url, output_path, referer, cookies, format_id, max_size=max_size)
 
         if result["success"]:
             _handle_success(task_id, result.get('file', output_path))
@@ -86,18 +95,19 @@ def _check_size_limits(filesize: int, limit_info: Dict[str, Any],
 
 
 def _route_download(url: str, output_path: str, referer: Optional[str], 
-                    cookies: Optional[str], format_id: Optional[str]) -> Dict[str, Any]:
+                    cookies: Optional[str], format_id: Optional[str],
+                    max_size: Optional[int] = None) -> Dict[str, Any]:
     if is_tiktok_url(url):
         tiktok_format = format_id if format_id and format_id.startswith('tiktok_') else 'tiktok_no_watermark'
-        return download_tiktok(url, output_path, format_id=tiktok_format)
+        return download_tiktok(url, output_path, format_id=tiktok_format, max_size=max_size)
 
     if is_twitter_url(url) and format_id and format_id.startswith('twitter_'):
-        return download_twitter(url, output_path, format_id=format_id)
+        return download_twitter(url, output_path, format_id=format_id, max_size=max_size)
 
     if is_youtube_url(url):
-        return download_youtube(url, output_path, format_id=format_id)
+        return download_youtube(url, output_path, format_id=format_id, max_size=max_size)
 
     if is_instagram_url(url):
-        return download_instagram(url, output_path)
+        return download_instagram(url, output_path, max_size=max_size)
 
-    return download_generic(url, output_path, referer=referer, cookies=cookies, format_id=format_id)
+    return download_generic(url, output_path, referer=referer, cookies=cookies, format_id=format_id, max_size=max_size)

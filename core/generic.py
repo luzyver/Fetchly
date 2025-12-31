@@ -1,9 +1,13 @@
+import os
+import glob
 import json
+import time
 import subprocess
 import logging
+import threading
 from typing import Dict, List, Optional, Tuple, Any
 from urllib.parse import urlparse
-from core.config import USER_AGENTS
+from core.config import CONFIG, USER_AGENTS
 from core.utils import format_size, is_direct_supported, get_cookie_file
 
 logger = logging.getLogger(__name__)
@@ -132,7 +136,8 @@ def _calculate_filesize(fmt: Dict, duration: Optional[int]) -> Tuple[int, str]:
 
 
 def download_generic(url: str, output_path: str, referer: Optional[str] = None, 
-                     cookies: Optional[str] = None, format_id: Optional[str] = None) -> Dict[str, Any]:
+                     cookies: Optional[str] = None, format_id: Optional[str] = None,
+                     max_size: Optional[int] = None) -> Dict[str, Any]:
     logger.info(f"Generic download: {url[:60]} (format: {format_id})")
 
     parsed_url = urlparse(url)
@@ -140,6 +145,8 @@ def download_generic(url: str, output_path: str, referer: Optional[str] = None,
     current_referer = referer or domain
     direct_supported = is_direct_supported(url)
     cookie_file = get_cookie_file()
+        if max_size is None:
+        max_size = CONFIG['MAX_FILE_SIZE']
 
     last_error = None
 
@@ -147,17 +154,88 @@ def download_generic(url: str, output_path: str, referer: Optional[str] = None,
         cmd = _build_download_cmd(ua, url, output_path, current_referer, domain, cookies, cookie_file, direct_supported, format_id)
 
         logger.info(f"Generic attempt {i+1}/2")
-        process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        _, stderr = process.communicate()
-
-        if process.returncode == 0:
+        
+        result = _run_with_size_monitor(cmd, output_path, max_size)
+        
+        if result['success']:
             logger.info(f"Generic download completed: {output_path}")
-            return {"success": True, "file": output_path}
+            return result
+        
+        if result.get('size_exceeded'):
+            return result
 
-        last_error = stderr.decode().strip()[-300:]
+        last_error = result.get('error', 'Unknown error')
         logger.warning(f"Generic attempt {i+1} failed: {last_error}")
 
     return {"success": False, "error": last_error}
+
+
+def _run_with_size_monitor(cmd: list, output_path: str, max_size: Optional[int]) -> Dict[str, Any]:
+    process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    
+    if max_size is None:
+        _, stderr = process.communicate()
+        if process.returncode == 0 and os.path.exists(output_path):
+            return {"success": True, "file": output_path}
+        return {"success": False, "error": stderr.decode().strip()[-300:] if stderr else "Download failed"}
+    
+    size_exceeded = [False]
+    monitor_stop = threading.Event()
+    
+    def monitor():
+        base_path = output_path.rsplit('.', 1)[0]
+        while not monitor_stop.is_set():
+            current_size = _get_download_size(base_path)
+            if current_size > max_size:
+                size_exceeded[0] = True
+                logger.warning(f"Size limit exceeded: {current_size} > {max_size}, killing process")
+                process.kill()
+                break
+            time.sleep(1)
+    
+    monitor_thread = threading.Thread(target=monitor, daemon=True)
+    monitor_thread.start()
+    
+    try:
+        _, stderr = process.communicate()
+    finally:
+        monitor_stop.set()
+        monitor_thread.join(timeout=2)
+    
+    if size_exceeded[0]:
+        _cleanup_partial(output_path)
+        return {
+            "success": False, 
+            "error": "Download cancelled: file size exceeded limit",
+            "size_exceeded": True
+        }
+    
+    if process.returncode == 0 and os.path.exists(output_path):
+        return {"success": True, "file": output_path}
+    
+    return {"success": False, "error": stderr.decode().strip()[-300:] if stderr else "Download failed"}
+
+
+def _get_download_size(base_path: str) -> int:
+    total = 0
+    for pattern in [f"{base_path}*", f"{base_path}.*"]:
+        for filepath in glob.glob(pattern):
+            try:
+                total += os.path.getsize(filepath)
+            except OSError:
+                pass
+    return total
+
+
+def _cleanup_partial(output_path: str) -> None:
+    base_path = output_path.rsplit('.', 1)[0]
+    for pattern in [f"{base_path}*", f"{output_path}*"]:
+        for filepath in glob.glob(pattern):
+            try:
+                os.remove(filepath)
+                logger.info(f"Cleaned up: {filepath}")
+            except OSError:
+                pass
 
 
 def _build_download_cmd(ua: str, url: str, output_path: str, referer: str, domain: str,

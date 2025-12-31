@@ -1,7 +1,8 @@
+import os
 import json
 import subprocess
 import logging
-from typing import Dict, Any, List, Tuple
+from typing import Dict, Any, List, Tuple, Optional
 from core.utils import format_size, get_cookie_file
 
 logger = logging.getLogger(__name__)
@@ -102,11 +103,15 @@ def _default_twitter_format() -> Dict:
     }
 
 
-def download_twitter(url: str, output_path: str, format_id: str = 'twitter_0') -> Dict[str, Any]:
+def download_twitter(url: str, output_path: str, format_id: str = 'twitter_0',
+                     max_size: Optional[int] = None) -> Dict[str, Any]:
     logger.info(f"Twitter download: {url[:60]} (format: {format_id})")
 
     video_index = int(format_id.replace('twitter_', '')) if format_id.startswith('twitter_') else 0
     cookie_file = get_cookie_file()
+    
+    if max_size is None:
+        max_size = CONFIG['MAX_FILE_SIZE']
 
     cmd = ['yt-dlp', '--no-check-certificate', '--user-agent', TWITTER_USER_AGENT,
            '-f', 'bestvideo+bestaudio/best', '--merge-output-format', 'mp4',
@@ -117,17 +122,91 @@ def download_twitter(url: str, output_path: str, format_id: str = 'twitter_0') -
 
     logger.info(f"Downloading Twitter video {video_index + 1}")
 
+    result = _run_with_size_monitor(cmd, output_path, max_size)
+    
+    if result['success']:
+        logger.info(f"Twitter download completed: {output_path}")
+    elif result.get('size_exceeded'):
+        logger.warning(f"Twitter download cancelled: size exceeded")
+    else:
+        logger.error(f"Twitter download failed: {result.get('error')}")
+    
+    return result
+
+
+def _run_with_size_monitor(cmd: list, output_path: str, max_size: Optional[int]) -> Dict[str, Any]:
+    import time
+    import glob
+    import threading
+    
+    process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    
+    if max_size is None:
+        try:
+            _, stderr = process.communicate(timeout=120)
+        except subprocess.TimeoutExpired:
+            process.kill()
+            return {"success": False, "error": "Download timeout"}
+        if process.returncode == 0 and os.path.exists(output_path):
+            return {"success": True, "file": output_path}
+        return {"success": False, "error": stderr.decode().strip()[-300:] if stderr else "Download failed"}
+    
+    size_exceeded = [False]
+    monitor_stop = threading.Event()
+    
+    def monitor():
+        base_path = output_path.rsplit('.', 1)[0]
+        while not monitor_stop.is_set():
+            current_size = _get_download_size(base_path)
+            if current_size > max_size:
+                size_exceeded[0] = True
+                logger.warning(f"Size limit exceeded: {current_size} > {max_size}, killing process")
+                process.kill()
+                break
+            time.sleep(1)
+    
+    monitor_thread = threading.Thread(target=monitor, daemon=True)
+    monitor_thread.start()
+    
     try:
-        process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         _, stderr = process.communicate(timeout=120)
     except subprocess.TimeoutExpired:
         process.kill()
+        monitor_stop.set()
         return {"success": False, "error": "Download timeout"}
-
-    if process.returncode == 0:
-        logger.info(f"Twitter download completed: {output_path}")
+    finally:
+        monitor_stop.set()
+        monitor_thread.join(timeout=2)
+    
+    if size_exceeded[0]:
+        _cleanup_partial(output_path)
+        return {"success": False, "error": "Download cancelled: file size exceeded limit", "size_exceeded": True}
+    
+    if process.returncode == 0 and os.path.exists(output_path):
         return {"success": True, "file": output_path}
+    
+    return {"success": False, "error": stderr.decode().strip()[-300:] if stderr else "Download failed"}
 
-    error = stderr.decode().strip()[-300:]
-    logger.error(f"Twitter download failed: {error}")
-    return {"success": False, "error": error}
+
+def _get_download_size(base_path: str) -> int:
+    import glob
+    total = 0
+    for pattern in [f"{base_path}*", f"{base_path}.*"]:
+        for filepath in glob.glob(pattern):
+            try:
+                total += os.path.getsize(filepath)
+            except OSError:
+                pass
+    return total
+
+
+def _cleanup_partial(output_path: str) -> None:
+    import glob
+    base_path = output_path.rsplit('.', 1)[0]
+    for pattern in [f"{base_path}*", f"{output_path}*"]:
+        for filepath in glob.glob(pattern):
+            try:
+                os.remove(filepath)
+                logger.info(f"Cleaned up: {filepath}")
+            except OSError:
+                pass

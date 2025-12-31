@@ -96,11 +96,22 @@ def _extract_best_quality(formats: list, duration: int) -> Tuple[int, int]:
     return height, filesize_bytes
 
 
-def download_instagram(url: str, output_path: str) -> Dict[str, Any]:
+def download_instagram(url: str, output_path: str, max_size: Optional[int] = None) -> Dict[str, Any]:
     logger.info(f"Downloading Instagram video: {url}")
     
     if not output_path.endswith('.mp4'):
         output_path = output_path.rsplit('.', 1)[0] + '.mp4'
+    
+    downloaded_bytes = [0]
+    size_exceeded = [False]
+    
+    def progress_hook(d):
+        if d['status'] == 'downloading':
+            downloaded = d.get('downloaded_bytes', 0)
+            downloaded_bytes[0] = downloaded
+            if max_size is not None and downloaded > max_size:
+                size_exceeded[0] = True
+                raise Exception("Size limit exceeded")
     
     ydl_opts = {
         **_get_base_opts(),
@@ -108,6 +119,7 @@ def download_instagram(url: str, output_path: str) -> Dict[str, Any]:
         'outtmpl': output_path,
         'merge_output_format': 'mp4',
         'postprocessors': [{'key': 'FFmpegVideoConvertor', 'preferedformat': 'mp4'}],
+        'progress_hooks': [progress_hook],
     }
 
     try:
@@ -119,5 +131,21 @@ def download_instagram(url: str, output_path: str) -> Dict[str, Any]:
         return {"success": False, "error": "Download completed but file not found"}
     
     except Exception as e:
+        if size_exceeded[0]:
+            _cleanup_partial(output_path)
+            logger.warning(f"Instagram download cancelled: size exceeded")
+            return {"success": False, "error": "Download cancelled: file size exceeded limit", "size_exceeded": True}
         logger.error(f"Instagram download failed: {e}")
         return {"success": False, "error": str(e)}
+
+
+def _cleanup_partial(output_path: str) -> None:
+    import glob
+    base_path = output_path.rsplit('.', 1)[0]
+    for pattern in [f"{base_path}*", f"{output_path}*"]:
+        for filepath in glob.glob(pattern):
+            try:
+                os.remove(filepath)
+                logger.info(f"Cleaned up: {filepath}")
+            except OSError:
+                pass

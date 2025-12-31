@@ -1,4 +1,6 @@
+import os
 import logging
+from typing import Dict, Any, Optional, Tuple
 import requests
 from core.utils import format_size
 
@@ -6,7 +8,8 @@ logger = logging.getLogger(__name__)
 
 TIKWM_API = "https://www.tikwm.com/api/"
 
-def fetch_tiktok_info(url):
+
+def fetch_tiktok_info(url: str) -> Dict[str, Any]:
     session = requests.Session()
     session.headers.update({
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
@@ -42,10 +45,11 @@ def fetch_tiktok_info(url):
         "size_hd": video_data.get("hd_size"),
     }
 
-def fetch_tiktok_formats(url):
+
+def fetch_tiktok_formats(url: str) -> Dict[str, Any]:
     info = fetch_tiktok_info(url)
-    hd_size = format_size(info.get('size_hd') or info.get('size'))
     hd_size_bytes = info.get('size_hd') or info.get('size') or 0
+    hd_size = format_size(hd_size_bytes)
 
     return {
         'formats': [
@@ -57,39 +61,68 @@ def fetch_tiktok_formats(url):
         'duration': info.get('duration'),
     }
 
-def download_tiktok(url, output_path, format_id='tiktok_no_watermark'):
+
+def download_tiktok(url: str, output_path: str, format_id: str = 'tiktok_no_watermark',
+                    max_size: Optional[int] = None) -> Dict[str, Any]:
     logger.info(f"TikTok download: {url[:60]} (format: {format_id})")
+    
+    if max_size is None:
+        max_size = CONFIG['MAX_FILE_SIZE']
 
     try:
         info = fetch_tiktok_info(url)
-
-        if format_id == 'tiktok_audio':
-            download_url = info.get("audio")
-            if not download_url:
-                return {"success": False, "error": "Audio URL not available"}
-            if output_path.endswith('.mp4'):
-                output_path = output_path[:-4] + '.mp3'
-        elif format_id == 'tiktok_watermark':
-            download_url = info.get("watermark") or info.get("no_watermark")
-        else:
-            download_url = info.get("no_watermark") or info.get("watermark")
+        download_url, output_path = _get_download_url(info, format_id, output_path)
 
         if not download_url:
             return {"success": False, "error": "No download URL available"}
 
         logger.info(f"Downloading: {download_url[:80]}...")
+        result = _download_file(download_url, output_path, max_size)
 
-        resp = requests.get(download_url, stream=True, timeout=120)
-        resp.raise_for_status()
-
-        with open(output_path, 'wb') as f:
-            for chunk in resp.iter_content(chunk_size=8192):
-                if chunk:
-                    f.write(chunk)
-
-        logger.info(f"Download completed: {output_path}")
-        return {"success": True, "file": output_path}
+        if result['success']:
+            logger.info(f"Download completed: {output_path}")
+        
+        return result
 
     except Exception as e:
         logger.error(f"TikTok download failed: {e}")
         return {"success": False, "error": str(e)}
+
+
+def _get_download_url(info: Dict[str, Any], format_id: str, output_path: str) -> Tuple[Optional[str], str]:
+    if format_id == 'tiktok_audio':
+        download_url = info.get("audio")
+        if output_path.endswith('.mp4'):
+            output_path = output_path[:-4] + '.mp3'
+    elif format_id == 'tiktok_watermark':
+        download_url = info.get("watermark") or info.get("no_watermark")
+    else:
+        download_url = info.get("no_watermark") or info.get("watermark")
+
+    return download_url, output_path
+
+
+def _download_file(url: str, output_path: str, max_size: Optional[int]) -> Dict[str, Any]:
+    resp = requests.get(url, stream=True, timeout=120)
+    resp.raise_for_status()
+    
+    downloaded = 0
+
+    try:
+        with open(output_path, 'wb') as f:
+            for chunk in resp.iter_content(chunk_size=8192):
+                if chunk:
+                    downloaded += len(chunk)
+                    if max_size is not None and downloaded > max_size:
+                        logger.warning(f"Size limit exceeded: {downloaded} > {max_size}")
+                        f.close()
+                        if os.path.exists(output_path):
+                            os.remove(output_path)
+                        return {"success": False, "error": "Download cancelled: file size exceeded limit", "size_exceeded": True}
+                    f.write(chunk)
+        
+        return {"success": True, "file": output_path}
+    except Exception as e:
+        if os.path.exists(output_path):
+            os.remove(output_path)
+        raise e
