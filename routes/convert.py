@@ -5,7 +5,7 @@ from typing import Dict, Any, Optional, Tuple
 from concurrent.futures import ThreadPoolExecutor
 from flask import Blueprint, request, jsonify, send_file
 from core.config import CONFIG
-from core.database import get_db, check_limit, record_abuse_attempt, set_full_usage
+from core.database import get_db, check_limit, set_full_usage
 from core.resolver import resolve_source_url
 from core.converter import process_download
 from core.utils import is_tiktok_url, is_twitter_url, is_direct_supported
@@ -77,18 +77,14 @@ def _check_estimated_size(estimated_filesize: int, limit_info: Dict[str, Any],
     if not (exceeds_remaining or exceeds_max):
         return None
 
-    should_penalize = record_abuse_attempt(fingerprint, ip)
-    if should_penalize:
-        set_full_usage(fingerprint, ip)
-        return 'Too many attempts with oversized files. Daily limit has been fully consumed as penalty.'
-
+    set_full_usage(fingerprint, ip)
     filesize_mb = round(estimated_filesize / (1024 * 1024))
     
     if exceeds_max:
-        return f'File too large ({filesize_mb}MB). Maximum file size is 1GB.'
+        return f'File too large ({filesize_mb}MB). Maximum file size is 1GB. Daily quota consumed.'
     
     remaining_mb = round(limit_info['remaining'] / (1024 * 1024))
-    return f'File too large ({filesize_mb}MB). You only have {remaining_mb}MB remaining today.'
+    return f'File too large ({filesize_mb}MB). You only have {remaining_mb}MB remaining. Daily quota consumed.'
 
 
 def _resolve_if_needed(url: str, referer: str) -> Tuple[Optional[str], Optional[str], str]:

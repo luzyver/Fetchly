@@ -3,7 +3,7 @@ import logging
 from typing import Dict, Any, Optional
 from core.database import (
     update_task_status, update_task_filesize, add_usage,
-    get_task_info, check_limit, record_abuse_attempt, set_full_usage
+    get_task_info, check_limit, set_full_usage
 )
 from core.config import CONFIG
 from core.utils import is_tiktok_url, is_twitter_url, is_youtube_url, is_instagram_url
@@ -38,6 +38,11 @@ def process_download(task_id: str, url: str, output_path: str,
 
         if result["success"]:
             _handle_success(task_id, result.get('file', output_path))
+        elif result.get('size_exceeded'):
+            set_full_usage(fingerprint, ip)
+            error_msg = 'Download cancelled: file size exceeded limit. Daily quota has been fully consumed.'
+            update_task_status(task_id, 'failed', error=error_msg)
+            logger.warning(f"Task {task_id}: {error_msg}")
         else:
             update_task_status(task_id, 'failed', error=result.get('error', 'Unknown error'))
             logger.error(f"Task {task_id}: Download failed - {result.get('error')}")
@@ -80,18 +85,15 @@ def _check_size_limits(filesize: int, limit_info: Dict[str, Any],
     if not (exceeds_max or exceeds_remaining):
         return None
 
-    should_penalize = record_abuse_attempt(fingerprint, ip)
-    if should_penalize:
-        set_full_usage(fingerprint, ip)
-        return 'Too many oversized downloads. Daily limit fully consumed as penalty.'
+    set_full_usage(fingerprint, ip)
     
     filesize_mb = round(filesize / (1024 * 1024))
     
     if exceeds_max:
-        return f'File too large ({filesize_mb}MB). Maximum allowed is 1GB.'
+        return f'File too large ({filesize_mb}MB). Maximum allowed is 1GB. Daily quota consumed.'
     
     remaining_mb = round(limit_info['remaining'] / (1024 * 1024))
-    return f'File ({filesize_mb}MB) exceeds remaining quota ({remaining_mb}MB).'
+    return f'File ({filesize_mb}MB) exceeds remaining quota ({remaining_mb}MB). Daily quota consumed.'
 
 
 def _route_download(url: str, output_path: str, referer: Optional[str], 

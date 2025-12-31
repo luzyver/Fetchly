@@ -9,7 +9,6 @@ logger = logging.getLogger(__name__)
 
 WIB = timezone(timedelta(hours=7))
 DAILY_LIMIT_BYTES = 1 * 1024 * 1024 * 1024
-MAX_ABUSE_ATTEMPTS = 3
 
 _SCHEMAS = [
     '''CREATE TABLE IF NOT EXISTS tasks (
@@ -22,9 +21,6 @@ _SCHEMAS = [
     )''',
     '''CREATE TABLE IF NOT EXISTS whitelist (
         user_id TEXT PRIMARY KEY, note TEXT, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-    )''',
-    '''CREATE TABLE IF NOT EXISTS abuse_attempts (
-        identifier TEXT PRIMARY KEY, attempts INTEGER DEFAULT 0, last_attempt TEXT
     )''',
     '''CREATE TABLE IF NOT EXISTS blacklist (
         ip_address TEXT PRIMARY KEY, reason TEXT, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -149,31 +145,6 @@ def check_limit(fingerprint: str, ip: str) -> Dict[str, Any]:
     used = get_usage(fingerprint, ip)
     remaining = max(0, DAILY_LIMIT_BYTES - used)
     return {'allowed': used < DAILY_LIMIT_BYTES, 'used': used, 'limit': DAILY_LIMIT_BYTES, 'remaining': remaining}
-
-
-def record_abuse_attempt(fingerprint: str, ip: str) -> bool:
-    today = _get_today_wib()
-    should_penalize = False
-
-    with get_db() as conn:
-        for identifier in [fingerprint, ip]:
-            if not identifier:
-                continue
-
-            row = conn.execute('SELECT attempts, last_attempt FROM abuse_attempts WHERE identifier = ?', (identifier,)).fetchone()
-
-            if not row:
-                conn.execute('INSERT INTO abuse_attempts (identifier, attempts, last_attempt) VALUES (?, 1, ?)', (identifier, today))
-            elif row['last_attempt'] != today:
-                conn.execute('UPDATE abuse_attempts SET attempts = 1, last_attempt = ? WHERE identifier = ?', (today, identifier))
-            else:
-                new_attempts = row['attempts'] + 1
-                conn.execute('UPDATE abuse_attempts SET attempts = ? WHERE identifier = ?', (new_attempts, identifier))
-                if new_attempts >= MAX_ABUSE_ATTEMPTS:
-                    should_penalize = True
-
-        conn.commit()
-    return should_penalize
 
 
 def set_full_usage(fingerprint: str, ip: str) -> None:
