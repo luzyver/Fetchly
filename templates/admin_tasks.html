@@ -11,8 +11,8 @@
     <style>.hidden { display: none !important; }</style>
 </head>
 <body>
-    <div class="main-content mx-auto max-w-6xl">
-        <header class="flex items-center justify-between mb-8">
+    <div class="main-content mx-auto max-w-6xl px-4 sm:px-6">
+        <header class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
             <div>
                 <h1>Task Manager</h1>
                 <p>System-wide conversion status monitoring.</p>
@@ -28,33 +28,33 @@
         {% set failed = tasks|selectattr('status', 'equalto', 'failed')|list|length %}
         {% set queued = tasks|selectattr('status', 'equalto', 'queued')|list|length %}
 
-        <div class="grid grid-cols-4 gap-4 mb-8">
-            <div class="p-4 border border-[#27282e] rounded bg-[#15171b]">
-                <div class="text-2xl font-semibold text-white">{{ completed }}</div>
-                <div class="text-xs text-[#8a8d95] uppercase tracking-wider mt-1">Completed</div>
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 mb-8">
+            <div class="p-3 sm:p-4 border border-[#27282e] rounded bg-[#15171b]">
+                <div class="text-xl sm:text-2xl font-semibold text-white">{{ completed }}</div>
+                <div class="text-[10px] sm:text-xs text-[#8a8d95] uppercase tracking-wider mt-1">Completed</div>
             </div>
-            <div class="p-4 border border-[#27282e] rounded bg-[#15171b]">
-                <div class="text-2xl font-semibold text-white">{{ processing }}</div>
-                <div class="text-xs text-[#8a8d95] uppercase tracking-wider mt-1">Active</div>
+            <div class="p-3 sm:p-4 border border-[#27282e] rounded bg-[#15171b]">
+                <div class="text-xl sm:text-2xl font-semibold text-white">{{ processing }}</div>
+                <div class="text-[10px] sm:text-xs text-[#8a8d95] uppercase tracking-wider mt-1">Active</div>
             </div>
-            <div class="p-4 border border-[#27282e] rounded bg-[#15171b]">
-                <div class="text-2xl font-semibold text-white">{{ failed }}</div>
-                <div class="text-xs text-[#8a8d95] uppercase tracking-wider mt-1">Failed</div>
+            <div class="p-3 sm:p-4 border border-[#27282e] rounded bg-[#15171b]">
+                <div class="text-xl sm:text-2xl font-semibold text-white">{{ failed }}</div>
+                <div class="text-[10px] sm:text-xs text-[#8a8d95] uppercase tracking-wider mt-1">Failed</div>
             </div>
-            <div class="p-4 border border-[#27282e] rounded bg-[#15171b]">
-                <div class="text-2xl font-semibold text-white">{{ queued }}</div>
-                <div class="text-xs text-[#8a8d95] uppercase tracking-wider mt-1">Queue</div>
+            <div class="p-3 sm:p-4 border border-[#27282e] rounded bg-[#15171b]">
+                <div class="text-xl sm:text-2xl font-semibold text-white">{{ queued }}</div>
+                <div class="text-[10px] sm:text-xs text-[#8a8d95] uppercase tracking-wider mt-1">Queue</div>
             </div>
         </div>
 
-        <div class="table-container bg-[#15171b]">
-            <table>
+        <div class="table-container bg-[#15171b] overflow-x-auto">
+            <table class="min-w-[400px] w-full">
                 <thead>
                     <tr>
-                        <th class="w-16">Status</th>
+                        <th class="w-12 sm:w-16">Status</th>
                         <th>URL / ID</th>
-                        <th class="w-32">Time</th>
-                        <th class="w-24 text-right">Action</th>
+                        <th class="w-20 sm:w-32 hidden sm:table-cell">Time</th>
+                        <th class="w-16 sm:w-24 text-right">Action</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -72,15 +72,16 @@
                             {% endif %}
                         </td>
                         <td>
-                            <div class="text-sm font-medium text-white truncate max-w-md" title="{{ task.url }}">{{ task.url }}</div>
-                            <div class="text-xs text-[#565961] font-mono mt-0.5">{{ task.id }}</div>
+                            <div class="text-xs sm:text-sm font-medium text-white truncate max-w-[150px] sm:max-w-md" title="{{ task.url }}">{{ task.url }}</div>
+                            <div class="text-[10px] sm:text-xs text-[#565961] font-mono mt-0.5">{{ task.id }}</div>
+                            <div class="sm:hidden text-[10px] text-[#8a8d95] font-mono mt-0.5">{{ task.created_at.split(' ')[1] if ' ' in task.created_at else task.created_at }}</div>
                             {% if task.error %}
-                                <div class="text-xs text-red-400 mt-1 truncate max-w-md">{{ task.error }}</div>
+                                <div class="text-[10px] sm:text-xs text-red-400 mt-1 truncate max-w-[150px] sm:max-w-md">{{ task.error }}</div>
                             {% endif %}
                         </td>
-                        <td class="text-xs text-[#8a8d95] font-mono">{{ task.created_at.split(' ')[1] if ' ' in task.created_at else task.created_at }}</td>
+                        <td class="text-xs text-[#8a8d95] font-mono hidden sm:table-cell">{{ task.created_at.split(' ')[1] if ' ' in task.created_at else task.created_at }}</td>
                         <td class="text-right">
-                            <div class="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <div class="flex justify-end gap-2 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
                                 {% if task.status == 'completed' %}
                                 <a href="/download/{{ task.id }}" class="text-white hover:text-[#499d79]" title="Download">
                                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>

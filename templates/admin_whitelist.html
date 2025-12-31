@@ -11,8 +11,8 @@
     <style>.hidden { display: none !important; }</style>
 </head>
 <body>
-    <div class="main-content mx-auto max-w-6xl">
-        <header class="flex items-center justify-between mb-8">
+    <div class="main-content mx-auto max-w-6xl px-4 sm:px-6">
+        <header class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
             <div>
                 <h1>Whitelist Manager</h1>
                 <p>Manage privileged access and monitor usage quotas.</p>
@@ -26,34 +26,37 @@
         
         <div class="p-4 border border-[#27282e] rounded bg-[#15171b] mb-8">
             <h3 class="text-xs font-medium uppercase tracking-wider text-[#8a8d95] mb-3">Add User to Whitelist</h3>
-            <div class="flex gap-2">
+            <div class="flex flex-col sm:flex-row gap-2">
                 <input type="text" id="userId" placeholder="Fingerprint or IP address" 
                     class="hero-input text-sm py-2 px-3 h-10 w-full font-mono">
                 <input type="text" id="note" placeholder="Optional Note" 
                     class="hero-input text-sm py-2 px-3 h-10 w-full">
-                <button onclick="addToWhitelist()" class="btn btn-primary h-10 px-6 whitespace-nowrap">Add User</button>
+                <button onclick="addToWhitelist()" class="btn btn-primary h-10 px-6 whitespace-nowrap w-full sm:w-auto">Add User</button>
             </div>
         </div>
 
         
         <div class="mb-12">
             <h3 class="mb-3">Whitelisted Users</h3>
-            <div class="table-container bg-[#15171b]">
-                <table>
+            <div class="table-container bg-[#15171b] overflow-x-auto">
+                <table class="min-w-[500px] w-full">
                     <thead>
                         <tr>
                             <th>User ID</th>
-                            <th>Note</th>
-                            <th>Date Added</th>
+                            <th class="hidden sm:table-cell">Note</th>
+                            <th class="hidden sm:table-cell">Date Added</th>
                             <th class="text-right">Action</th>
                         </tr>
                     </thead>
                     <tbody>
                         {% for item in whitelist %}
                         <tr data-user-id="{{ item.user_id }}">
-                            <td class="font-mono text-sm">{{ item.user_id }}</td>
-                            <td class="text-[#8a8d95]">{{ item.note or '-' }}</td>
-                            <td class="text-xs text-[#565961]">{{ item.created_at }}</td>
+                            <td>
+                                <div class="font-mono text-sm break-all">{{ item.user_id }}</div>
+                                <div class="sm:hidden text-xs text-[#565961] mt-1">{{ item.note or '-' }}</div>
+                            </td>
+                            <td class="text-[#8a8d95] hidden sm:table-cell">{{ item.note or '-' }}</td>
+                            <td class="text-xs text-[#565961] hidden sm:table-cell">{{ item.created_at }}</td>
                             <td class="text-right">
                                 <button onclick="removeFromWhitelist('{{ item.user_id }}')" class="text-[#8a8d95] hover:text-red-400" title="Remove">
                                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
@@ -71,21 +74,21 @@
         </div>
 
         
-        <div>
-            <div class="flex justify-between items-end mb-3">
+        <div class="pb-8">
+            <div class="flex flex-col sm:flex-row justify-between sm:items-end gap-2 mb-3">
                 <h3>Usage Monitor (Daily)</h3>
                 <span class="text-xs text-[#565961]">Limit: {{ (daily_limit / 1024 / 1024 / 1024)|round(1) }} GB</span>
             </div>
             
-            <div class="table-container bg-[#15171b]">
-                <table>
+            <div class="table-container bg-[#15171b] overflow-x-auto">
+                <table class="min-w-[600px] w-full">
                     <thead>
                         <tr>
                             <th class="w-10"></th>
                             <th>Identifier</th>
                             <th>Usage</th>
-                            <th>Downloads</th>
-                            <th>Last Active</th>
+                            <th class="hidden sm:table-cell">Downloads</th>
+                            <th class="hidden md:table-cell">Last Active</th>
                             <th class="w-10"></th>
                         </tr>
                     </thead>
@@ -102,25 +105,26 @@
                                 {% endif %}
                             </td>
                             <td>
-                                <div class="flex items-center gap-2">
-                                    <span class="font-mono text-sm text-white">{{ user.identifier }}</span>
+                                <div class="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2">
+                                    <span class="font-mono text-xs sm:text-sm text-white break-all">{{ user.identifier }}</span>
                                     {% if user.id_type == 'ip' %}
-                                        <span class="text-[10px] bg-[#27282e] text-[#8a8d95] px-1 rounded">IP</span>
+                                        <span class="text-[10px] bg-[#27282e] text-[#8a8d95] px-1 rounded w-fit">IP</span>
                                     {% endif %}
                                 </div>
+                                <div class="sm:hidden text-xs text-[#565961] mt-1">{{ user.today_downloads }}/{{ user.total_downloads }} downloads</div>
                             </td>
                             <td>
-                                <div class="flex items-center gap-2">
-                                    <span class="text-sm font-medium {{ 'text-red-400' if user.bytes_used >= daily_limit else 'text-white' }}">
+                                <div class="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2">
+                                    <span class="text-xs sm:text-sm font-medium {{ 'text-red-400' if user.bytes_used >= daily_limit else 'text-white' }}">
                                         {{ (user.bytes_used / 1024 / 1024)|round(1) }} MB
                                     </span>
-                                    <div class="w-16 h-1 bg-[#27282e] rounded-full overflow-hidden">
+                                    <div class="w-12 sm:w-16 h-1 bg-[#27282e] rounded-full overflow-hidden">
                                         <div class="h-full bg-white progress-bar" data-width="{{ ((user.bytes_used / daily_limit) * 100)|round(1) }}"></div>
                                     </div>
                                 </div>
                             </td>
-                            <td class="text-sm text-[#8a8d95]">{{ user.today_downloads }} / {{ user.total_downloads }}</td>
-                            <td class="text-xs text-[#565961]">{{ user.last_activity or '-' }}</td>
+                            <td class="text-sm text-[#8a8d95] hidden sm:table-cell">{{ user.today_downloads }} / {{ user.total_downloads }}</td>
+                            <td class="text-xs text-[#565961] hidden md:table-cell">{{ user.last_activity or '-' }}</td>
                             <td>
                                 <button onclick="copyFingerprint('{{ user.identifier }}')" class="text-[#8a8d95] hover:text-white" title="Copy ID">
                                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
