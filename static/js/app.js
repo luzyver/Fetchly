@@ -12,8 +12,8 @@ const App = {
         videoTitle: null,
         fingerprint: null,
         captchaEnabled: false,
-        recaptchaSiteKey: '',
-        recaptchaReady: false
+        turnstileSiteKey: '',
+        turnstileWidgetId: null
     },
 
     elements: {},
@@ -128,42 +128,53 @@ const App = {
             const data = await res.json();
             this.updateUsageDisplay(data);
             
-            if (data.captcha_enabled && data.recaptcha_site_key) {
+            if (data.captcha_enabled && data.turnstile_site_key) {
                 this.state.captchaEnabled = true;
-                this.state.recaptchaSiteKey = data.recaptcha_site_key;
-                this.loadRecaptchaV3();
+                this.state.turnstileSiteKey = data.turnstile_site_key;
+                this.loadTurnstile();
             }
         } catch (e) {
             console.error('Failed to check limit:', e);
         }
     },
 
-    loadRecaptchaV3() {
-        if (document.getElementById('recaptcha-v3-script')) return;
+    loadTurnstile() {
+        if (document.getElementById('turnstile-script')) return;
         
         const script = document.createElement('script');
-        script.id = 'recaptcha-v3-script';
-        script.src = `https://www.google.com/recaptcha/api.js?render=${this.state.recaptchaSiteKey}`;
-        script.onload = () => {
-            grecaptcha.ready(() => {
-                this.state.recaptchaReady = true;
+        script.id = 'turnstile-script';
+        script.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js?onload=onTurnstileLoad';
+        script.async = true;
+        
+        window.onTurnstileLoad = () => {
+            const container = document.createElement('div');
+            container.id = 'turnstile-container';
+            container.style.cssText = 'position: fixed; bottom: 20px; right: 20px; z-index: 1000;';
+            document.body.appendChild(container);
+            
+            this.state.turnstileWidgetId = turnstile.render('#turnstile-container', {
+                sitekey: this.state.turnstileSiteKey,
+                theme: 'dark',
+                size: 'compact',
+                callback: (token) => {
+                    this.state.turnstileToken = token;
+                }
             });
         };
+        
         document.head.appendChild(script);
     },
 
-    async getCaptchaToken() {
+    getCaptchaToken() {
         if (!this.state.captchaEnabled) return '';
-        if (!this.state.recaptchaReady) {
-            await new Promise(resolve => {
-                const check = () => {
-                    if (this.state.recaptchaReady) resolve();
-                    else setTimeout(check, 100);
-                };
-                check();
-            });
+        return this.state.turnstileToken || '';
+    },
+
+    resetTurnstile() {
+        if (this.state.turnstileWidgetId !== null && typeof turnstile !== 'undefined') {
+            turnstile.reset(this.state.turnstileWidgetId);
+            this.state.turnstileToken = null;
         }
-        return await grecaptcha.execute(this.state.recaptchaSiteKey, { action: 'fetch_formats' });
     },
 
     updateUsageDisplay(data) {
@@ -315,7 +326,7 @@ const App = {
         Toast.info('Fetching formats...');
 
         try {
-            const captchaToken = await this.getCaptchaToken();
+            const captchaToken = this.getCaptchaToken();
             
             const res = await fetch('/fetch-formats', {
                 method: 'POST',
@@ -325,6 +336,7 @@ const App = {
             const data = await res.json();
             
             if (data.captcha_required) {
+                this.resetTurnstile();
                 throw new Error(data.error || 'Verification failed');
             }
             
@@ -340,6 +352,7 @@ const App = {
 
             this.renderFormatSelection();
             Toast.success(`Found ${this.state.formats.length} formats`);
+            this.resetTurnstile();
         } catch (e) {
             Toast.error(e.message);
         } finally {

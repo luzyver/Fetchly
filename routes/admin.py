@@ -77,15 +77,15 @@ def admin_login():
     
     if is_rate_limited(ip):
         error = 'Too many attempts. Try again later.'
-        return render_template('admin_login.html', error=error, captcha_enabled=captcha_enabled, recaptcha_site_key=CONFIG['RECAPTCHA_SITE_KEY'])
+        return render_template('admin_login.html', error=error, captcha_enabled=captcha_enabled, turnstile_site_key=CONFIG['TURNSTILE_SITE_KEY'])
     
     if request.method == 'POST':
         password = request.form.get('password', '')
-        captcha_response = request.form.get('g-recaptcha-response', '')
+        captcha_response = request.form.get('cf-turnstile-response', '')
         
         if captcha_enabled and not verify_captcha(captcha_response):
             error = 'Please complete the captcha'
-            return render_template('admin_login.html', error=error, captcha_enabled=captcha_enabled, recaptcha_site_key=CONFIG['RECAPTCHA_SITE_KEY'])
+            return render_template('admin_login.html', error=error, captcha_enabled=captcha_enabled, turnstile_site_key=CONFIG['TURNSTILE_SITE_KEY'])
         
         if hmac.compare_digest(password, CONFIG['ADMIN_PASSWORD']):
             session['admin_logged_in'] = True
@@ -99,7 +99,7 @@ def admin_login():
         logger.warning(f"Failed admin login attempt from {ip}")
         error = 'Invalid password'
     
-    return render_template('admin_login.html', error=error, captcha_enabled=captcha_enabled, recaptcha_site_key=CONFIG['RECAPTCHA_SITE_KEY'])
+    return render_template('admin_login.html', error=error, captcha_enabled=captcha_enabled, turnstile_site_key=CONFIG['TURNSTILE_SITE_KEY'])
 
 
 @admin_bp.route('/admin/logout')

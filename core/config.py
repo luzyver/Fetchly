@@ -9,8 +9,8 @@ CONFIG = {
     'RETENTION_PERIOD': 86400,
     'ADMIN_PASSWORD': os.getenv('ADMIN_PASSWORD', 'admin123'),
     'SECRET_KEY': os.getenv('SECRET_KEY', 'change-me-in-production'),
-    'RECAPTCHA_SITE_KEY': os.getenv('RECAPTCHA_SITE_KEY', ''),
-    'RECAPTCHA_SECRET_KEY': os.getenv('RECAPTCHA_SECRET_KEY', ''),
+    'TURNSTILE_SITE_KEY': os.getenv('TURNSTILE_SITE_KEY', ''),
+    'TURNSTILE_SECRET_KEY': os.getenv('TURNSTILE_SECRET_KEY', ''),
 }
 
 USER_AGENTS = {

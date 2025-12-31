@@ -33,7 +33,7 @@ def check_usage_limit():
 
     result = check_limit(fingerprint, ip)
     result['captcha_enabled'] = is_captcha_enabled()
-    result['recaptcha_site_key'] = CONFIG['RECAPTCHA_SITE_KEY'] if is_captcha_enabled() else ''
+    result['turnstile_site_key'] = CONFIG['TURNSTILE_SITE_KEY'] if is_captcha_enabled() else ''
     return jsonify(result)
 
 @api_bp.route('/history', methods=['POST'])
