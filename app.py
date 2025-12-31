@@ -2,11 +2,11 @@ import os
 import time
 import logging
 from logging.handlers import RotatingFileHandler
-from flask import Flask, render_template
+from flask import Flask, render_template, request, abort
 from concurrent.futures import ThreadPoolExecutor
 
 from core.config import CONFIG
-from core.database import init_db
+from core.database import init_db, is_blacklisted
 from routes.main import main_bp
 from routes.api import api_bp, set_executor as set_api_executor
 from routes.convert import convert_bp, set_executor as set_convert_executor
@@ -28,6 +28,22 @@ app = Flask(__name__)
 app.secret_key = CONFIG['SECRET_KEY']
 app.config['CACHE_VERSION'] = str(int(time.time()))
 
+
+def get_client_ip():
+    if request.headers.get('X-Forwarded-For'):
+        return request.headers.get('X-Forwarded-For').split(',')[0].strip()
+    return request.remote_addr or 'unknown'
+
+
+@app.before_request
+def check_blacklist():
+    if request.path.startswith('/admin') or request.path.startswith('/static'):
+        return None
+    ip = get_client_ip()
+    if is_blacklisted(ip):
+        abort(403)
+
+
 @app.context_processor
 def inject_globals():
     return {'cache_version': app.config['CACHE_VERSION']}
@@ -42,6 +58,11 @@ app.register_blueprint(main_bp)
 app.register_blueprint(api_bp)
 app.register_blueprint(convert_bp)
 app.register_blueprint(admin_bp)
+
+@app.errorhandler(403)
+def forbidden(e):
+    return render_template('403.html'), 403
+
 
 @app.errorhandler(404)
 def page_not_found(e):

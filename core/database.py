@@ -49,6 +49,14 @@ ABUSE_SCHEMA = '''
     )
 '''
 
+BLACKLIST_SCHEMA = '''
+    CREATE TABLE IF NOT EXISTS blacklist (
+        ip_address TEXT PRIMARY KEY,
+        reason TEXT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )
+'''
+
 MAX_ABUSE_ATTEMPTS = 3
 
 @contextmanager
@@ -66,6 +74,7 @@ def init_db():
         conn.execute(USAGE_SCHEMA)
         conn.execute(WHITELIST_SCHEMA)
         conn.execute(ABUSE_SCHEMA)
+        conn.execute(BLACKLIST_SCHEMA)
         conn.commit()
 
 def update_task_status(task_id, status, file=None, error=None):
@@ -348,3 +357,49 @@ def get_all_usage():
     except Exception as e:
         logger.error(f"Failed to get all usage: {e}")
         return []
+
+
+def is_blacklisted(ip):
+    if not ip:
+        return False
+    try:
+        with get_db() as conn:
+            row = conn.execute(
+                'SELECT 1 FROM blacklist WHERE ip_address = ?',
+                (ip,)
+            ).fetchone()
+            return row is not None
+    except Exception:
+        return False
+
+
+def get_blacklist():
+    try:
+        with get_db() as conn:
+            rows = conn.execute(
+                'SELECT ip_address, reason, created_at FROM blacklist ORDER BY created_at DESC'
+            ).fetchall()
+            return [dict(row) for row in rows]
+    except Exception:
+        return []
+
+
+def add_to_blacklist(ip, reason=''):
+    try:
+        with get_db() as conn:
+            conn.execute(
+                'INSERT OR REPLACE INTO blacklist (ip_address, reason) VALUES (?, ?)',
+                (ip, reason)
+            )
+            conn.commit()
+    except Exception as e:
+        logger.error(f"Failed to add to blacklist: {e}")
+
+
+def remove_from_blacklist(ip):
+    try:
+        with get_db() as conn:
+            conn.execute('DELETE FROM blacklist WHERE ip_address = ?', (ip,))
+            conn.commit()
+    except Exception as e:
+        logger.error(f"Failed to remove from blacklist: {e}")

@@ -6,7 +6,7 @@ from datetime import datetime, timedelta
 from functools import wraps
 from flask import Blueprint, render_template, jsonify, request, redirect, url_for, session
 from core.config import CONFIG
-from core.database import get_db, get_whitelist, add_to_whitelist, remove_from_whitelist, get_all_usage, DAILY_LIMIT_BYTES
+from core.database import get_db, get_whitelist, add_to_whitelist, remove_from_whitelist, get_all_usage, get_blacklist, add_to_blacklist, remove_from_blacklist, DAILY_LIMIT_BYTES
 
 logger = logging.getLogger(__name__)
 admin_bp = Blueprint('admin', __name__)
@@ -113,6 +113,7 @@ def admin_dashboard():
 
         tasks_list = [_format_task(dict(task)) for task in tasks]
         whitelist = get_whitelist()
+        blacklist = get_blacklist()
         usage_data = get_all_usage()
         
         stats = {
@@ -121,12 +122,14 @@ def admin_dashboard():
             'failed': failed_tasks,
             'processing': processing_tasks,
             'whitelist_count': len(whitelist),
+            'blacklist_count': len(blacklist),
             'active_users': len(usage_data)
         }
 
         return render_template('admin_dashboard.html', 
                              tasks=tasks_list,
                              whitelist=whitelist,
+                             blacklist=blacklist,
                              usage_data=usage_data,
                              daily_limit=DAILY_LIMIT_BYTES,
                              stats=stats)
@@ -173,6 +176,31 @@ def add_whitelist():
 def remove_whitelist(user_id):
     try:
         remove_from_whitelist(user_id)
+        return jsonify({'status': 'success'})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@admin_bp.route('/admin/blacklist/add', methods=['POST'])
+@login_required
+def add_blacklist_route():
+    try:
+        data = request.json
+        ip = data.get('ip', '').strip()
+        reason = data.get('reason', '').strip()
+        if not ip:
+            return jsonify({'error': 'IP required'}), 400
+        add_to_blacklist(ip, reason)
+        return jsonify({'status': 'success'})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@admin_bp.route('/admin/blacklist/remove/<ip>', methods=['DELETE'])
+@login_required
+def remove_blacklist_route(ip):
+    try:
+        remove_from_blacklist(ip)
         return jsonify({'status': 'success'})
     except Exception as e:
         return jsonify({'error': str(e)}), 500
