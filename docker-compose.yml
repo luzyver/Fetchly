@@ -8,6 +8,8 @@ services:
     environment:
       - FLASK_ENV=production
       - PROXY=socks5://warp:1080
+      - ADMIN_PASSWORD=${ADMIN_PASSWORD}
+      - SECRET_KEY=${SECRET_KEY}
     volumes:
       - ./downloads:/app/downloads
       - ./config/cookies.txt:/app/cookies.txt

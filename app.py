@@ -25,6 +25,7 @@ logging.basicConfig(
 )
 
 app = Flask(__name__)
+app.secret_key = CONFIG['SECRET_KEY']
 app.config['CACHE_VERSION'] = str(int(time.time()))
 
 @app.context_processor

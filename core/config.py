@@ -7,6 +7,8 @@ CONFIG = {
     'MAX_WORKERS': 4,
     'CLEANUP_INTERVAL': 3600,
     'RETENTION_PERIOD': 86400,
+    'ADMIN_PASSWORD': os.getenv('ADMIN_PASSWORD'),
+    'SECRET_KEY': os.getenv('SECRET_KEY'),
 }
 
 USER_AGENTS = {

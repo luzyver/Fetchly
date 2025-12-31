@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Login - Fetchly</title>
+    <meta name="theme-color" content="#0b0c0e">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}?v={{ cache_version }}">
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-[var(--bg-body)] min-h-screen flex items-center justify-center px-4">
+    <div class="w-full max-w-sm">
+        <div class="text-center mb-8">
+            <div class="flex items-center justify-center gap-2 mb-4">
+                <svg class="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+                </svg>
+                <span class="font-semibold text-white text-lg">Fetchly</span>
+            </div>
+            <h1 class="text-2xl font-semibold text-white mb-2">Admin Access</h1>
+            <p class="text-sm text-[var(--text-muted)]">Enter password to continue</p>
+        </div>
+
+        <form method="POST" class="space-y-4">
+            {% if error %}
+            <div class="bg-red-500/10 border border-red-500/20 rounded-lg px-4 py-3 text-sm text-red-400">
+                {{ error }}
+            </div>
+            {% endif %}
+            
+            <div>
+                <input type="password" name="password" placeholder="Password" autofocus required
+                    class="w-full bg-[var(--bg-surface)] border border-[var(--border-subtle)] rounded-lg px-4 py-3 text-white placeholder-[var(--text-faint)] focus:border-[var(--border-focus)] focus:outline-none">
+            </div>
+            
+            <button type="submit" class="w-full bg-white text-black font-medium py-3 px-4 rounded-lg hover:bg-gray-200 transition-colors">
+                Login
+            </button>
+        </form>
+
+        <div class="mt-6 text-center">
+            <a href="/" class="text-sm text-[var(--text-muted)] hover:text-white transition-colors">← Back to home</a>
+        </div>
+    </div>
+</body>
+</html>
