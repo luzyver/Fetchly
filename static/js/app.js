@@ -37,7 +37,7 @@ const App = {
             historySection: document.getElementById('historySection'),
             historyList: document.getElementById('historyList'),
             historyEmpty: document.getElementById('historyEmpty'),
-            captchaModal: document.getElementById('captchaModal'),
+            captchaSection: document.getElementById('captchaSection'),
             captchaContainer: document.getElementById('captchaContainer')
         };
 
@@ -141,20 +141,18 @@ const App = {
         }
     },
 
-    showCaptchaModal() {
-        if (!this.elements.captchaModal) return;
-        this.elements.captchaModal.classList.remove('hidden');
-        document.body.style.overflow = 'hidden';
+    showCaptchaSection() {
+        if (!this.elements.captchaSection) return;
+        this.elements.captchaSection.classList.remove('hidden');
         
         if (!this.state.captchaRendered) {
             this.renderCaptcha();
         }
     },
 
-    closeCaptchaModal() {
-        if (!this.elements.captchaModal) return;
-        this.elements.captchaModal.classList.add('hidden');
-        document.body.style.overflow = '';
+    hideCaptchaSection() {
+        if (!this.elements.captchaSection) return;
+        this.elements.captchaSection.classList.add('hidden');
     },
 
     renderCaptcha() {
@@ -182,15 +180,6 @@ const App = {
             grecaptcha.reset(this.state.captchaWidgetId);
             this.state.captchaResponse = '';
         }
-    },
-
-    submitWithCaptcha() {
-        if (!this.state.captchaResponse) {
-            Toast.warning('Please complete the captcha');
-            return;
-        }
-        this.closeCaptchaModal();
-        this.doFetchFormats();
     },
 
     updateUsageDisplay(data) {
@@ -309,6 +298,7 @@ const App = {
         this.elements.formatSection?.classList.add('hidden');
         this.elements.convertBtn?.classList.add('hidden');
         this.elements.fetchBtn?.classList.remove('hidden');
+        this.hideCaptchaSection();
     },
 
     setFetchLoading(loading) {
@@ -333,9 +323,12 @@ const App = {
         if (!url) { Toast.warning('Enter a URL first'); this.elements.input?.focus(); return; }
         if (!url.startsWith('http')) { Toast.warning('Enter a valid URL'); return; }
 
-        if (this.state.captchaEnabled && !this.state.captchaResponse) {
-            this.showCaptchaModal();
-            return;
+        if (this.state.captchaEnabled) {
+            this.showCaptchaSection();
+            if (!this.state.captchaResponse) {
+                Toast.info('Please complete the captcha first');
+                return;
+            }
         }
 
         this.doFetchFormats();
@@ -356,7 +349,7 @@ const App = {
             
             if (data.captcha_required) {
                 this.resetCaptcha();
-                this.showCaptchaModal();
+                this.showCaptchaSection();
                 throw new Error(data.error || 'Captcha required');
             }
             
@@ -371,6 +364,7 @@ const App = {
             });
 
             this.renderFormatSelection();
+            this.hideCaptchaSection();
             Toast.success(`Found ${this.state.formats.length} formats`);
             this.resetCaptcha();
         } catch (e) {

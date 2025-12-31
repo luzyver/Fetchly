@@ -78,7 +78,13 @@
                 </span>
             </button>
 
-            
+            <div id="captchaSection" class="hidden mt-4">
+                <div class="p-4 bg-[var(--bg-surface)] border border-[var(--border-subtle)] rounded-lg">
+                    <p class="text-sm text-[var(--text-muted)] mb-3">Complete the captcha to continue</p>
+                    <div id="captchaContainer" class="flex justify-center"></div>
+                </div>
+            </div>
+
             <div id="usageInfo" class="mt-4 text-xs text-[var(--text-faint)] font-mono"></div>
 
             
@@ -126,21 +132,6 @@
 <footer class="fixed bottom-4 left-6 text-[10px] text-[var(--text-faint)] font-mono pointer-events-none">
     <span id="year"></span> © FETCHLY SYSTEMS
 </footer>
-
-<div id="captchaModal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4">
-    <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" onclick="App.closeCaptchaModal()"></div>
-    <div class="relative bg-[var(--bg-surface)] border border-[var(--border-subtle)] rounded-lg p-6 max-w-sm w-full">
-        <div class="text-center mb-4">
-            <h3 class="text-lg font-semibold text-[var(--text-main)]">Verify you're human</h3>
-            <p class="text-sm text-[var(--text-muted)] mt-1">Complete the captcha to continue</p>
-        </div>
-        <div id="captchaContainer" class="flex justify-center mb-4"></div>
-        <div class="flex gap-2">
-            <button onclick="App.closeCaptchaModal()" class="flex-1 px-4 py-2 text-sm text-[var(--text-muted)] border border-[var(--border-subtle)] rounded-md hover:bg-[var(--bg-surface-hover)]">Cancel</button>
-            <button onclick="App.submitWithCaptcha()" class="flex-1 px-4 py-2 text-sm font-medium bg-white text-black rounded-md hover:bg-gray-200">Continue</button>
-        </div>
-    </div>
-</div>
 
 <script>document.getElementById('year').textContent = new Date().getFullYear();</script>
 <script src="{{ url_for('static', filename='js/protection.js') }}?v={{ cache_version }}"></script>
