@@ -1,11 +1,11 @@
 import os
 import uuid
 import logging
-from typing import Dict, Any, Optional, Tuple
+from typing import Tuple, Optional
 from concurrent.futures import ThreadPoolExecutor
 from flask import Blueprint, request, jsonify, send_file
 from core.config import CONFIG
-from core.database import get_db, check_limit, set_full_usage
+from core.database import get_db, check_limit
 from core.resolver import resolve_source_url
 from core.converter import process_download
 from core.utils import is_tiktok_url, is_twitter_url, is_direct_supported
@@ -45,12 +45,6 @@ def convert():
     if not limit_info['allowed']:
         return jsonify({'error': 'Daily limit reached (1GB). Try again tomorrow.'}), 429
 
-    estimated_filesize = data.get('filesize', 0)
-    if not limit_info.get('whitelisted') and estimated_filesize > 0:
-        error = _check_estimated_size(estimated_filesize, limit_info, fingerprint, ip)
-        if error:
-            return jsonify({'error': error}), 429
-
     if not resolved_url:
         resolved_url, cookies, referer = _resolve_if_needed(url, referer)
         if resolved_url is None:
@@ -67,25 +61,6 @@ def convert():
     except Exception as e:
         logger.error(f"Submission error: {e}")
         return jsonify({'error': 'Server Error'}), 500
-
-
-def _check_estimated_size(estimated_filesize: int, limit_info: Dict[str, Any], 
-                          fingerprint: str, ip: str) -> Optional[str]:
-    exceeds_remaining = estimated_filesize > limit_info['remaining']
-    exceeds_max = estimated_filesize > MAX_FILE_SIZE
-
-    if not (exceeds_remaining or exceeds_max):
-        return None
-
-    set_full_usage(fingerprint, ip)
-    filesize_mb = round(estimated_filesize / (1024 * 1024))
-    
-    if exceeds_max:
-        return f'File too large ({filesize_mb}MB). Maximum file size is 1GB. Daily quota consumed.'
-    
-    remaining_mb = round(limit_info['remaining'] / (1024 * 1024))
-    return f'File too large ({filesize_mb}MB). You only have {remaining_mb}MB remaining. Daily quota consumed.'
-
 
 def _resolve_if_needed(url: str, referer: str) -> Tuple[Optional[str], Optional[str], str]:
     resolved_url = url

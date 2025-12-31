@@ -44,6 +44,28 @@
     outline: none;
 }
 
+.hidden {
+    display: none !important;
+}
+
+.mobile-only {
+    display: block;
+}
+
+.desktop-only {
+    display: none;
+}
+
+@media (min-width: 640px) {
+    .mobile-only {
+        display: none;
+    }
+
+    .desktop-only {
+        display: block;
+    }
+}
+
 body {
     background-color: var(--bg-body);
     color: var(--text-main);
@@ -64,7 +86,8 @@ h1 {
     margin: 0 0 1rem 0;
 }
 
-h2, h3 {
+h2,
+h3 {
     font-size: 0.75rem;
     font-weight: 500;
     color: var(--text-muted);
@@ -107,6 +130,7 @@ p {
     max-width: 1200px;
     width: 100%;
     margin: 0 auto;
+    min-height: 100vh;
 }
 
 .sidebar {
@@ -125,12 +149,14 @@ p {
     .app-layout {
         grid-template-columns: 1fr;
     }
+
     .sidebar {
         height: auto;
         border-left: none;
         border-top: 1px solid var(--border-subtle);
         position: relative;
     }
+
     .main-content {
         padding: 2rem;
     }
@@ -302,9 +328,17 @@ p {
 }
 
 @keyframes pulse {
-    0% { opacity: 0.4; }
-    50% { opacity: 1; }
-    100% { opacity: 0.4; }
+    0% {
+        opacity: 0.4;
+    }
+
+    50% {
+        opacity: 1;
+    }
+
+    100% {
+        opacity: 0.4;
+    }
 }
 
 .table-container {
@@ -413,27 +447,55 @@ tr:hover td {
     color: var(--text-main);
 }
 
-.toast-success .toast-icon { color: var(--status-success); }
-.toast-error .toast-icon { color: var(--status-error); }
-.toast-info .toast-icon { color: var(--text-muted); }
-.toast-warning .toast-icon { color: #f59e0b; }
+.toast-success .toast-icon {
+    color: var(--status-success);
+}
+
+.toast-error .toast-icon {
+    color: var(--status-error);
+}
+
+.toast-info .toast-icon {
+    color: var(--text-muted);
+}
+
+.toast-warning .toast-icon {
+    color: #f59e0b;
+}
 
 .toast.removing {
     animation: toastFadeOut 0.2s ease-out forwards;
 }
 
 @keyframes toastSlideDown {
-    from { opacity: 0; transform: translateY(-10px); }
-    to { opacity: 1; transform: translateY(0); }
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
 @keyframes toastFadeOut {
-    to { opacity: 0; transform: translateY(-10px); }
+    to {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
 }
 
 @keyframes fadeIn {
-    from { opacity: 0; transform: translateY(5px); }
-    to { opacity: 1; transform: translateY(0); }
+    from {
+        opacity: 0;
+        transform: translateY(5px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
 .animate-fadeIn {
@@ -504,12 +566,22 @@ tr:hover td {
 }
 
 @keyframes slideIn {
-    from { opacity: 0; transform: translateX(20px); }
-    to { opacity: 1; transform: translateX(0); }
+    from {
+        opacity: 0;
+        transform: translateX(20px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
 }
 
 @keyframes slideOut {
-    to { opacity: 0; transform: translateX(20px); }
+    to {
+        opacity: 0;
+        transform: translateX(20px);
+    }
 }
 
 .admin-notification {
