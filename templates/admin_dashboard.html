@@ -7,22 +7,12 @@
     <meta name="theme-color" content="#0b0c0e">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}?v={{ cache_version }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/admin/admin.css') }}?v={{ cache_version }}">
     <script src="https://cdn.tailwindcss.com"></script>
-    <style>
-        .card { background: var(--bg-surface); border: 1px solid var(--border-subtle); border-radius: 8px; }
-        .section-title { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted); }
-        .stat-card { text-align: center; padding: 16px; }
-        .stat-value { font-size: 28px; font-weight: 600; color: white; line-height: 1; }
-        .stat-label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.03em; color: var(--text-muted); margin-top: 6px; }
-        .tab-btn { padding: 8px 16px; font-size: 13px; color: var(--text-muted); border-radius: 6px; transition: all 0.15s; }
-        .tab-btn:hover { color: white; background: var(--bg-surface-hover); }
-        .tab-btn.active { color: white; background: var(--bg-surface); }
-        .tab-content { display: none; }
-        .tab-content.active { display: block; }
-    </style>
 </head>
 <body class="bg-[var(--bg-body)]">
     <div class="max-w-5xl mx-auto px-4 py-6">
+        <!-- Header -->
         <header class="mb-6">
             <div class="flex items-center justify-between mb-2">
                 <div class="flex items-center gap-3">
@@ -38,6 +28,7 @@
             </div>
         </header>
 
+        <!-- Stats Grid -->
         <div class="grid grid-cols-3 sm:grid-cols-6 gap-2 mb-6">
             <div class="card stat-card">
                 <div class="stat-value">{{ stats.total }}</div>
@@ -65,6 +56,7 @@
             </div>
         </div>
 
+        <!-- Tabs -->
         <div class="flex gap-2 mb-4 border-b border-[var(--border-subtle)] pb-4">
             <button class="tab-btn active" data-tab="tasks">Tasks</button>
             <button class="tab-btn" data-tab="whitelist">Whitelist</button>
@@ -72,6 +64,7 @@
             <button class="tab-btn" data-tab="usage">Usage</button>
         </div>
 
+        <!-- Tasks Tab -->
         <div id="tasks" class="tab-content active">
             <div class="section-title mb-3">All Tasks</div>
             {% if tasks %}
@@ -117,6 +110,7 @@
             {% endif %}
         </div>
 
+        <!-- Whitelist Tab -->
         <div id="whitelist" class="tab-content">
             <div class="card p-4 mb-4">
                 <div class="section-title mb-3">Add to Whitelist</div>
@@ -149,6 +143,7 @@
             {% endif %}
         </div>
 
+        <!-- Blacklist Tab -->
         <div id="blacklist" class="tab-content">
             <div class="card p-4 mb-4">
                 <div class="section-title mb-3">Add to Blacklist</div>
@@ -181,6 +176,7 @@
             {% endif %}
         </div>
 
+        <!-- Usage Tab -->
         <div id="usage" class="tab-content">
             <div class="flex items-center justify-between mb-3">
                 <div class="section-title">Usage Monitor</div>
@@ -231,65 +227,11 @@
         </div>
     </div>
 
-    <script>
-        document.querySelectorAll('.progress-bar').forEach(el => el.style.width = el.dataset.width + '%');
-        
-        document.querySelectorAll('.tab-btn').forEach(btn => {
-            btn.addEventListener('click', () => {
-                document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-                document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
-                btn.classList.add('active');
-                document.getElementById(btn.dataset.tab).classList.add('active');
-            });
-        });
-
-        async function deleteTask(taskId) {
-            if (!confirm('Delete this task?')) return;
-            try {
-                const res = await fetch(`/admin/delete_task/${taskId}`, { method: 'DELETE' });
-                if (res.ok) document.querySelector(`[data-task-id="${taskId}"]`).remove();
-            } catch (e) { alert('Error: ' + e.message); }
-        }
-
-        async function addToWhitelist() {
-            const userId = document.getElementById('userId').value.trim();
-            const note = document.getElementById('note').value.trim();
-            if (!userId) return alert('User ID required');
-            try {
-                const res = await fetch('/admin/whitelist/add', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ user_id: userId, note }) });
-                if (res.ok) location.reload();
-            } catch (e) { alert('Error: ' + e.message); }
-        }
-
-        async function removeFromWhitelist(userId) {
-            if (!confirm('Remove from whitelist?')) return;
-            try {
-                const res = await fetch(`/admin/whitelist/remove/${userId}`, { method: 'DELETE' });
-                if (res.ok) document.querySelector(`[data-user-id="${userId}"]`).remove();
-            } catch (e) { alert('Error: ' + e.message); }
-        }
-
-        async function addToBlacklist() {
-            const ip = document.getElementById('blacklistIp').value.trim();
-            const reason = document.getElementById('blacklistReason').value.trim();
-            if (!ip) return alert('IP required');
-            try {
-                const res = await fetch('/admin/blacklist/add', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ip, reason }) });
-                if (res.ok) location.reload();
-            } catch (e) { alert('Error: ' + e.message); }
-        }
-
-        async function removeFromBlacklist(ip) {
-            if (!confirm('Unblock this IP?')) return;
-            try {
-                const res = await fetch(`/admin/blacklist/remove/${ip}`, { method: 'DELETE' });
-                if (res.ok) document.querySelector(`[data-blacklist-ip="${ip}"]`).remove();
-            } catch (e) { alert('Error: ' + e.message); }
-        }
-
-        function copyFingerprint(fp) {
-            navigator.clipboard.writeText(fp).then(() => alert('Copied!'));
-        }
-    </script>
+    <!-- Admin JS Modules -->
+    <script src="{{ url_for('static', filename='js/admin/api.js') }}?v={{ cache_version }}"></script>
+    <script src="{{ url_for('static', filename='js/admin/ui.js') }}?v={{ cache_version }}"></script>
+    <script src="{{ url_for('static', filename='js/admin/tabs.js') }}?v={{ cache_version }}"></script>
+    <script src="{{ url_for('static', filename='js/admin/actions.js') }}?v={{ cache_version }}"></script>
+    <script src="{{ url_for('static', filename='js/admin/app.js') }}?v={{ cache_version }}"></script>
 </body>
 </html>

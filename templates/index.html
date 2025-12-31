@@ -132,6 +132,13 @@
 <script>document.getElementById('year').textContent = new Date().getFullYear();</script>
 <script src="{{ url_for('static', filename='js/protection.js') }}?v={{ cache_version }}"></script>
 <script src="{{ url_for('static', filename='js/toast.js') }}?v={{ cache_version }}"></script>
+<!-- JS Modules -->
+<script src="{{ url_for('static', filename='js/modules/utils.js') }}?v={{ cache_version }}"></script>
+<script src="{{ url_for('static', filename='js/modules/state.js') }}?v={{ cache_version }}"></script>
+<script src="{{ url_for('static', filename='js/modules/api.js') }}?v={{ cache_version }}"></script>
+<script src="{{ url_for('static', filename='js/modules/theme.js') }}?v={{ cache_version }}"></script>
+<script src="{{ url_for('static', filename='js/modules/captcha.js') }}?v={{ cache_version }}"></script>
+<script src="{{ url_for('static', filename='js/modules/ui.js') }}?v={{ cache_version }}"></script>
 <script src="{{ url_for('static', filename='js/app.js') }}?v={{ cache_version }}"></script>
 </body>
 </html>

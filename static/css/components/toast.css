@@ -1,0 +1,87 @@
+.toast-container {
+    position: fixed;
+    top: 2rem;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 9999;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    pointer-events: none;
+    align-items: center;
+    transition: all 0.3s ease;
+}
+
+@media (min-width: 901px) {
+    .toast-container {
+        left: auto;
+        right: calc(var(--sidebar-width) + 2rem);
+        transform: none;
+        align-items: flex-end;
+    }
+}
+
+.toast {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.75rem 1rem;
+    background-color: var(--bg-surface);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-md);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    color: var(--text-main);
+    pointer-events: auto;
+    animation: toastSlideDown 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    min-width: 300px;
+    max-width: 400px;
+}
+
+.toast-message {
+    font-size: 0.875rem;
+    line-height: 1.4;
+    flex: 1;
+}
+
+.toast-icon {
+    width: 1.25rem;
+    height: 1.25rem;
+    flex-shrink: 0;
+}
+
+.toast-close {
+    background: transparent;
+    border: none;
+    color: var(--text-muted);
+    cursor: pointer;
+    padding: 0.25rem;
+    margin-left: 0.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: var(--radius-sm);
+    transition: all 0.2s;
+}
+
+.toast-close:hover {
+    background-color: var(--bg-surface-hover);
+    color: var(--text-main);
+}
+
+.toast-success .toast-icon { color: var(--status-success); }
+.toast-error .toast-icon { color: var(--status-error); }
+.toast-info .toast-icon { color: var(--text-muted); }
+.toast-warning .toast-icon { color: #f59e0b; }
+
+.toast.removing {
+    animation: toastFadeOut 0.2s ease-out forwards;
+}
+
+@keyframes toastSlideDown {
+    from { opacity: 0; transform: translateY(-10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes toastFadeOut {
+    to { opacity: 0; transform: translateY(-10px); }
+}

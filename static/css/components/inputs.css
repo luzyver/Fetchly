@@ -1,0 +1,24 @@
+.input-group {
+    position: relative;
+    margin-bottom: 1.5rem;
+}
+
+.hero-input {
+    width: 100%;
+    background-color: var(--bg-input);
+    border: 1px solid var(--border-subtle);
+    color: var(--text-main);
+    padding: 1.25rem 1.5rem;
+    font-size: 1.125rem;
+    border-radius: var(--radius-md);
+    transition: border-color 0.15s ease;
+    font-family: monospace;
+}
+
+.hero-input:focus {
+    border-color: var(--border-focus);
+}
+
+.hero-input::placeholder {
+    color: var(--text-faint);
+}

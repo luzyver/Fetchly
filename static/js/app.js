@@ -1,482 +1,211 @@
 const App = {
-    state: {
-        currentTaskId: null,
-        pollInterval: null,
-        isProcessing: false,
-        progress: 0,
-        formats: [],
-        selectedFormat: 'best',
-        resolvedUrl: null,
-        cookies: null,
-        referer: null,
-        videoTitle: null,
-        fingerprint: null,
-        captchaEnabled: false,
-        turnstileSiteKey: '',
-        turnstileWidgetId: null
-    },
-
-    elements: {},
-
     async init() {
-        this.elements = {
-            input: document.getElementById('url'),
-            pasteBtn: document.getElementById('pasteBtn'),
-            clearBtn: document.getElementById('clearBtn'),
-            fetchBtn: document.getElementById('fetchBtn'),
-            convertBtn: document.getElementById('convertBtn'),
-            btnContent: document.getElementById('btnContent'),
-            btnLoader: document.getElementById('btnLoader'),
-            fetchContent: document.getElementById('fetchContent'),
-            fetchLoader: document.getElementById('fetchLoader'),
-            formatSection: document.getElementById('formatSection'),
-            formatList: document.getElementById('formatList'),
-            usageInfo: document.getElementById('usageInfo'),
-            historySection: document.getElementById('historySection'),
-            historyList: document.getElementById('historyList'),
-            historyEmpty: document.getElementById('historyEmpty')
-        };
+        ThemeManager.init();
+        UI.init();
+        
+        if (!UI.elements.input) return;
 
-        this.initTheme();
-        if (!this.elements.input) return;
-
-        await this.initFingerprint();
+        AppState.fingerprint = Utils.generateFingerprint();
+        
         this.bindEvents();
-        this.checkInputState();
-        this.checkUsageLimit();
-        this.loadHistory();
+        UI.checkInputState();
+        await this.checkUsageLimit();
+        await this.loadHistory();
     },
 
-    initTheme() {
-        const savedTheme = localStorage.getItem('theme') || 'dark';
-        document.documentElement.setAttribute('data-theme', savedTheme);
-        this.updateThemeIcon(savedTheme);
-        this.updateMetaColor(savedTheme);
-        document.getElementById('themeToggle')?.addEventListener('click', () => this.toggleTheme());
+    bindEvents() {
+        const { input, pasteBtn, clearBtn, fetchBtn, convertBtn } = UI.elements;
+
+        input?.addEventListener('input', () => {
+            UI.checkInputState();
+            this.resetFormatSelection();
+        });
+
+        input?.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter' && !AppState.isProcessing) {
+                AppState.formats.length > 0 ? this.startConversion() : this.fetchFormats();
+            }
+        });
+
+        pasteBtn?.addEventListener('click', () => this.handlePaste());
+        clearBtn?.addEventListener('click', () => this.handleClear());
+        fetchBtn?.addEventListener('click', () => this.fetchFormats());
+        convertBtn?.addEventListener('click', () => this.startConversion());
     },
 
-    toggleTheme() {
-        const currentTheme = document.documentElement.getAttribute('data-theme');
-        const newTheme = currentTheme === 'light' ? 'dark' : 'light';
-        document.documentElement.setAttribute('data-theme', newTheme);
-        localStorage.setItem('theme', newTheme);
-        this.updateThemeIcon(newTheme);
-        this.updateMetaColor(newTheme);
-    },
-
-    updateThemeIcon(theme) {
-        const moon = document.getElementById('iconMoon');
-        const sun = document.getElementById('iconSun');
-        if (theme === 'light') {
-            moon?.classList.add('hidden');
-            sun?.classList.remove('hidden');
-        } else {
-            moon?.classList.remove('hidden');
-            sun?.classList.add('hidden');
+    async handlePaste() {
+        try {
+            const text = await navigator.clipboard.readText();
+            UI.setInputValue(text);
+            UI.checkInputState();
+            this.resetFormatSelection();
+            Toast.success('URL pasted');
+        } catch {
+            Toast.error('Clipboard access denied');
         }
     },
 
-    updateMetaColor(theme) {
-        const metaColor = theme === 'light' ? '#ffffff' : '#141517';
-        document.querySelector('meta[name="theme-color"]')?.setAttribute('content', metaColor);
+    handleClear() {
+        UI.setInputValue('');
+        UI.checkInputState();
+        this.resetFormatSelection();
+        UI.focusInput();
     },
 
-    async initFingerprint() {
-        this.state.fingerprint = this.generateFingerprint();
-    },
-
-    generateFingerprint() {
-        const canvas = document.createElement('canvas');
-        canvas.width = 200;
-        canvas.height = 50;
-        const ctx = canvas.getContext('2d');
-        ctx.textBaseline = 'top';
-        ctx.font = '14px Arial';
-        ctx.fillStyle = '#f60';
-        ctx.fillRect(125, 1, 62, 20);
-        ctx.fillStyle = '#069';
-        ctx.fillText('Fetchly', 2, 15);
-        ctx.fillStyle = 'rgba(102, 204, 0, 0.7)';
-        ctx.fillText('Fetchly', 4, 17);
-
-        const canvasData = canvas.toDataURL();
-        const data = [
-            canvasData, navigator.userAgent, navigator.language,
-            screen.width + 'x' + screen.height, screen.colorDepth,
-            new Date().getTimezoneOffset(),
-            navigator.hardwareConcurrency || 0,
-            navigator.deviceMemory || 0
-        ].join('|');
-
-        let hash = 0;
-        for (let i = 0; i < data.length; i++) {
-            const char = data.charCodeAt(i);
-            hash = ((hash << 5) - hash) + char;
-            hash = hash & hash;
-        }
-        return 'fp_' + Math.abs(hash).toString(16);
+    resetFormatSelection() {
+        AppState.reset();
+        UI.hideFormatSection();
     },
 
     async checkUsageLimit() {
-        if (!this.state.fingerprint) return;
+        if (!AppState.fingerprint) return;
+        
         try {
-            const res = await fetch('/check-limit', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ fingerprint: this.state.fingerprint })
-            });
-            const data = await res.json();
-            this.updateUsageDisplay(data);
+            const { data } = await API.checkLimit(AppState.fingerprint);
+            UI.renderUsage(data);
             
             if (data.captcha_enabled && data.turnstile_site_key) {
-                this.state.captchaEnabled = true;
-                this.state.turnstileSiteKey = data.turnstile_site_key;
-                this.loadTurnstile();
+                CaptchaManager.init(data.turnstile_site_key);
             }
         } catch (e) {
             console.error('Failed to check limit:', e);
         }
     },
 
-    loadTurnstile() {
-        if (document.getElementById('turnstile-script')) return;
-
-        this.updateCaptchaStatus('Verifying...', false);
-
-        const script = document.createElement('script');
-        script.id = 'turnstile-script';
-        script.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js?onload=onTurnstileLoad';
-        script.async = true;
-
-        window.onTurnstileLoad = () => {
-            const container = document.createElement('div');
-            container.id = 'turnstile-container';
-            container.style.cssText = 'position: fixed; bottom: 20px; right: 20px; z-index: -1; opacity: 0; pointer-events: none;';
-            document.body.appendChild(container);
-
-            this.state.turnstileWidgetId = turnstile.render('#turnstile-container', {
-                sitekey: this.state.turnstileSiteKey,
-                theme: 'dark',
-                size: 'invisible',
-                callback: (token) => {
-                    this.state.turnstileToken = token;
-                    this.updateCaptchaStatus('Verified', true);
-                }
-            });
-        };
-
-        document.head.appendChild(script);
-    },
-
-    updateCaptchaStatus(text, verified) {
-        const statusEl = document.getElementById('captchaStatus');
-        const textEl = document.getElementById('captchaText');
-        if (statusEl && textEl) {
-            statusEl.classList.remove('hidden');
-            textEl.textContent = text;
-            if (verified) {
-                statusEl.classList.remove('text-[var(--text-muted)]');
-                statusEl.classList.add('text-emerald-500');
-            } else {
-                statusEl.classList.remove('text-emerald-500');
-                statusEl.classList.add('text-[var(--text-muted)]');
-            }
-        }
-    },
-
-    getCaptchaToken() {
-        if (!this.state.captchaEnabled) return '';
-        return this.state.turnstileToken || '';
-    },
-
-    resetTurnstile() {
-        if (this.state.turnstileWidgetId !== null && typeof turnstile !== 'undefined') {
-            turnstile.reset(this.state.turnstileWidgetId);
-            this.state.turnstileToken = null;
-            this.updateCaptchaStatus('Verifying...', false);
-        }
-    },
-
-    updateUsageDisplay(data) {
-        const usedMB = Math.round(data.used / (1024 * 1024));
-        const limitMB = Math.round(data.limit / (1024 * 1024));
-        const remainingMB = Math.round(data.remaining / (1024 * 1024));
-        const percent = Math.round((data.used / data.limit) * 100);
-
-        if (this.elements.usageInfo) {
-            this.elements.usageInfo.innerHTML = `
-                <div class="text-xs text-[var(--text-muted)]">
-                    Daily usage: ${usedMB}MB / ${limitMB}MB (${remainingMB}MB remaining)
-                </div>
-                <div class="h-1 bg-[var(--border-subtle)] rounded-full overflow-hidden mt-1">
-                    <div class="h-full ${percent > 80 ? 'bg-red-500' : 'bg-emerald-500'} rounded-full" style="width: ${percent}%"></div>
-                </div>
-            `;
-        }
-    },
-
     async loadHistory() {
-        if (!this.state.fingerprint) return;
+        if (!AppState.fingerprint) return;
+        
         try {
-            const res = await fetch('/history', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ fingerprint: this.state.fingerprint })
-            });
-            const data = await res.json();
-            this.renderHistory(data.history || []);
+            const { data } = await API.loadHistory(AppState.fingerprint);
+            UI.renderHistory(data.history || []);
         } catch (e) {
             console.error('Failed to load history:', e);
         }
     },
 
-    renderHistory(history) {
-        if (!this.elements.historySection) return;
-
-        if (history.length === 0) {
-            this.elements.historyEmpty?.classList.remove('hidden');
-            this.elements.historyList.innerHTML = '';
+    async fetchFormats() {
+        const url = UI.getInputValue();
+        
+        if (!url) {
+            Toast.warning('Enter a URL first');
+            UI.focusInput();
+            return;
+        }
+        
+        if (!Utils.isValidUrl(url)) {
+            Toast.warning('Enter a valid URL');
             return;
         }
 
-        this.elements.historyEmpty?.classList.add('hidden');
-        this.elements.historyList?.classList.remove('hidden');
-
-        const formatSize = (bytes) => {
-            if (!bytes) return '-';
-            if (bytes > 1024 * 1024) return `${(bytes / (1024 * 1024)).toFixed(1)}MB`;
-            if (bytes > 1024) return `${(bytes / 1024).toFixed(1)}KB`;
-            return `${bytes}B`;
-        };
-
-        this.elements.historyList.innerHTML = history.map(item => `
-            <div class="history-item">
-                <div class="flex justify-between items-start">
-                    <div class="history-title" title="${item.title || 'Unknown'}">${item.title || 'Untitled Video'}</div>
-                    ${item.status === 'completed' ? 
-                        `<a href="/download/${item.id}?fingerprint=${this.state.fingerprint}" class="text-xs text-[var(--text-main)] hover:underline">Download</a>` : 
-                        `<span class="text-xs text-[var(--text-faint)]">${item.status}</span>`}
-                </div>
-                <div class="history-meta mt-1">
-                    <span class="status-dot ${item.status === 'completed' ? 'success' : item.status === 'failed' ? 'error' : 'processing'}"></span>
-                    <span>${formatSize(item.filesize)}</span>
-                    <span class="ml-auto font-mono text-[10px] text-[var(--text-faint)]">${item.id.substring(0,6)}</span>
-                </div>
-            </div>
-        `).join('');
-    },
-
-    bindEvents() {
-        this.elements.input.addEventListener('input', () => {
-            this.checkInputState();
-            this.resetFormatSelection();
-        });
-
-        this.elements.input.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter' && !this.state.isProcessing) {
-                this.state.formats.length > 0 ? this.startConversion() : this.fetchFormats();
-            }
-        });
-
-        this.elements.pasteBtn?.addEventListener('click', async () => {
-            try {
-                const text = await navigator.clipboard.readText();
-                this.elements.input.value = text;
-                this.checkInputState();
-                this.resetFormatSelection();
-                Toast.success('URL pasted');
-            } catch { Toast.error('Clipboard access denied'); }
-        });
-
-        this.elements.clearBtn?.addEventListener('click', () => {
-            this.elements.input.value = '';
-            this.checkInputState();
-            this.resetFormatSelection();
-            this.elements.input.focus();
-        });
-
-        this.elements.fetchBtn?.addEventListener('click', () => this.fetchFormats());
-        this.elements.convertBtn?.addEventListener('click', () => this.startConversion());
-    },
-
-    checkInputState() {
-        const hasValue = this.elements.input.value.trim().length > 0;
-        this.elements.clearBtn?.classList.toggle('hidden', !hasValue);
-        this.elements.pasteBtn?.classList.toggle('hidden', hasValue);
-    },
-
-    resetFormatSelection() {
-        Object.assign(this.state, {
-            formats: [], selectedFormat: 'best', resolvedUrl: null,
-            cookies: null, referer: null, videoTitle: null
-        });
-        this.elements.formatSection?.classList.add('hidden');
-        this.elements.convertBtn?.classList.add('hidden');
-        this.elements.fetchBtn?.classList.remove('hidden');
-    },
-
-    setFetchLoading(loading) {
-        if (!this.elements.fetchBtn) return;
-        this.elements.fetchBtn.disabled = loading;
-        this.elements.input && (this.elements.input.disabled = loading);
-        this.elements.fetchContent?.classList.toggle('hidden', loading);
-        this.elements.fetchLoader?.classList.toggle('hidden', !loading);
-    },
-
-    setConvertLoading(loading) {
-        this.state.isProcessing = loading;
-        if (!this.elements.convertBtn) return;
-        this.elements.convertBtn.disabled = loading;
-        this.elements.input && (this.elements.input.disabled = loading);
-        this.elements.btnContent?.classList.toggle('hidden', loading);
-        this.elements.btnLoader?.classList.toggle('hidden', !loading);
-    },
-
-    fetchFormats() {
-        const url = this.elements.input?.value.trim();
-        if (!url) { Toast.warning('Enter a URL first'); this.elements.input?.focus(); return; }
-        if (!url.startsWith('http')) { Toast.warning('Enter a valid URL'); return; }
-
-        this.doFetchFormats();
-    },
-
-    async doFetchFormats() {
-        const url = this.elements.input?.value.trim();
-        this.setFetchLoading(true);
+        UI.setFetchLoading(true);
         Toast.info('Fetching formats...');
 
         try {
-            const captchaToken = this.getCaptchaToken();
-            
-            const res = await fetch('/fetch-formats', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ url, captcha: captchaToken })
-            });
-            const data = await res.json();
+            const captchaToken = CaptchaManager.getToken();
+            const { response, data } = await API.fetchFormats(url, captchaToken);
             
             if (data.captcha_required) {
-                this.resetTurnstile();
+                CaptchaManager.reset();
                 throw new Error(data.error || 'Verification failed');
             }
             
-            if (!res.ok) throw new Error(data.error || 'Failed to fetch');
+            if (!response.ok) {
+                throw new Error(data.error || 'Failed to fetch');
+            }
 
-            Object.assign(this.state, {
-                formats: data.formats || [],
-                resolvedUrl: data.resolved_url,
-                cookies: data.cookies,
-                referer: data.referer,
-                videoTitle: data.title
-            });
-
-            this.renderFormatSelection();
-            Toast.success(`Found ${this.state.formats.length} formats`);
+            AppState.setFormats(data);
+            UI.showFormatSection();
+            UI.renderFormats(AppState.formats, AppState.videoTitle);
+            Toast.success(`Found ${AppState.formats.length} formats`);
         } catch (e) {
             Toast.error(e.message);
         } finally {
-            this.setFetchLoading(false);
+            UI.setFetchLoading(false);
         }
-    },
-
-    renderFormatSelection() {
-        if (!this.elements.formatSection || !this.elements.formatList) return;
-
-        this.elements.formatSection.classList.remove('hidden');
-        this.elements.fetchBtn?.classList.add('hidden');
-        this.elements.convertBtn?.classList.remove('hidden');
-
-        const videoTitle = document.getElementById('videoTitle');
-        if (videoTitle && this.state.videoTitle) {
-            videoTitle.textContent = this.state.videoTitle;
-            videoTitle.title = this.state.videoTitle;
-        }
-
-        this.elements.formatList.innerHTML = this.state.formats.map((fmt, i) => `
-            <label class="format-option ${i === 0 ? 'selected' : ''}">
-                <input type="radio" name="format" value="${fmt.format_id}" ${i === 0 ? 'checked' : ''} class="hidden">
-                <div class="flex justify-between items-center w-full">
-                    <span class="font-medium text-[var(--text-main)]">${fmt.resolution || 'Auto'}</span>
-                </div>
-                <div class="format-meta">
-                    ${fmt.ext.toUpperCase()} ${fmt.filesize ? '• ' + fmt.filesize : ''}
-                </div>
-            </label>`).join('');
-
-        this.elements.formatList.querySelectorAll('input[name="format"]').forEach(radio => {
-            radio.addEventListener('change', (e) => {
-                this.state.selectedFormat = e.target.value;
-                this.elements.formatList.querySelectorAll('.format-option').forEach(opt => opt.classList.remove('selected'));
-                e.target.closest('.format-option').classList.add('selected');
-            });
-        });
     },
 
     async startConversion() {
-        const url = this.elements.input?.value.trim();
-        if (!url) { Toast.warning('Enter a URL first'); return; }
+        const url = UI.getInputValue();
+        if (!url) {
+            Toast.warning('Enter a URL first');
+            return;
+        }
 
-        const selectedFormat = this.state.formats.find(f => f.format_id === this.state.selectedFormat);
-        const filesize = selectedFormat?.filesize_bytes || 0;
-
-        this.setConvertLoading(true);
-        this.state.progress = 0;
+        const selectedFormat = AppState.formats.find(f => f.format_id === AppState.selectedFormat);
+        
+        UI.setConvertLoading(true);
+        AppState.progress = 0;
         Toast.info('Starting download...');
 
         try {
-            const res = await fetch('/convert', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    url,
-                    format_id: this.state.selectedFormat,
-                    resolved_url: this.state.resolvedUrl,
-                    cookies: this.state.cookies,
-                    referer: this.state.referer,
-                    fingerprint: this.state.fingerprint,
-                    title: this.state.videoTitle,
-                    filesize: filesize
-                })
+            const { response, data } = await API.startConversion({
+                url,
+                format_id: AppState.selectedFormat,
+                resolved_url: AppState.resolvedUrl,
+                cookies: AppState.cookies,
+                referer: AppState.referer,
+                fingerprint: AppState.fingerprint,
+                title: AppState.videoTitle,
+                filesize: selectedFormat?.filesize_bytes || 0
             });
-            const data = await res.json();
-            if (!res.ok) throw new Error(data.error || 'Failed');
 
-            this.state.currentTaskId = data.task_id;
-            if (this.state.pollInterval) clearInterval(this.state.pollInterval);
-            this.state.pollInterval = setInterval(() => this.checkStatus(), 1500);
+            if (!response.ok) {
+                throw new Error(data.error || 'Failed');
+            }
+
+            AppState.currentTaskId = data.task_id;
+            this.startPolling();
         } catch (e) {
-            this.setConvertLoading(false);
+            UI.setConvertLoading(false);
             Toast.error(e.message);
+        }
+    },
+
+    startPolling() {
+        this.stopPolling();
+        AppState.pollInterval = setInterval(() => this.checkStatus(), 1500);
+    },
+
+    stopPolling() {
+        if (AppState.pollInterval) {
+            clearInterval(AppState.pollInterval);
+            AppState.pollInterval = null;
         }
     },
 
     async checkStatus() {
-        if (!this.state.currentTaskId) return;
+        if (!AppState.currentTaskId) return;
+        
         try {
-            const res = await fetch(`/status/${this.state.currentTaskId}`);
-            if (!res.ok) throw new Error('Network error');
-            const data = await res.json();
+            const { response, data } = await API.checkStatus(AppState.currentTaskId);
+            
+            if (!response.ok) {
+                throw new Error('Network error');
+            }
 
             if (data.status === 'completed') {
-                this.stopPolling();
-                this.setConvertLoading(false);
-                this.loadHistory();
-                this.checkUsageLimit();
-                Toast.success('Ready to download!');
+                this.handleConversionComplete();
             } else if (data.status === 'failed') {
-                this.stopPolling();
-                this.setConvertLoading(false);
-                this.loadHistory();
-                Toast.error(data.error || 'Download failed');
+                this.handleConversionFailed(data.error);
             }
-        } catch (e) { console.error('Poll error:', e); }
+        } catch (e) {
+            console.error('Poll error:', e);
+        }
     },
 
-    stopPolling() {
-        if (this.state.pollInterval) {
-            clearInterval(this.state.pollInterval);
-            this.state.pollInterval = null;
-        }
+    handleConversionComplete() {
+        this.stopPolling();
+        UI.setConvertLoading(false);
+        this.loadHistory();
+        this.checkUsageLimit();
+        Toast.success('Ready to download!');
+    },
+
+    handleConversionFailed(error) {
+        this.stopPolling();
+        UI.setConvertLoading(false);
+        this.loadHistory();
+        Toast.error(error || 'Download failed');
     }
 };
 
