@@ -14,7 +14,8 @@ const App = {
         captchaEnabled: false,
         recaptchaSiteKey: '',
         captchaWidgetId: null,
-        captchaResponse: ''
+        captchaResponse: '',
+        captchaRendered: false
     },
 
     elements: {},
@@ -32,15 +33,15 @@ const App = {
             fetchLoader: document.getElementById('fetchLoader'),
             formatSection: document.getElementById('formatSection'),
             formatList: document.getElementById('formatList'),
-            errorDetails: document.getElementById('errorDetails'),
             usageInfo: document.getElementById('usageInfo'),
             historySection: document.getElementById('historySection'),
             historyList: document.getElementById('historyList'),
-            historyEmpty: document.getElementById('historyEmpty')
+            historyEmpty: document.getElementById('historyEmpty'),
+            captchaModal: document.getElementById('captchaModal'),
+            captchaContainer: document.getElementById('captchaContainer')
         };
 
         this.initTheme();
-
         if (!this.elements.input) return;
 
         await this.initFingerprint();
@@ -55,14 +56,12 @@ const App = {
         document.documentElement.setAttribute('data-theme', savedTheme);
         this.updateThemeIcon(savedTheme);
         this.updateMetaColor(savedTheme);
-        
         document.getElementById('themeToggle')?.addEventListener('click', () => this.toggleTheme());
     },
 
     toggleTheme() {
         const currentTheme = document.documentElement.getAttribute('data-theme');
         const newTheme = currentTheme === 'light' ? 'dark' : 'light';
-        
         document.documentElement.setAttribute('data-theme', newTheme);
         localStorage.setItem('theme', newTheme);
         this.updateThemeIcon(newTheme);
@@ -106,11 +105,8 @@ const App = {
 
         const canvasData = canvas.toDataURL();
         const data = [
-            canvasData,
-            navigator.userAgent,
-            navigator.language,
-            screen.width + 'x' + screen.height,
-            screen.colorDepth,
+            canvasData, navigator.userAgent, navigator.language,
+            screen.width + 'x' + screen.height, screen.colorDepth,
             new Date().getTimezoneOffset(),
             navigator.hardwareConcurrency || 0,
             navigator.deviceMemory || 0
@@ -139,21 +135,32 @@ const App = {
             if (data.captcha_enabled && data.recaptcha_site_key) {
                 this.state.captchaEnabled = true;
                 this.state.recaptchaSiteKey = data.recaptcha_site_key;
-                this.initCaptcha();
             }
         } catch (e) {
             console.error('Failed to check limit:', e);
         }
     },
 
-    initCaptcha() {
-        if (!this.state.captchaEnabled || !this.state.recaptchaSiteKey) return;
+    showCaptchaModal() {
+        if (!this.elements.captchaModal) return;
+        this.elements.captchaModal.classList.remove('hidden');
+        document.body.style.overflow = 'hidden';
         
-        const container = document.getElementById('captchaContainer');
-        if (!container) return;
-        
-        container.classList.remove('hidden');
-        
+        if (!this.state.captchaRendered) {
+            this.renderCaptcha();
+        }
+    },
+
+    closeCaptchaModal() {
+        if (!this.elements.captchaModal) return;
+        this.elements.captchaModal.classList.add('hidden');
+        document.body.style.overflow = '';
+    },
+
+    renderCaptcha() {
+        const container = this.elements.captchaContainer;
+        if (!container || this.state.captchaRendered) return;
+
         const checkRecaptcha = () => {
             if (typeof grecaptcha !== 'undefined' && grecaptcha.render) {
                 this.state.captchaWidgetId = grecaptcha.render(container, {
@@ -162,6 +169,7 @@ const App = {
                     callback: (response) => { this.state.captchaResponse = response; },
                     'expired-callback': () => { this.state.captchaResponse = ''; }
                 });
+                this.state.captchaRendered = true;
             } else {
                 setTimeout(checkRecaptcha, 100);
             }
@@ -174,6 +182,15 @@ const App = {
             grecaptcha.reset(this.state.captchaWidgetId);
             this.state.captchaResponse = '';
         }
+    },
+
+    submitWithCaptcha() {
+        if (!this.state.captchaResponse) {
+            Toast.warning('Please complete the captcha');
+            return;
+        }
+        this.closeCaptchaModal();
+        this.doFetchFormats();
     },
 
     updateUsageDisplay(data) {
@@ -292,7 +309,6 @@ const App = {
         this.elements.formatSection?.classList.add('hidden');
         this.elements.convertBtn?.classList.add('hidden');
         this.elements.fetchBtn?.classList.remove('hidden');
-
     },
 
     setFetchLoading(loading) {
@@ -312,16 +328,21 @@ const App = {
         this.elements.btnLoader?.classList.toggle('hidden', !loading);
     },
 
-    async fetchFormats() {
+    fetchFormats() {
         const url = this.elements.input?.value.trim();
         if (!url) { Toast.warning('Enter a URL first'); this.elements.input?.focus(); return; }
         if (!url.startsWith('http')) { Toast.warning('Enter a valid URL'); return; }
 
         if (this.state.captchaEnabled && !this.state.captchaResponse) {
-            Toast.warning('Please complete the captcha');
+            this.showCaptchaModal();
             return;
         }
 
+        this.doFetchFormats();
+    },
+
+    async doFetchFormats() {
+        const url = this.elements.input?.value.trim();
         this.setFetchLoading(true);
         Toast.info('Fetching formats...');
 
@@ -335,6 +356,7 @@ const App = {
             
             if (data.captcha_required) {
                 this.resetCaptcha();
+                this.showCaptchaModal();
                 throw new Error(data.error || 'Captcha required');
             }
             
@@ -353,7 +375,6 @@ const App = {
             this.resetCaptcha();
         } catch (e) {
             Toast.error(e.message);
-            this.updateStatusUI('failed', e.message);
         } finally {
             this.setFetchLoading(false);
         }
@@ -366,30 +387,27 @@ const App = {
         this.elements.fetchBtn?.classList.add('hidden');
         this.elements.convertBtn?.classList.remove('hidden');
 
-        if (this.elements.videoTitle && this.state.videoTitle) {
-            this.elements.videoTitle.textContent = this.state.videoTitle;
-            this.elements.videoTitle.title = this.state.videoTitle;
+        const videoTitle = document.getElementById('videoTitle');
+        if (videoTitle && this.state.videoTitle) {
+            videoTitle.textContent = this.state.videoTitle;
+            videoTitle.title = this.state.videoTitle;
         }
 
-        this.elements.formatList.innerHTML = this.state.formats.map((fmt, i) => {
-            return `
-                <label class="format-option ${i === 0 ? 'selected' : ''}">
-                    <input type="radio" name="format" value="${fmt.format_id}" ${i === 0 ? 'checked' : ''} class="hidden">
-                    <div class="flex justify-between items-center w-full">
-                        <span class="font-medium text-[var(--text-main)]">${fmt.resolution || 'Auto'}</span>
-                    </div>
-                    <div class="format-meta">
-                        ${fmt.ext.toUpperCase()} ${fmt.filesize ? '• ' + fmt.filesize : ''}
-                    </div>
-                </label>`;
-        }).join('');
+        this.elements.formatList.innerHTML = this.state.formats.map((fmt, i) => `
+            <label class="format-option ${i === 0 ? 'selected' : ''}">
+                <input type="radio" name="format" value="${fmt.format_id}" ${i === 0 ? 'checked' : ''} class="hidden">
+                <div class="flex justify-between items-center w-full">
+                    <span class="font-medium text-[var(--text-main)]">${fmt.resolution || 'Auto'}</span>
+                </div>
+                <div class="format-meta">
+                    ${fmt.ext.toUpperCase()} ${fmt.filesize ? '• ' + fmt.filesize : ''}
+                </div>
+            </label>`).join('');
 
         this.elements.formatList.querySelectorAll('input[name="format"]').forEach(radio => {
             radio.addEventListener('change', (e) => {
                 this.state.selectedFormat = e.target.value;
-                this.elements.formatList.querySelectorAll('.format-option').forEach(opt => {
-                    opt.classList.remove('selected');
-                });
+                this.elements.formatList.querySelectorAll('.format-option').forEach(opt => opt.classList.remove('selected'));
                 e.target.closest('.format-option').classList.add('selected');
             });
         });
@@ -404,7 +422,6 @@ const App = {
 
         this.setConvertLoading(true);
         this.state.progress = 0;
-
         Toast.info('Starting download...');
 
         try {
@@ -426,9 +443,6 @@ const App = {
             if (!res.ok) throw new Error(data.error || 'Failed');
 
             this.state.currentTaskId = data.task_id;
-
-            this.updateStatusUI('processing');
-
             if (this.state.pollInterval) clearInterval(this.state.pollInterval);
             this.state.pollInterval = setInterval(() => this.checkStatus(), 1500);
         } catch (e) {
@@ -444,12 +458,8 @@ const App = {
             if (!res.ok) throw new Error('Network error');
             const data = await res.json();
 
-            data.progress !== undefined ? this.updateProgress(data.progress) : this.simulateProgress();
-
             if (data.status === 'completed') {
                 this.stopPolling();
-                this.updateProgress(100);
-                this.updateStatusUI('completed');
                 this.setConvertLoading(false);
                 this.loadHistory();
                 this.checkUsageLimit();
@@ -463,28 +473,10 @@ const App = {
         } catch (e) { console.error('Poll error:', e); }
     },
 
-    simulateProgress() {
-        if (this.state.progress < 90) {
-            this.state.progress = Math.min(90, this.state.progress + Math.random() * 5 + 1);
-            this.updateProgress(this.state.progress);
-        }
-    },
-
-    updateProgress(percent) {
-        this.state.progress = percent;
-
-    },
-
     stopPolling() {
         if (this.state.pollInterval) {
             clearInterval(this.state.pollInterval);
             this.state.pollInterval = null;
-        }
-    },
-
-    updateStatusUI(status, message = '') {
-        if (status === 'failed' && message) {
-            Toast.error(message);
         }
     }
 };
