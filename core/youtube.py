@@ -9,7 +9,13 @@ def download_youtube(url, output_path, format_id='best'):
     logger.info(f"YouTube download: {url[:60]} (format: {format_id})")
 
     cookie_file = get_cookie_file()
-    fmt = f'{format_id}+bestaudio/best' if format_id and format_id != 'best' else 'bestvideo+bestaudio/best'
+    
+    # Build format string - strict format selection without fallback to best
+    if format_id and format_id != 'best':
+        # Try exact format + best audio, fallback to format only
+        fmt = f'{format_id}+bestaudio/{format_id}'
+    else:
+        fmt = 'bestvideo+bestaudio/best'
 
     base_cmd = ['yt-dlp', '--no-check-certificate', '--no-playlist',
                 '-f', fmt, '--merge-output-format', 'mp4', '-o', output_path, url]
