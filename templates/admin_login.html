@@ -9,8 +9,9 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}?v={{ cache_version }}">
     <script src="https://cdn.tailwindcss.com"></script>
     {% if captcha_enabled %}
-    <script src="https://www.google.com/recaptcha/api.js" async defer></script>
+    <script src="https://www.google.com/recaptcha/api.js?render={{ recaptcha_site_key }}"></script>
     {% endif %}
+    <style>.grecaptcha-badge { visibility: hidden; }</style>
 </head>
 <body class="bg-[var(--bg-body)] min-h-screen flex items-center justify-center px-4">
     <div class="w-full max-w-sm">
@@ -25,7 +26,7 @@
             <p class="text-sm text-[var(--text-muted)]">Enter password to continue</p>
         </div>
 
-        <form method="POST" class="space-y-4">
+        <form method="POST" id="loginForm" class="space-y-4">
             {% if error %}
             <div class="bg-red-500/10 border border-red-500/20 rounded-lg px-4 py-3 text-sm text-red-400">
                 {{ error }}
@@ -37,11 +38,7 @@
                     class="w-full bg-[var(--bg-surface)] border border-[var(--border-subtle)] rounded-lg px-4 py-3 text-white placeholder-[var(--text-faint)] focus:border-[var(--border-focus)] focus:outline-none">
             </div>
             
-            {% if captcha_enabled %}
-            <div class="flex justify-center">
-                <div class="g-recaptcha" data-sitekey="{{ recaptcha_site_key }}" data-theme="dark"></div>
-            </div>
-            {% endif %}
+            <input type="hidden" name="g-recaptcha-response" id="captchaToken">
             
             <button type="submit" class="w-full bg-white text-black font-medium py-3 px-4 rounded-lg hover:bg-gray-200 transition-colors">
                 Login
@@ -52,5 +49,19 @@
             <a href="/" class="text-sm text-[var(--text-muted)] hover:text-white transition-colors">← Back to home</a>
         </div>
     </div>
+
+    {% if captcha_enabled %}
+    <script>
+        document.getElementById('loginForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            grecaptcha.ready(function() {
+                grecaptcha.execute('{{ recaptcha_site_key }}', {action: 'admin_login'}).then(function(token) {
+                    document.getElementById('captchaToken').value = token;
+                    document.getElementById('loginForm').submit();
+                });
+            });
+        });
+    </script>
+    {% endif %}
 </body>
 </html>

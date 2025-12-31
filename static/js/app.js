@@ -13,9 +13,7 @@ const App = {
         fingerprint: null,
         captchaEnabled: false,
         recaptchaSiteKey: '',
-        captchaWidgetId: null,
-        captchaResponse: '',
-        captchaRendered: false
+        recaptchaReady: false
     },
 
     elements: {},
@@ -36,9 +34,7 @@ const App = {
             usageInfo: document.getElementById('usageInfo'),
             historySection: document.getElementById('historySection'),
             historyList: document.getElementById('historyList'),
-            historyEmpty: document.getElementById('historyEmpty'),
-            captchaSection: document.getElementById('captchaSection'),
-            captchaContainer: document.getElementById('captchaContainer')
+            historyEmpty: document.getElementById('historyEmpty')
         };
 
         this.initTheme();
@@ -135,51 +131,39 @@ const App = {
             if (data.captcha_enabled && data.recaptcha_site_key) {
                 this.state.captchaEnabled = true;
                 this.state.recaptchaSiteKey = data.recaptcha_site_key;
+                this.loadRecaptchaV3();
             }
         } catch (e) {
             console.error('Failed to check limit:', e);
         }
     },
 
-    showCaptchaSection() {
-        if (!this.elements.captchaSection) return;
-        this.elements.captchaSection.classList.remove('hidden');
+    loadRecaptchaV3() {
+        if (document.getElementById('recaptcha-v3-script')) return;
         
-        if (!this.state.captchaRendered) {
-            this.renderCaptcha();
-        }
-    },
-
-    hideCaptchaSection() {
-        if (!this.elements.captchaSection) return;
-        this.elements.captchaSection.classList.add('hidden');
-    },
-
-    renderCaptcha() {
-        const container = this.elements.captchaContainer;
-        if (!container || this.state.captchaRendered) return;
-
-        const checkRecaptcha = () => {
-            if (typeof grecaptcha !== 'undefined' && grecaptcha.render) {
-                this.state.captchaWidgetId = grecaptcha.render(container, {
-                    sitekey: this.state.recaptchaSiteKey,
-                    theme: document.documentElement.getAttribute('data-theme') === 'light' ? 'light' : 'dark',
-                    callback: (response) => { this.state.captchaResponse = response; },
-                    'expired-callback': () => { this.state.captchaResponse = ''; }
-                });
-                this.state.captchaRendered = true;
-            } else {
-                setTimeout(checkRecaptcha, 100);
-            }
+        const script = document.createElement('script');
+        script.id = 'recaptcha-v3-script';
+        script.src = `https://www.google.com/recaptcha/api.js?render=${this.state.recaptchaSiteKey}`;
+        script.onload = () => {
+            grecaptcha.ready(() => {
+                this.state.recaptchaReady = true;
+            });
         };
-        checkRecaptcha();
+        document.head.appendChild(script);
     },
 
-    resetCaptcha() {
-        if (this.state.captchaWidgetId !== null && typeof grecaptcha !== 'undefined') {
-            grecaptcha.reset(this.state.captchaWidgetId);
-            this.state.captchaResponse = '';
+    async getCaptchaToken() {
+        if (!this.state.captchaEnabled) return '';
+        if (!this.state.recaptchaReady) {
+            await new Promise(resolve => {
+                const check = () => {
+                    if (this.state.recaptchaReady) resolve();
+                    else setTimeout(check, 100);
+                };
+                check();
+            });
         }
+        return await grecaptcha.execute(this.state.recaptchaSiteKey, { action: 'fetch_formats' });
     },
 
     updateUsageDisplay(data) {
@@ -298,7 +282,6 @@ const App = {
         this.elements.formatSection?.classList.add('hidden');
         this.elements.convertBtn?.classList.add('hidden');
         this.elements.fetchBtn?.classList.remove('hidden');
-        this.hideCaptchaSection();
     },
 
     setFetchLoading(loading) {
@@ -323,14 +306,6 @@ const App = {
         if (!url) { Toast.warning('Enter a URL first'); this.elements.input?.focus(); return; }
         if (!url.startsWith('http')) { Toast.warning('Enter a valid URL'); return; }
 
-        if (this.state.captchaEnabled) {
-            this.showCaptchaSection();
-            if (!this.state.captchaResponse) {
-                Toast.info('Please complete the captcha first');
-                return;
-            }
-        }
-
         this.doFetchFormats();
     },
 
@@ -340,17 +315,17 @@ const App = {
         Toast.info('Fetching formats...');
 
         try {
+            const captchaToken = await this.getCaptchaToken();
+            
             const res = await fetch('/fetch-formats', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ url, captcha: this.state.captchaResponse })
+                body: JSON.stringify({ url, captcha: captchaToken })
             });
             const data = await res.json();
             
             if (data.captcha_required) {
-                this.resetCaptcha();
-                this.showCaptchaSection();
-                throw new Error(data.error || 'Captcha required');
+                throw new Error(data.error || 'Verification failed');
             }
             
             if (!res.ok) throw new Error(data.error || 'Failed to fetch');
@@ -364,9 +339,7 @@ const App = {
             });
 
             this.renderFormatSelection();
-            this.hideCaptchaSection();
             Toast.success(`Found ${this.state.formats.length} formats`);
-            this.resetCaptcha();
         } catch (e) {
             Toast.error(e.message);
         } finally {
