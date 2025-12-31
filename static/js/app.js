@@ -141,7 +141,7 @@ const App = {
     loadTurnstile() {
         if (document.getElementById('turnstile-script')) return;
 
-        Toast.info('Verifying...');
+        this.updateCaptchaStatus('Verifying...', false);
 
         const script = document.createElement('script');
         script.id = 'turnstile-script';
@@ -160,12 +160,28 @@ const App = {
                 size: 'invisible',
                 callback: (token) => {
                     this.state.turnstileToken = token;
-                    Toast.success('Verification complete');
+                    this.updateCaptchaStatus('Verified', true);
                 }
             });
         };
 
         document.head.appendChild(script);
+    },
+
+    updateCaptchaStatus(text, verified) {
+        const statusEl = document.getElementById('captchaStatus');
+        const textEl = document.getElementById('captchaText');
+        if (statusEl && textEl) {
+            statusEl.classList.remove('hidden');
+            textEl.textContent = text;
+            if (verified) {
+                statusEl.classList.remove('text-[var(--text-muted)]');
+                statusEl.classList.add('text-emerald-500');
+            } else {
+                statusEl.classList.remove('text-emerald-500');
+                statusEl.classList.add('text-[var(--text-muted)]');
+            }
+        }
     },
 
     getCaptchaToken() {
@@ -177,6 +193,7 @@ const App = {
         if (this.state.turnstileWidgetId !== null && typeof turnstile !== 'undefined') {
             turnstile.reset(this.state.turnstileWidgetId);
             this.state.turnstileToken = null;
+            this.updateCaptchaStatus('Verifying...', false);
         }
     },
 
