@@ -47,7 +47,7 @@ def admin_logout():
 def admin_dashboard():
     try:
         with get_db() as conn:
-            tasks = conn.execute('SELECT * FROM tasks ORDER BY created_at DESC LIMIT 50').fetchall()
+            tasks = conn.execute('SELECT * FROM tasks ORDER BY created_at DESC').fetchall()
             total_tasks = conn.execute('SELECT COUNT(*) FROM tasks').fetchone()[0]
             completed_tasks = conn.execute("SELECT COUNT(*) FROM tasks WHERE status = 'completed'").fetchone()[0]
             failed_tasks = conn.execute("SELECT COUNT(*) FROM tasks WHERE status = 'failed'").fetchone()[0]
