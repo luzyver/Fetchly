@@ -107,10 +107,12 @@ def _parse_formats(video_info, direct_supported):
         })
 
     formats.sort(key=lambda x: x['height'], reverse=True)
-    formats.insert(0, {
-        'format_id': 'best', 'resolution': 'Best Quality', 'height': 9999, 'width': 0,
-        'ext': 'mp4', 'filesize': '', 'filesize_bytes': 0, 'bitrate': '', 'has_audio': True
-    })
+    
+    if not formats:
+        formats.append({
+            'format_id': 'bestvideo', 'resolution': 'HD (720p)', 'height': 720, 'width': 1280,
+            'ext': 'mp4', 'filesize': '', 'filesize_bytes': 0, 'bitrate': '', 'has_audio': True
+        })
 
     return formats
 

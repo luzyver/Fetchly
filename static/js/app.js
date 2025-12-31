@@ -322,13 +322,11 @@ const App = {
         }
 
         this.elements.formatList.innerHTML = this.state.formats.map((fmt, i) => {
-            const isBest = fmt.format_id === 'best';
             return `
                 <label class="format-option ${i === 0 ? 'selected' : ''}">
                     <input type="radio" name="format" value="${fmt.format_id}" ${i === 0 ? 'checked' : ''} class="hidden">
                     <div class="flex justify-between items-center w-full">
                         <span class="font-medium text-[var(--text-main)]">${fmt.resolution || 'Auto'}</span>
-                        ${isBest ? '<span class="text-[10px] bg-[var(--bg-surface-hover)] text-[var(--text-main)] px-1.5 rounded border border-[var(--border-subtle)]">BEST</span>' : ''}
                     </div>
                     <div class="format-meta">
                         ${fmt.ext.toUpperCase()} ${fmt.filesize ? '• ' + fmt.filesize : ''}

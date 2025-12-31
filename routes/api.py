@@ -101,8 +101,7 @@ def _handle_instagram(url):
         'duration': info['duration'],
         'cookies': None,
         'referer': url,
-        'is_instagram': True,
-        'video_url': info['video_url']
+        'is_instagram': True
     })
 
 def _handle_generic(url):
