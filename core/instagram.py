@@ -134,7 +134,7 @@ def download_instagram(url: str, output_path: str, max_size: Optional[int] = Non
         if size_exceeded[0]:
             _cleanup_partial(output_path)
             logger.warning(f"Instagram download cancelled: size exceeded")
-            return {"success": False, "error": "Download cancelled: file size exceeded limit", "size_exceeded": True}
+            return {"success": False, "error": "Download cancelled: file size exceeded limit", "size_exceeded": True, "downloaded_size": downloaded_bytes[0]}
         logger.error(f"Instagram download failed: {e}")
         return {"success": False, "error": str(e)}
 

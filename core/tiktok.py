@@ -118,7 +118,7 @@ def _download_file(url: str, output_path: str, max_size: Optional[int]) -> Dict[
                         f.close()
                         if os.path.exists(output_path):
                             os.remove(output_path)
-                        return {"success": False, "error": "Download cancelled: file size exceeded limit", "size_exceeded": True}
+                        return {"success": False, "error": "Download cancelled: file size exceeded limit", "size_exceeded": True, "downloaded_size": downloaded}
                     f.write(chunk)
         
         return {"success": True, "file": output_path}

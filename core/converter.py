@@ -39,10 +39,13 @@ def process_download(task_id: str, url: str, output_path: str,
         if result["success"]:
             _handle_success(task_id, result.get('file', output_path))
         elif result.get('size_exceeded'):
-            set_full_usage(fingerprint, ip)
-            error_msg = 'Download cancelled: file size exceeded limit. Daily quota has been fully consumed.'
+            downloaded_size = result.get('downloaded_size', max_size or MAX_FILE_SIZE)
+            add_usage(fingerprint, ip, downloaded_size)
+            limit_mb = round((max_size or MAX_FILE_SIZE) / (1024 * 1024))
+            charged_mb = round(downloaded_size / (1024 * 1024))
+            error_msg = f'Download cancelled: exceeded {limit_mb}MB limit. Charged {charged_mb}MB.'
             update_task_status(task_id, 'failed', error=error_msg)
-            logger.warning(f"Task {task_id}: {error_msg}")
+            logger.warning(f"Task {task_id}: Size exceeded, charged {charged_mb}MB to usage")
         else:
             update_task_status(task_id, 'failed', error=result.get('error', 'Unknown error'))
             logger.error(f"Task {task_id}: Download failed - {result.get('error')}")

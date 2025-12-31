@@ -180,12 +180,14 @@ def _run_with_size_monitor(cmd: list, output_path: str, max_size: Optional[int])
         return {"success": False, "error": stderr.decode().strip()[-300:] if stderr else "Download failed"}
     
     size_exceeded = [False]
+    final_size = [0]
     monitor_stop = threading.Event()
     
     def monitor():
         base_path = output_path.rsplit('.', 1)[0]
         while not monitor_stop.is_set():
             current_size = _get_download_size(base_path)
+            final_size[0] = current_size
             if current_size > max_size:
                 size_exceeded[0] = True
                 logger.warning(f"Size limit exceeded: {current_size} > {max_size}, killing process")
@@ -207,7 +209,8 @@ def _run_with_size_monitor(cmd: list, output_path: str, max_size: Optional[int])
         return {
             "success": False, 
             "error": "Download cancelled: file size exceeded limit",
-            "size_exceeded": True
+            "size_exceeded": True,
+            "downloaded_size": final_size[0]
         }
     
     if process.returncode == 0 and os.path.exists(output_path):
@@ -218,12 +221,20 @@ def _run_with_size_monitor(cmd: list, output_path: str, max_size: Optional[int])
 
 def _get_download_size(base_path: str) -> int:
     total = 0
-    for pattern in [f"{base_path}*", f"{base_path}.*"]:
-        for filepath in glob.glob(pattern):
+    task_id = os.path.basename(base_path)
+    dir_path = os.path.dirname(base_path)
+    
+    if not os.path.exists(dir_path):
+        return 0
+    
+    for filename in os.listdir(dir_path):
+        if filename.startswith(task_id):
+            filepath = os.path.join(dir_path, filename)
             try:
                 total += os.path.getsize(filepath)
             except OSError:
                 pass
+    
     return total
 
 
