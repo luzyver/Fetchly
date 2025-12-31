@@ -141,6 +141,8 @@ const App = {
     loadTurnstile() {
         if (document.getElementById('turnstile-script')) return;
 
+        Toast.info('Verifying...');
+
         const script = document.createElement('script');
         script.id = 'turnstile-script';
         script.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js?onload=onTurnstileLoad';
@@ -158,6 +160,7 @@ const App = {
                 size: 'invisible',
                 callback: (token) => {
                     this.state.turnstileToken = token;
+                    Toast.success('Verification complete');
                 }
             });
         };
