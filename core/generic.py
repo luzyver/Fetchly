@@ -220,22 +220,15 @@ def _run_with_size_monitor(cmd: list, output_path: str, max_size: Optional[int])
 
 
 def _get_download_size(base_path: str) -> int:
-    total = 0
-    task_id = os.path.basename(base_path)
-    dir_path = os.path.dirname(base_path)
+    output_mp4 = f"{base_path}.mp4"
     
-    if not os.path.exists(dir_path):
-        return 0
+    if os.path.exists(output_mp4):
+        try:
+            return os.path.getsize(output_mp4)
+        except OSError:
+            pass
     
-    for filename in os.listdir(dir_path):
-        if filename.startswith(task_id):
-            filepath = os.path.join(dir_path, filename)
-            try:
-                total += os.path.getsize(filepath)
-            except OSError:
-                pass
-    
-    return total
+    return 0
 
 
 def _cleanup_partial(output_path: str) -> None:
