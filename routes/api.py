@@ -7,6 +7,8 @@ from core.instagram import fetch_instagram_formats
 from core.generic import fetch_generic_formats
 from core.resolver import resolve_source_url
 from core.database import check_limit, get_user_history
+from core.captcha import verify_captcha, is_captcha_enabled
+from core.config import CONFIG
 
 logger = logging.getLogger(__name__)
 api_bp = Blueprint('api', __name__)
@@ -30,6 +32,8 @@ def check_usage_limit():
     ip = get_client_ip()
 
     result = check_limit(fingerprint, ip)
+    result['captcha_enabled'] = is_captcha_enabled()
+    result['recaptcha_site_key'] = CONFIG['RECAPTCHA_SITE_KEY'] if is_captcha_enabled() else ''
     return jsonify(result)
 
 @api_bp.route('/history', methods=['POST'])
@@ -45,12 +49,16 @@ def get_history():
 def fetch_formats():
     data = request.json
     url = data.get('url', '').strip()
+    captcha_response = data.get('captcha', '')
 
     if not url:
         return jsonify({'error': 'URL is required'}), 400
 
     if not url.startswith(('http://', 'https://')):
         return jsonify({'error': 'Invalid URL format'}), 400
+
+    if is_captcha_enabled() and not verify_captcha(captcha_response):
+        return jsonify({'error': 'Please complete the captcha', 'captcha_required': True}), 400
 
     try:
         if is_tiktok_url(url):

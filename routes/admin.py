@@ -7,6 +7,7 @@ from functools import wraps
 from flask import Blueprint, render_template, jsonify, request, redirect, url_for, session
 from core.config import CONFIG
 from core.database import get_db, get_whitelist, add_to_whitelist, remove_from_whitelist, get_all_usage, get_blacklist, add_to_blacklist, remove_from_blacklist, DAILY_LIMIT_BYTES
+from core.captcha import verify_captcha, is_captcha_enabled
 
 logger = logging.getLogger(__name__)
 admin_bp = Blueprint('admin', __name__)
@@ -72,13 +73,20 @@ def admin_login():
     
     ip = get_client_ip()
     error = None
+    captcha_enabled = is_captcha_enabled()
     
     if is_rate_limited(ip):
         error = 'Too many attempts. Try again later.'
-        return render_template('admin_login.html', error=error)
+        return render_template('admin_login.html', error=error, captcha_enabled=captcha_enabled, recaptcha_site_key=CONFIG['RECAPTCHA_SITE_KEY'])
     
     if request.method == 'POST':
         password = request.form.get('password', '')
+        captcha_response = request.form.get('g-recaptcha-response', '')
+        
+        if captcha_enabled and not verify_captcha(captcha_response):
+            error = 'Please complete the captcha'
+            return render_template('admin_login.html', error=error, captcha_enabled=captcha_enabled, recaptcha_site_key=CONFIG['RECAPTCHA_SITE_KEY'])
+        
         if hmac.compare_digest(password, CONFIG['ADMIN_PASSWORD']):
             session['admin_logged_in'] = True
             session['admin_login_time'] = time.time()
@@ -91,7 +99,7 @@ def admin_login():
         logger.warning(f"Failed admin login attempt from {ip}")
         error = 'Invalid password'
     
-    return render_template('admin_login.html', error=error)
+    return render_template('admin_login.html', error=error, captcha_enabled=captcha_enabled, recaptcha_site_key=CONFIG['RECAPTCHA_SITE_KEY'])
 
 
 @admin_bp.route('/admin/logout')

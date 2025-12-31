@@ -10,7 +10,11 @@ const App = {
         cookies: null,
         referer: null,
         videoTitle: null,
-        fingerprint: null
+        fingerprint: null,
+        captchaEnabled: false,
+        recaptchaSiteKey: '',
+        captchaWidgetId: null,
+        captchaResponse: ''
     },
 
     elements: {},
@@ -131,8 +135,44 @@ const App = {
             });
             const data = await res.json();
             this.updateUsageDisplay(data);
+            
+            if (data.captcha_enabled && data.recaptcha_site_key) {
+                this.state.captchaEnabled = true;
+                this.state.recaptchaSiteKey = data.recaptcha_site_key;
+                this.initCaptcha();
+            }
         } catch (e) {
             console.error('Failed to check limit:', e);
+        }
+    },
+
+    initCaptcha() {
+        if (!this.state.captchaEnabled || !this.state.recaptchaSiteKey) return;
+        
+        const container = document.getElementById('captchaContainer');
+        if (!container) return;
+        
+        container.classList.remove('hidden');
+        
+        const checkRecaptcha = () => {
+            if (typeof grecaptcha !== 'undefined' && grecaptcha.render) {
+                this.state.captchaWidgetId = grecaptcha.render(container, {
+                    sitekey: this.state.recaptchaSiteKey,
+                    theme: document.documentElement.getAttribute('data-theme') === 'light' ? 'light' : 'dark',
+                    callback: (response) => { this.state.captchaResponse = response; },
+                    'expired-callback': () => { this.state.captchaResponse = ''; }
+                });
+            } else {
+                setTimeout(checkRecaptcha, 100);
+            }
+        };
+        checkRecaptcha();
+    },
+
+    resetCaptcha() {
+        if (this.state.captchaWidgetId !== null && typeof grecaptcha !== 'undefined') {
+            grecaptcha.reset(this.state.captchaWidgetId);
+            this.state.captchaResponse = '';
         }
     },
 
@@ -277,17 +317,27 @@ const App = {
         if (!url) { Toast.warning('Enter a URL first'); this.elements.input?.focus(); return; }
         if (!url.startsWith('http')) { Toast.warning('Enter a valid URL'); return; }
 
-        this.setFetchLoading(true);
+        if (this.state.captchaEnabled && !this.state.captchaResponse) {
+            Toast.warning('Please complete the captcha');
+            return;
+        }
 
+        this.setFetchLoading(true);
         Toast.info('Fetching formats...');
 
         try {
             const res = await fetch('/fetch-formats', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ url })
+                body: JSON.stringify({ url, captcha: this.state.captchaResponse })
             });
             const data = await res.json();
+            
+            if (data.captcha_required) {
+                this.resetCaptcha();
+                throw new Error(data.error || 'Captcha required');
+            }
+            
             if (!res.ok) throw new Error(data.error || 'Failed to fetch');
 
             Object.assign(this.state, {
@@ -300,9 +350,9 @@ const App = {
 
             this.renderFormatSelection();
             Toast.success(`Found ${this.state.formats.length} formats`);
+            this.resetCaptcha();
         } catch (e) {
             Toast.error(e.message);
-
             this.updateStatusUI('failed', e.message);
         } finally {
             this.setFetchLoading(false);
