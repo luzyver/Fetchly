@@ -372,7 +372,6 @@ const App = {
 
             this.renderFormatSelection();
             Toast.success(`Found ${this.state.formats.length} formats`);
-            this.resetTurnstile();
         } catch (e) {
             Toast.error(e.message);
         } finally {
