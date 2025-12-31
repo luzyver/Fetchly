@@ -1,6 +1,6 @@
 import os
 import logging
-from typing import Dict, Any, Tuple
+from typing import Dict, Any, Tuple, Optional
 import yt_dlp
 from core.config import CONFIG
 from core.utils import format_size
