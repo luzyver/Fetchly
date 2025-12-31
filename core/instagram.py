@@ -2,6 +2,7 @@ import os
 import logging
 import yt_dlp
 from core.config import CONFIG
+from core.utils import format_size
 
 logger = logging.getLogger(__name__)
 
@@ -31,20 +32,47 @@ def fetch_instagram_formats(url):
         if len(title) > 50:
             title = title[:50] + "..."
 
+        filesize_bytes = 0
+        filesize_str = ''
+        duration = info.get('duration', 0)
+        height = 720
+        
+        formats = info.get('formats', [])
+        for fmt in formats:
+            fs = fmt.get('filesize') or fmt.get('filesize_approx')
+            if fs and fs > filesize_bytes:
+                filesize_bytes = fs
+            
+            h = fmt.get('height')
+            if h and h > height:
+                height = h
+        
+        if not filesize_bytes and duration:
+            for fmt in formats:
+                tbr = fmt.get('tbr')
+                if tbr:
+                    filesize_bytes = int((tbr * 1000 / 8) * duration)
+                    break
+        
+        if filesize_bytes:
+            filesize_str = f"~{format_size(filesize_bytes)}"
+        
+        resolution = f"{height}p (with audio)" if height else "HD (with audio)"
+
         return {
             'formats': [{
                 'format_id': 'instagram_hd',
-                'resolution': 'HD (with audio)',
-                'height': 720,
-                'width': 1280,
+                'resolution': resolution,
+                'height': height,
+                'width': int(height * 16 / 9) if height else 1280,
                 'ext': 'mp4',
-                'filesize': '',
-                'filesize_bytes': 0,
+                'filesize': filesize_str,
+                'filesize_bytes': filesize_bytes,
                 'bitrate': '',
                 'has_audio': True
             }],
             'title': title,
-            'duration': info.get('duration'),
+            'duration': duration,
             'thumbnail': info.get('thumbnail', '')
         }
     except Exception as e:
