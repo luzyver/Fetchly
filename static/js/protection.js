@@ -1,7 +1,7 @@
 (function() {
-    const redirectTo403 = () => { 
-        if (window.location.pathname !== '/devtools') {
-            window.location.href = '/devtools'; 
+    const redirect = () => { 
+        if (!window.location.pathname.includes('/devtools') && !window.location.pathname.includes('/admin')) {
+            window.location.replace('/devtools'); 
         }
     };
 
@@ -13,125 +13,148 @@
             (e.ctrlKey && ['U','u','S','s'].includes(e.key)) ||
             (e.metaKey && e.altKey && ['I','i','J','j','C','c'].includes(e.key))) {
             e.preventDefault();
-            redirectTo403();
+            redirect();
         }
     });
 
-    let devtoolsOpen = false;
-    const threshold = 160;
+    let isDevToolsOpen = false;
 
-    const checkDevTools = () => {
-        const widthThreshold = window.outerWidth - window.innerWidth > threshold;
-        const heightThreshold = window.outerHeight - window.innerHeight > threshold;
-        
-        if (widthThreshold || heightThreshold) {
-            if (!devtoolsOpen) {
-                devtoolsOpen = true;
-                redirectTo403();
-            }
-        } else {
-            devtoolsOpen = false;
-        }
+    const detectBySize = () => {
+        const threshold = 160;
+        const widthDiff = window.outerWidth - window.innerWidth > threshold;
+        const heightDiff = window.outerHeight - window.innerHeight > threshold;
+        return widthDiff || heightDiff;
     };
 
-    const detectDebugger = () => {
-        const start = performance.now();
+    const detectByDebugger = () => {
+        let detected = false;
+        const start = new Date();
         debugger;
-        const end = performance.now();
+        const end = new Date();
         if (end - start > 100) {
-            redirectTo403();
+            detected = true;
         }
+        return detected;
     };
 
-    const checkConsole = () => {
-        const element = new Image();
-        let consoleOpened = false;
-        Object.defineProperty(element, 'id', {
+    const detectByConsoleLog = () => {
+        let detected = false;
+        const img = new Image();
+        Object.defineProperty(img, 'id', {
             get: function() {
-                consoleOpened = true;
-                redirectTo403();
+                detected = true;
             }
         });
-        console.log('%c', element);
+        console.log(img);
         console.clear();
-        return consoleOpened;
+        return detected;
     };
 
-    const checkMobileDevTools = () => {
-        if (typeof window.__REACT_DEVTOOLS_GLOBAL_HOOK__ !== 'undefined' ||
-            typeof window.__VUE_DEVTOOLS_GLOBAL_HOOK__ !== 'undefined') {
-            redirectTo403();
-        }
-
-        const userAgent = navigator.userAgent.toLowerCase();
-        if (userAgent.includes('chrome') && !userAgent.includes('mobile')) {
-            if (window.chrome && window.chrome.runtime) {
-                return;
+    const detectByToString = () => {
+        let detected = false;
+        const div = document.createElement('div');
+        Object.defineProperty(div, 'id', {
+            get: function() {
+                detected = true;
             }
-        }
-
-        if (/eruda|vconsole|devtools/i.test(navigator.userAgent)) {
-            redirectTo403();
-        }
+        });
+        console.log(div);
+        console.clear();
+        return detected;
     };
 
-    const detectEruda = () => {
-        if (typeof eruda !== 'undefined' || 
-            document.querySelector('#eruda') ||
-            document.querySelector('.eruda-container')) {
-            redirectTo403();
-        }
-        
-        if (typeof vConsole !== 'undefined' ||
-            document.querySelector('#__vconsole')) {
-            redirectTo403();
-        }
-    };
-
-    const checkPerformance = () => {
-        const t1 = performance.now();
-        for (let i = 0; i < 100; i++) {
-            console.log(i);
-            console.clear();
-        }
-        const t2 = performance.now();
-        if (t2 - t1 > 200) {
-            redirectTo403();
-        }
-    };
-
-    setInterval(checkDevTools, 1000);
-    setInterval(checkConsole, 2000);
-    setInterval(detectEruda, 2000);
-    setInterval(checkMobileDevTools, 3000);
-
-    window.addEventListener('load', () => {
-        checkDevTools();
-        checkConsole();
-        detectEruda();
-        checkMobileDevTools();
-    });
-
-    const originalConsoleLog = console.log;
-    const originalConsoleWarn = console.warn;
-    const originalConsoleError = console.error;
-    
-    let consoleCallCount = 0;
-    const maxConsoleCalls = 10;
-    
-    const wrapConsole = (original) => {
-        return function(...args) {
-            consoleCallCount++;
-            if (consoleCallCount > maxConsoleCalls) {
-                return;
-            }
-            return original.apply(console, args);
+    const detectByRegex = () => {
+        let detected = false;
+        const re = /./;
+        re.toString = function() {
+            detected = true;
+            return '';
         };
+        console.log(re);
+        console.clear();
+        return detected;
     };
 
-    console.log = wrapConsole(originalConsoleLog);
-    console.warn = wrapConsole(originalConsoleWarn);
-    console.error = wrapConsole(originalConsoleError);
+    const detectByDate = () => {
+        let detected = false;
+        const date = new Date();
+        date.toString = function() {
+            detected = true;
+            return '';
+        };
+        console.log(date);
+        console.clear();
+        return detected;
+    };
 
-    setInterval(() => { consoleCallCount = 0; }, 5000);
+    const detectByFunction = () => {
+        let detected = false;
+        const fn = function() {};
+        fn.toString = function() {
+            detected = true;
+            return '';
+        };
+        console.log(fn);
+        console.clear();
+        return detected;
+    };
+
+    const detectByProfile = () => {
+        let detected = false;
+        const start = performance.now();
+        for (let i = 0; i < 1000; i++) {
+            console.log(i);
+        }
+        console.clear();
+        const end = performance.now();
+        if (end - start > 100) {
+            detected = true;
+        }
+        return detected;
+    };
+
+    const detectMobileTools = () => {
+        return typeof eruda !== 'undefined' || 
+               typeof vConsole !== 'undefined' ||
+               document.querySelector('#eruda') !== null ||
+               document.querySelector('.eruda-container') !== null ||
+               document.querySelector('#__vconsole') !== null;
+    };
+
+    const runAllDetections = () => {
+        if (detectBySize() || 
+            detectByConsoleLog() || 
+            detectByToString() || 
+            detectByRegex() ||
+            detectByDate() ||
+            detectByFunction() ||
+            detectMobileTools()) {
+            if (!isDevToolsOpen) {
+                isDevToolsOpen = true;
+                redirect();
+            }
+        }
+    };
+
+    setInterval(runAllDetections, 500);
+    
+    window.addEventListener('load', runAllDetections);
+    document.addEventListener('DOMContentLoaded', runAllDetections);
+
+    const noop = () => {};
+    console.log = noop;
+    console.warn = noop;
+    console.error = noop;
+    console.info = noop;
+    console.debug = noop;
+    console.table = noop;
+    console.trace = noop;
+    console.dir = noop;
+    console.dirxml = noop;
+    console.group = noop;
+    console.groupEnd = noop;
+    console.time = noop;
+    console.timeEnd = noop;
+    console.assert = noop;
+    console.count = noop;
 })();
