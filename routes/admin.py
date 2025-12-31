@@ -1,5 +1,7 @@
 import os
+import hmac
 import logging
+import time
 from datetime import datetime, timedelta
 from functools import wraps
 from flask import Blueprint, render_template, jsonify, request, redirect, url_for, session
@@ -9,38 +11,94 @@ from core.database import get_db, get_whitelist, add_to_whitelist, remove_from_w
 logger = logging.getLogger(__name__)
 admin_bp = Blueprint('admin', __name__)
 
+login_attempts = {}
+MAX_ATTEMPTS = 3
+LOCKOUT_TIME = 300
+SESSION_EXPIRY = 86400
+
+
+def get_client_ip():
+    if request.headers.get('X-Forwarded-For'):
+        return request.headers.get('X-Forwarded-For').split(',')[0].strip()
+    return request.remote_addr or 'unknown'
+
+
+def is_rate_limited(ip):
+    if ip not in login_attempts:
+        return False
+    attempts, last_attempt = login_attempts[ip]
+    if attempts >= MAX_ATTEMPTS:
+        if time.time() - last_attempt < LOCKOUT_TIME:
+            return True
+        login_attempts[ip] = (0, time.time())
+    return False
+
+
+def record_failed_attempt(ip):
+    if ip not in login_attempts:
+        login_attempts[ip] = (1, time.time())
+    else:
+        attempts, _ = login_attempts[ip]
+        login_attempts[ip] = (attempts + 1, time.time())
+
+
+def clear_attempts(ip):
+    login_attempts.pop(ip, None)
+
+
 def login_required(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
         if not session.get('admin_logged_in'):
             return redirect(url_for('admin.admin_login'))
+        if session.get('admin_login_time'):
+            if time.time() - session.get('admin_login_time') > SESSION_EXPIRY:
+                session.clear()
+                return redirect(url_for('admin.admin_login'))
         return f(*args, **kwargs)
     return decorated_function
+
 
 @admin_bp.route('/admin')
 @login_required
 def admin_index():
     return redirect(url_for('admin.admin_dashboard'))
 
+
 @admin_bp.route('/admin/login', methods=['GET', 'POST'])
 def admin_login():
     if session.get('admin_logged_in'):
         return redirect(url_for('admin.admin_dashboard'))
     
+    ip = get_client_ip()
     error = None
+    
+    if is_rate_limited(ip):
+        error = 'Too many attempts. Try again later.'
+        return render_template('admin_login.html', error=error)
+    
     if request.method == 'POST':
         password = request.form.get('password', '')
-        if password == CONFIG['ADMIN_PASSWORD']:
+        if hmac.compare_digest(password, CONFIG['ADMIN_PASSWORD']):
             session['admin_logged_in'] = True
+            session['admin_login_time'] = time.time()
+            session.permanent = True
+            clear_attempts(ip)
+            logger.info(f"Admin login successful from {ip}")
             return redirect(url_for('admin.admin_dashboard'))
+        
+        record_failed_attempt(ip)
+        logger.warning(f"Failed admin login attempt from {ip}")
         error = 'Invalid password'
     
     return render_template('admin_login.html', error=error)
 
+
 @admin_bp.route('/admin/logout')
 def admin_logout():
-    session.pop('admin_logged_in', None)
+    session.clear()
     return redirect(url_for('admin.admin_login'))
+
 
 @admin_bp.route('/admin/dashboard')
 @login_required
@@ -76,6 +134,7 @@ def admin_dashboard():
         logger.error(f"Dashboard error: {e}")
         return "Server Error", 500
 
+
 @admin_bp.route('/admin/delete_task/<task_id>', methods=['DELETE'])
 @login_required
 def delete_task(task_id):
@@ -93,6 +152,7 @@ def delete_task(task_id):
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
+
 @admin_bp.route('/admin/whitelist/add', methods=['POST'])
 @login_required
 def add_whitelist():
@@ -107,6 +167,7 @@ def add_whitelist():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
+
 @admin_bp.route('/admin/whitelist/remove/<user_id>', methods=['DELETE'])
 @login_required
 def remove_whitelist(user_id):
@@ -115,6 +176,7 @@ def remove_whitelist(user_id):
         return jsonify({'status': 'success'})
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+
 
 def _format_task(task):
     if task.get('created_at'):
