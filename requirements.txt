@@ -1,5 +1,5 @@
 flask
 requests
 gunicorn
-selenium
+playwright
 yt-dlp
