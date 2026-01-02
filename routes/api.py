@@ -2,7 +2,10 @@ import logging
 from typing import Any
 from concurrent.futures import ThreadPoolExecutor
 from flask import Blueprint, request, jsonify
-from core.utils import is_tiktok_url, is_twitter_url, is_instagram_url, is_direct_supported, get_user_error
+from core.utils import (
+    is_tiktok_url, is_twitter_url, is_instagram_url, is_direct_supported,
+    get_user_error, validate_public_url
+)
 from core.tiktok import fetch_tiktok_formats
 from core.twitter import fetch_twitter_formats
 from core.instagram import fetch_instagram_formats
@@ -55,8 +58,9 @@ def fetch_formats():
     if not url:
         return jsonify({'error': 'URL is required'}), 400
 
-    if not url.startswith(('http://', 'https://')):
-        return jsonify({'error': 'Invalid URL format'}), 400
+    validation_error = validate_public_url(url)
+    if validation_error:
+        return jsonify({'error': validation_error}), 400
 
     if is_captcha_enabled() and not verify_captcha(captcha_response):
         return jsonify({'error': 'Please complete the captcha', 'captcha_required': True}), 400
@@ -64,7 +68,7 @@ def fetch_formats():
     try:
         return _handle_fetch(url)
     except Exception as e:
-        logger.error(f"Fetch formats error: {e}")
+        logger.exception(f"Fetch formats error for {url}: {e}")
         return jsonify({'error': get_user_error(str(e))}), 400
 
 

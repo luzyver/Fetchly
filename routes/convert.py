@@ -8,7 +8,7 @@ from core.config import CONFIG
 from core.database import get_db, check_limit
 from core.resolver import resolve_source_url
 from core.converter import process_download
-from core.utils import is_tiktok_url, is_twitter_url, is_direct_supported
+from core.utils import is_tiktok_url, is_twitter_url, is_direct_supported, validate_public_url
 from routes.helpers import get_client_ip
 
 logger = logging.getLogger(__name__)
@@ -30,8 +30,10 @@ def convert():
     
     if not url:
         return jsonify({'error': 'URL is required'}), 400
-    if not url.startswith(('http://', 'https://')):
-        return jsonify({'error': 'Invalid URL format'}), 400
+
+    validation_error = validate_public_url(url)
+    if validation_error:
+        return jsonify({'error': validation_error}), 400
 
     format_id = data.get('format_id', 'best')
     resolved_url = data.get('resolved_url')
@@ -54,12 +56,16 @@ def convert():
     ext = 'mp3' if format_id == 'tiktok_audio' else 'mp4'
     output_path = os.path.join(CONFIG['DOWNLOAD_FOLDER'], f"{task_id}.{ext}")
 
+    if executor is None:
+        logger.error("Convert called before executor initialized")
+        return jsonify({'error': 'Server not ready'}), 503
+
     try:
         _create_task(task_id, resolved_url, fingerprint, ip, title)
         executor.submit(process_download, task_id, resolved_url, output_path, referer, cookies, format_id)
         return jsonify({'task_id': task_id})
     except Exception as e:
-        logger.error(f"Submission error: {e}")
+        logger.exception(f"Submission error for {url}: {e}")
         return jsonify({'error': 'Server Error'}), 500
 
 def _resolve_if_needed(url: str, referer: str) -> Tuple[Optional[str], Optional[str], str]:
@@ -82,7 +88,7 @@ def _resolve_if_needed(url: str, referer: str) -> Tuple[Optional[str], Optional[
                     referer = captured_referer
                 logger.info(f"Resolved to: {resolved_url}")
         except Exception as e:
-            logger.error(f"Resolution failed: {e}")
+            logger.exception(f"Resolution failed for {url}: {e}")
             return None, None, referer
 
     return resolved_url, cookies, referer

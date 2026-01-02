@@ -1,4 +1,5 @@
 import os
+import ipaddress
 from typing import Optional, List
 from urllib.parse import urlparse
 from core.config import CONFIG, SUPPORTED_DOMAINS, DIRECT_SUPPORTED_DOMAINS
@@ -43,6 +44,28 @@ def is_instagram_url(url: str) -> bool:
 
 def is_direct_supported(url: str) -> bool:
     return is_domain_match(url, DIRECT_SUPPORTED_DOMAINS)
+
+
+def validate_public_url(url: str) -> Optional[str]:
+    parsed = urlparse(url)
+
+    if parsed.scheme not in ('http', 'https'):
+        return "Invalid URL scheme"
+
+    if not parsed.netloc:
+        return "URL host is required"
+
+    hostname = parsed.hostname or ''
+    try:
+        ip = ipaddress.ip_address(hostname)
+        if ip.is_private or ip.is_loopback or ip.is_reserved or ip.is_link_local:
+            return "URL host is not allowed"
+    except ValueError:
+        lowered = hostname.lower()
+        if lowered in ('localhost',):
+            return "URL host is not allowed"
+
+    return None
 
 
 def has_cookie_file() -> bool:

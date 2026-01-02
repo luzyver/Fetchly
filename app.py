@@ -2,6 +2,8 @@ import os
 import time
 import logging
 import threading
+import atexit
+import signal
 from logging.handlers import RotatingFileHandler
 from concurrent.futures import ThreadPoolExecutor
 from flask import Flask, render_template, request, abort
@@ -13,6 +15,7 @@ from routes.api import api_bp, set_executor as set_api_executor
 from routes.convert import convert_bp, set_executor as set_convert_executor
 from routes.admin import admin_bp
 from routes.helpers import get_client_ip
+from core.cleanup import start_cleanup_thread
 
 
 def create_app() -> Flask:
@@ -32,9 +35,12 @@ def create_app() -> Flask:
     app.secret_key = CONFIG['SECRET_KEY']
     app.config['CACHE_VERSION'] = str(int(time.time()))
 
+    _warn_insecure_config()
+
     init_db()
 
     executor = ThreadPoolExecutor(max_workers=CONFIG['MAX_WORKERS'])
+    app.config['EXECUTOR'] = executor
     set_api_executor(executor)
     set_convert_executor(executor)
 
@@ -45,6 +51,7 @@ def create_app() -> Flask:
 
     _register_middleware(app)
     _register_error_handlers(app)
+    _register_shutdown_hooks(app, executor)
 
     return app
 
@@ -52,7 +59,7 @@ def create_app() -> Flask:
 def _register_middleware(app: Flask) -> None:
     @app.before_request
     def check_blacklist():
-        if request.path.startswith('/admin') or request.path.startswith('/static'):
+        if request.path.startswith('/static'):
             return None
         ip = get_client_ip()
         if is_blacklisted(ip):
@@ -85,13 +92,46 @@ def _register_error_handlers(app: Flask) -> None:
         return render_template('devtools.html'), 200
 
 
+def _register_shutdown_hooks(app: Flask, executor: ThreadPoolExecutor) -> None:
+    shutdown_flag = {'done': False}
+
+    def shutdown_executor():
+        if shutdown_flag['done']:
+            return
+        shutdown_flag['done'] = True
+        try:
+            executor.shutdown(wait=False, cancel_futures=True)
+            logging.getLogger(__name__).info("ThreadPoolExecutor shut down.")
+        except Exception as exc:
+            logging.getLogger(__name__).warning(f"Failed to shutdown executor cleanly: {exc}")
+
+    atexit.register(shutdown_executor)
+    app.config['EXECUTOR_SHUTDOWN'] = shutdown_executor
+
+
+def _warn_insecure_config() -> None:
+    if CONFIG['SECRET_KEY'] == 'change-me-in-production':
+        logging.getLogger(__name__).warning("SECRET_KEY is using the default value. Change it in production.")
+    if CONFIG['ADMIN_PASSWORD'] == 'admin123':
+        logging.getLogger(__name__).warning("ADMIN_PASSWORD is using the default value. Change it in production.")
+
+
 app = create_app()
 
 
 if __name__ == '__main__':
-    from core.cleanup import cleanup_old_files
-    
-    thread = threading.Thread(target=cleanup_old_files, daemon=True)
-    thread.start()
+    stop_event = threading.Event()
+    cleanup_thread = start_cleanup_thread(stop_event)
+
+    def _handle_exit(*_args):
+        stop_event.set()
+        cleanup_thread.join(timeout=5)
+        logging.getLogger(__name__).info("Cleanup thread stopped.")
+        shutdown_cb = app.config.get('EXECUTOR_SHUTDOWN')
+        if shutdown_cb:
+            shutdown_cb()
+
+    signal.signal(signal.SIGTERM, _handle_exit)
+    signal.signal(signal.SIGINT, _handle_exit)
     
     app.run(debug=False, host='0.0.0.0', port=5050)
