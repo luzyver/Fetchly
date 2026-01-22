@@ -110,9 +110,6 @@ def download_twitter(url: str, output_path: str, format_id: str = 'twitter_0',
     video_index = int(format_id.replace('twitter_', '')) if format_id.startswith('twitter_') else 0
     cookie_file = get_cookie_file()
     
-    if max_size is None:
-        max_size = CONFIG['MAX_FILE_SIZE']
-
     cmd = ['yt-dlp', '--no-check-certificate', '--user-agent', TWITTER_USER_AGENT,
            '-f', 'bestvideo+bestaudio/best', '--merge-output-format', 'mp4',
            '--playlist-items', str(video_index + 1), '-o', output_path, url]

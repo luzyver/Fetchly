@@ -145,8 +145,6 @@ def download_generic(url: str, output_path: str, referer: Optional[str] = None,
     current_referer = referer or domain
     direct_supported = is_direct_supported(url)
     cookie_file = get_cookie_file()
-    if max_size is None:
-        max_size = CONFIG['MAX_FILE_SIZE']
 
     last_error = None
 

@@ -65,9 +65,6 @@ def fetch_tiktok_formats(url: str) -> Dict[str, Any]:
 def download_tiktok(url: str, output_path: str, format_id: str = 'tiktok_no_watermark',
                     max_size: Optional[int] = None) -> Dict[str, Any]:
     logger.info(f"TikTok download: {url[:60]} (format: {format_id})")
-    
-    if max_size is None:
-        max_size = CONFIG['MAX_FILE_SIZE']
 
     try:
         info = fetch_tiktok_info(url)
