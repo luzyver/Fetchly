@@ -119,6 +119,7 @@ def download_instagram(url: str, output_path: str, max_size: Optional[int] = Non
         'outtmpl': output_path,
         'merge_output_format': 'mp4',
         'postprocessors': [{'key': 'FFmpegVideoConvertor', 'preferedformat': 'mp4'}],
+        'postprocessor_args': {'FFmpegVideoConvertor': ['-c:v', 'libx264', '-preset', 'fast', '-crf', '23', '-c:a', 'aac', '-b:a', '128k']},
         'progress_hooks': [progress_hook],
     }
 
