@@ -2,19 +2,32 @@ import os
 import logging
 from typing import Dict, Any, Optional, Tuple
 import requests
+import threading
 from core.utils import format_size
 
 logger = logging.getLogger(__name__)
 
 TIKWM_API = "https://www.tikwm.com/api/"
+_session_lock = threading.Lock()
+_session: requests.Session = None
+
+
+def _get_session() -> requests.Session:
+    global _session
+    if _session is None:
+        with _session_lock:
+            if _session is None:
+                session = requests.Session()
+                session.headers.update({
+                    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+                    "Accept": "application/json",
+                })
+                _session = session
+    return _session
 
 
 def fetch_tiktok_info(url: str) -> Dict[str, Any]:
-    session = requests.Session()
-    session.headers.update({
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
-        "Accept": "application/json",
-    })
+    session = _get_session()
 
     logger.info(f"Fetching TikTok: {url[:60]}...")
     resp = session.post(TIKWM_API, data={"url": url, "hd": 1}, timeout=20)

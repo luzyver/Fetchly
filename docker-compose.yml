@@ -12,6 +12,10 @@ services:
       - SECRET_KEY=${SECRET_KEY}
       - TURNSTILE_SITE_KEY=${TURNSTILE_SITE_KEY}
       - TURNSTILE_SECRET_KEY=${TURNSTILE_SECRET_KEY}
+      - LOG_JSON=${LOG_JSON}
+      - RATE_LIMIT_WINDOW=${RATE_LIMIT_WINDOW}
+      - RATE_LIMIT_FETCH=${RATE_LIMIT_FETCH}
+      - RATE_LIMIT_CONVERT=${RATE_LIMIT_CONVERT}
     volumes:
       - ./downloads:/app/downloads
       - ./config/cookies.txt:/app/cookies.txt

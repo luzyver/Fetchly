@@ -1,9 +1,12 @@
 import re
 import logging
 import time
+import atexit
+import threading
+from collections import OrderedDict
 from typing import Optional, Tuple, List, Set, Dict
-from urllib.parse import urljoin
-from playwright.sync_api import sync_playwright, Page, Frame, BrowserContext, Response, Route
+from urllib.parse import urljoin, urlparse
+from playwright.sync_api import sync_playwright, Page, Response, Route
 from core.config import USER_AGENTS
 
 logger = logging.getLogger(__name__)
@@ -15,14 +18,136 @@ NETWORK_KEYWORDS = ['.m3u8', '.mp4', '.webm', '.mkv', '/stream/', '/variant/', '
 
 ResolverResult = Tuple[Optional[str], Optional[str], Optional[str], Optional[str]]
 
+_CACHE_TTL_SECONDS = 600
+_CACHE_MAX_ENTRIES = 256
+_resolver_cache: "OrderedDict[str, Tuple[float, ResolverResult]]" = OrderedDict()
+_cache_lock = threading.Lock()
+
+_DOMAIN_CACHE_TTL_SECONDS = 300
+_DOMAIN_CACHE_MAX_ENTRIES = 128
+_domain_cache: "OrderedDict[str, Tuple[float, ResolverResult]]" = OrderedDict()
+_domain_cache_lock = threading.Lock()
+
+_browser_lock = threading.Lock()
+_playwright = None
+_browser = None
+_resolve_lock = threading.Lock()
+
+_metrics_lock = threading.Lock()
+_metrics = {
+    "requests": 0,
+    "cache_hit": 0,
+    "cache_miss": 0,
+    "success": 0,
+    "fail": 0,
+    "total_ms": 0.0,
+}
+_METRICS_LOG_EVERY = 100
+
+MAX_FOUND_URLS = 200
+
+
+def _get_browser():
+    global _playwright, _browser
+    with _browser_lock:
+        if _browser is None:
+            _playwright = sync_playwright().start()
+            _browser = _playwright.firefox.launch(
+                headless=True,
+                args=["--no-sandbox"]
+            )
+        return _browser
+
+
+def _close_browser():
+    global _playwright, _browser
+    with _browser_lock:
+        try:
+            if _browser:
+                _browser.close()
+        finally:
+            _browser = None
+        try:
+            if _playwright:
+                _playwright.stop()
+        finally:
+            _playwright = None
+
+
+atexit.register(_close_browser)
+
+
+def _cache_get(url: str) -> Optional[ResolverResult]:
+    now = time.time()
+    with _cache_lock:
+        entry = _resolver_cache.get(url)
+        if not entry:
+            return None
+        ts, result = entry
+        if now - ts > _CACHE_TTL_SECONDS:
+            _resolver_cache.pop(url, None)
+            return None
+        _resolver_cache.move_to_end(url)
+        return result
+
+
+def _cache_domain_get(host: str) -> Optional[ResolverResult]:
+    now = time.time()
+    with _domain_cache_lock:
+        entry = _domain_cache.get(host)
+        if not entry:
+            return None
+        ts, result = entry
+        if now - ts > _DOMAIN_CACHE_TTL_SECONDS:
+            _domain_cache.pop(host, None)
+            return None
+        _domain_cache.move_to_end(host)
+        return result
+
+
+def _cache_domain_set(host: str, result: ResolverResult) -> None:
+    now = time.time()
+    with _domain_cache_lock:
+        _domain_cache[host] = (now, result)
+        _domain_cache.move_to_end(host)
+        while len(_domain_cache) > _DOMAIN_CACHE_MAX_ENTRIES:
+            _domain_cache.popitem(last=False)
+
+
+def _normalize_host(hostname: Optional[str]) -> str:
+    if not hostname:
+        return ''
+    return hostname.lower().rstrip('.')
+
+
+def _cache_set(url: str, result: ResolverResult) -> None:
+    now = time.time()
+    with _cache_lock:
+        _resolver_cache[url] = (now, result)
+        _resolver_cache.move_to_end(url)
+        while len(_resolver_cache) > _CACHE_MAX_ENTRIES:
+            _resolver_cache.popitem(last=False)
+
+
 def resolve_source_url(url: str) -> ResolverResult:
     logger.info(f"Resolving: {url}")
-    with sync_playwright() as p:
-        browser = p.firefox.launch(
-            headless=True,
-            args=["--no-sandbox"]
-        )
-        
+    start = time.time()
+    host = _normalize_host(urlparse(url).hostname)
+
+    cached = _cache_get(url)
+    if cached and cached[0]:
+        _record_metrics(cache_hit=True, success=True, elapsed_ms=(time.time() - start) * 1000)
+        return cached
+
+    if host:
+        domain_cached = _cache_domain_get(host)
+        if domain_cached and domain_cached[0]:
+            _record_metrics(cache_hit=True, success=True, elapsed_ms=(time.time() - start) * 1000)
+            return domain_cached
+    _record_metrics(cache_hit=False)
+
+    with _resolve_lock:
+        browser = _get_browser()
         context = browser.new_context(
             user_agent=USER_AGENTS['DESKTOP'],
             viewport={'width': 1920, 'height': 1080},
@@ -30,9 +155,9 @@ def resolve_source_url(url: str) -> ResolverResult:
             device_scale_factor=1,
             ignore_https_errors=True
         )
-        
+
         context.add_init_script("Object.defineProperty(navigator, 'webdriver', {get: () => undefined})")
-        
+
         found_urls: List[str] = []
         context.route("**/*", lambda route: _handle_route(route, found_urls))
         context.on("response", lambda response: _handle_response(response, found_urls))
@@ -41,12 +166,53 @@ def resolve_source_url(url: str) -> ResolverResult:
         page.set_default_timeout(45000)
 
         try:
-            return _scan_recursive(page, url, found_urls)
+            result = _scan_recursive(page, url, found_urls)
+            if result and result[0]:
+                _cache_set(url, result)
+                media_host = _normalize_host(urlparse(result[0]).hostname)
+                if host and media_host and (media_host == host or media_host.endswith(f".{host}")):
+                    _cache_domain_set(host, result)
+                _record_metrics(success=True, elapsed_ms=(time.time() - start) * 1000)
+            else:
+                _record_metrics(success=False, elapsed_ms=(time.time() - start) * 1000)
+            return result
         except Exception as e:
             logger.error(f"Resolution failed: {e}")
+            _record_metrics(success=False, elapsed_ms=(time.time() - start) * 1000)
             return None, None, None, None
         finally:
-            browser.close()
+            try:
+                context.close()
+            except Exception:
+                pass
+
+
+def _record_metrics(cache_hit: Optional[bool] = None, success: Optional[bool] = None,
+                    elapsed_ms: Optional[float] = None) -> None:
+    with _metrics_lock:
+        _metrics["requests"] += 1 if cache_hit is not None else 0
+        if cache_hit is True:
+            _metrics["cache_hit"] += 1
+        elif cache_hit is False:
+            _metrics["cache_miss"] += 1
+        if success is True:
+            _metrics["success"] += 1
+        elif success is False:
+            _metrics["fail"] += 1
+        if elapsed_ms is not None:
+            _metrics["total_ms"] += elapsed_ms
+
+        if _metrics["requests"] and _metrics["requests"] % _METRICS_LOG_EVERY == 0:
+            avg_ms = _metrics["total_ms"] / max(1, (_metrics["success"] + _metrics["fail"]))
+            logger.info(
+                "Resolver metrics: requests=%d hit=%d miss=%d success=%d fail=%d avg_ms=%.1f",
+                _metrics["requests"],
+                _metrics["cache_hit"],
+                _metrics["cache_miss"],
+                _metrics["success"],
+                _metrics["fail"],
+                avg_ms,
+            )
 
 def _scan_recursive(page: Page, start_url: str, found_urls: List[str]) -> ResolverResult:
     queue = [start_url]
@@ -79,10 +245,16 @@ def _visit_and_check(page: Page, url: str, found_urls: List[str], referer: Optio
             page.set_extra_http_headers({})
 
         page.goto(url, wait_until="domcontentloaded", timeout=30000)
-        time.sleep(3)
+        try:
+            page.wait_for_load_state("networkidle", timeout=5000)
+        except Exception:
+            pass
         
         _interact_with_player(page)
-        time.sleep(2)
+        try:
+            page.wait_for_timeout(1200)
+        except Exception:
+            pass
 
         checkers = [
             lambda: _check_network_log(page, found_urls),
@@ -200,13 +372,15 @@ def _format_result(page: Page, media_url: str) -> ResolverResult:
 
 def _handle_route(route: Route, found_urls: List[str]) -> None:
     if any(kw in route.request.url for kw in NETWORK_KEYWORDS):
-        found_urls.append(route.request.url)
+        if len(found_urls) < MAX_FOUND_URLS:
+            found_urls.append(route.request.url)
     route.continue_()
 
 def _handle_response(response: Response, found_urls: List[str]) -> None:
     try:
         ct = response.header_value("content-type")
         if ct and ("mpegurl" in ct.lower() or "video/mp4" in ct.lower()):
-            found_urls.append(response.url)
+            if len(found_urls) < MAX_FOUND_URLS:
+                found_urls.append(response.url)
     except Exception:
         pass

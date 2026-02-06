@@ -11,6 +11,7 @@ from core.resolver import resolve_source_url
 from core.database import check_limit, get_user_history
 from core.captcha import verify_captcha, is_captcha_enabled
 from core.config import CONFIG
+from core.ratelimit import is_rate_limited
 from routes.helpers import get_client_ip
 
 logger = logging.getLogger(__name__)
@@ -51,6 +52,11 @@ def fetch_formats():
     data = request.json
     url = data.get('url', '').strip()
     captcha_response = data.get('captcha', '')
+    fingerprint = data.get('fingerprint', '')
+    ip = get_client_ip()
+
+    if is_rate_limited(f"fetch:{ip}:{fingerprint}", CONFIG['RATE_LIMIT_FETCH'], CONFIG['RATE_LIMIT_WINDOW']):
+        return jsonify({'error': 'Too many requests. Please slow down.'}), 429
 
     if not url:
         return jsonify({'error': 'URL is required'}), 400

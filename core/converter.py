@@ -57,8 +57,8 @@ def process_download(task_id: str, url: str, output_path: str,
 
 def _handle_success(task_id: str, file_path: str) -> None:
     if not os.path.exists(file_path):
-        update_task_status(task_id, 'completed', file=file_path)
-        logger.info(f"Task {task_id}: Download successful")
+        update_task_status(task_id, 'failed', error='Download completed but file not found')
+        logger.error(f"Task {task_id}: Download completed but file not found")
         return
 
     filesize = os.path.getsize(file_path)

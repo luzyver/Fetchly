@@ -26,12 +26,27 @@ _SCHEMAS = [
         ip_address TEXT PRIMARY KEY, reason TEXT, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )''',
 ]
+_INDEXES = [
+    "CREATE INDEX IF NOT EXISTS idx_tasks_created_at ON tasks(created_at)",
+    "CREATE INDEX IF NOT EXISTS idx_tasks_status ON tasks(status)",
+    "CREATE INDEX IF NOT EXISTS idx_tasks_fingerprint ON tasks(fingerprint)",
+    "CREATE INDEX IF NOT EXISTS idx_tasks_ip_address ON tasks(ip_address)",
+    "CREATE INDEX IF NOT EXISTS idx_usage_identifier ON usage(identifier)",
+    "CREATE INDEX IF NOT EXISTS idx_whitelist_user_id ON whitelist(user_id)",
+    "CREATE INDEX IF NOT EXISTS idx_blacklist_ip ON blacklist(ip_address)",
+]
 
 
 @contextmanager
 def get_db():
-    conn = sqlite3.connect(CONFIG['DB_PATH'])
+    conn = sqlite3.connect(CONFIG['DB_PATH'], timeout=30)
     conn.row_factory = sqlite3.Row
+    try:
+        conn.execute("PRAGMA journal_mode=WAL")
+        conn.execute("PRAGMA synchronous=NORMAL")
+        conn.execute("PRAGMA foreign_keys=ON")
+    except Exception as e:
+        logger.warning(f"Failed to set PRAGMAs: {e}")
     try:
         yield conn
     finally:
@@ -42,6 +57,8 @@ def init_db() -> None:
     with get_db() as conn:
         for schema in _SCHEMAS:
             conn.execute(schema)
+        for idx in _INDEXES:
+            conn.execute(idx)
         conn.commit()
 
 
@@ -96,8 +113,7 @@ def get_task_info(task_id: str) -> Tuple[Optional[str], Optional[str]]:
         return None, None
 
 
-def _get_usage_single(conn, identifier: str) -> int:
-    today = _get_today_wib()
+def _get_usage_single(conn, identifier: str, today: str) -> int:
     row = conn.execute('SELECT bytes_used, last_reset FROM usage WHERE identifier = ?', (identifier,)).fetchone()
 
     if not row:
@@ -109,9 +125,10 @@ def _get_usage_single(conn, identifier: str) -> int:
 
 
 def get_usage(fingerprint: str, ip: str) -> int:
+    today = _get_today_wib()
     with get_db() as conn:
-        fp_used = _get_usage_single(conn, fingerprint) if fingerprint else 0
-        ip_used = _get_usage_single(conn, ip) if ip else 0
+        fp_used = _get_usage_single(conn, fingerprint, today) if fingerprint else 0
+        ip_used = _get_usage_single(conn, ip, today) if ip else 0
         conn.commit()
         return max(fp_used, ip_used)
 
@@ -138,13 +155,30 @@ def add_usage(fingerprint: str, ip: str, bytes_count: int) -> None:
         conn.commit()
 
 
-def check_limit(fingerprint: str, ip: str) -> Dict[str, Any]:
-    if is_whitelisted(fingerprint) or is_whitelisted(ip):
-        return {'allowed': True, 'used': 0, 'limit': DAILY_LIMIT_BYTES, 'remaining': DAILY_LIMIT_BYTES, 'whitelisted': True}
+def _is_whitelisted_conn(conn, identifier: Optional[str]) -> bool:
+    if not identifier:
+        return False
+    row = conn.execute('SELECT 1 FROM whitelist WHERE user_id = ?', (identifier,)).fetchone()
+    return row is not None
 
-    used = get_usage(fingerprint, ip)
-    remaining = max(0, DAILY_LIMIT_BYTES - used)
-    return {'allowed': used < DAILY_LIMIT_BYTES, 'used': used, 'limit': DAILY_LIMIT_BYTES, 'remaining': remaining}
+
+def _get_usage_with_conn(conn, fingerprint: str, ip: str) -> int:
+    today = _get_today_wib()
+    fp_used = _get_usage_single(conn, fingerprint, today) if fingerprint else 0
+    ip_used = _get_usage_single(conn, ip, today) if ip else 0
+    return max(fp_used, ip_used)
+
+
+def check_limit(fingerprint: str, ip: str) -> Dict[str, Any]:
+    with get_db() as conn:
+        whitelisted = _is_whitelisted_conn(conn, fingerprint) or _is_whitelisted_conn(conn, ip)
+        if whitelisted:
+            return {'allowed': True, 'used': 0, 'limit': DAILY_LIMIT_BYTES, 'remaining': DAILY_LIMIT_BYTES, 'whitelisted': True}
+
+        used = _get_usage_with_conn(conn, fingerprint, ip)
+        conn.commit()
+        remaining = max(0, DAILY_LIMIT_BYTES - used)
+        return {'allowed': used < DAILY_LIMIT_BYTES, 'used': used, 'limit': DAILY_LIMIT_BYTES, 'remaining': remaining}
 
 
 def set_full_usage(fingerprint: str, ip: str) -> None:

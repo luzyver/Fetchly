@@ -9,6 +9,7 @@ from core.database import get_db, check_limit
 from core.resolver import resolve_source_url
 from core.converter import process_download
 from core.utils import is_tiktok_url, is_twitter_url, is_direct_supported
+from core.ratelimit import is_rate_limited
 from routes.helpers import get_client_ip
 
 logger = logging.getLogger(__name__)
@@ -40,6 +41,9 @@ def convert():
     fingerprint = data.get('fingerprint', '')
     title = data.get('title', 'Video')
     ip = get_client_ip()
+
+    if is_rate_limited(f"convert:{ip}:{fingerprint}", CONFIG['RATE_LIMIT_CONVERT'], CONFIG['RATE_LIMIT_WINDOW']):
+        return jsonify({'error': 'Too many requests. Please slow down.'}), 429
 
     limit_info = check_limit(fingerprint, ip)
     if not limit_info['allowed']:

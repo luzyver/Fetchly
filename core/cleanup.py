@@ -1,5 +1,6 @@
 import os
 import time
+import threading
 import logging
 from typing import Tuple
 from core.config import CONFIG
@@ -8,6 +9,16 @@ from core.database import get_db
 logger = logging.getLogger(__name__)
 
 ALLOWED_EXTENSIONS = ('.mp4', '.mp3')
+_cleanup_thread_started = False
+
+
+def start_cleanup_thread() -> None:
+    global _cleanup_thread_started
+    if _cleanup_thread_started:
+        return
+    _cleanup_thread_started = True
+    thread = threading.Thread(target=cleanup_old_files, daemon=True)
+    thread.start()
 
 
 def cleanup_old_files() -> None:

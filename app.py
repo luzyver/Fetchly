@@ -1,13 +1,14 @@
 import os
 import time
+import json
 import logging
-import threading
 from logging.handlers import RotatingFileHandler
 from concurrent.futures import ThreadPoolExecutor
 from flask import Flask, render_template, request, abort
 
 from core.config import CONFIG
 from core.database import init_db, is_blacklisted
+from core.cleanup import start_cleanup_thread
 from routes.main import main_bp
 from routes.api import api_bp, set_executor as set_api_executor
 from routes.convert import convert_bp, set_executor as set_convert_executor
@@ -17,16 +18,35 @@ from routes.helpers import get_client_ip
 
 def create_app() -> Flask:
     os.makedirs('logs', exist_ok=True)
-    
-    logging.basicConfig(
-        level=logging.INFO,
-        format='%(asctime)s - [%(levelname)s] - %(message)s',
-        datefmt='%Y-%m-%d %H:%M:%S',
-        handlers=[
-            logging.StreamHandler(),
-            RotatingFileHandler('logs/app.log', maxBytes=10*1024*1024, backupCount=3)
-        ]
+
+    class JsonFormatter(logging.Formatter):
+        def format(self, record: logging.LogRecord) -> str:
+            payload = {
+                "ts": time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(record.created)),
+                "level": record.levelname,
+                "name": record.name,
+                "msg": record.getMessage(),
+            }
+            if record.exc_info:
+                payload["exc_info"] = self.formatException(record.exc_info)
+            return json.dumps(payload, ensure_ascii=True)
+
+    formatter = JsonFormatter() if CONFIG.get('LOG_JSON') else logging.Formatter(
+        fmt='%(asctime)s - [%(levelname)s] - %(message)s',
+        datefmt='%Y-%m-%d %H:%M:%S'
     )
+
+    root_logger = logging.getLogger()
+    root_logger.setLevel(logging.INFO)
+    root_logger.handlers = []
+
+    stream_handler = logging.StreamHandler()
+    stream_handler.setFormatter(formatter)
+    file_handler = RotatingFileHandler('logs/app.log', maxBytes=10*1024*1024, backupCount=3)
+    file_handler.setFormatter(formatter)
+
+    root_logger.addHandler(stream_handler)
+    root_logger.addHandler(file_handler)
 
     app = Flask(__name__)
     app.secret_key = CONFIG['SECRET_KEY']
@@ -45,6 +65,9 @@ def create_app() -> Flask:
 
     _register_middleware(app)
     _register_error_handlers(app)
+
+    if CONFIG.get('ENABLE_CLEANUP_THREAD'):
+        start_cleanup_thread()
 
     return app
 
@@ -89,9 +112,4 @@ app = create_app()
 
 
 if __name__ == '__main__':
-    from core.cleanup import cleanup_old_files
-    
-    thread = threading.Thread(target=cleanup_old_files, daemon=True)
-    thread.start()
-    
     app.run(debug=False, host='0.0.0.0', port=5050)

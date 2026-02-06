@@ -13,6 +13,11 @@ CONFIG: Dict[str, any] = {
     'SECRET_KEY': os.getenv('SECRET_KEY', 'change-me-in-production'),
     'TURNSTILE_SITE_KEY': os.getenv('TURNSTILE_SITE_KEY', ''),
     'TURNSTILE_SECRET_KEY': os.getenv('TURNSTILE_SECRET_KEY', ''),
+    'ENABLE_CLEANUP_THREAD': os.getenv('ENABLE_CLEANUP_THREAD', 'true').lower() in ('1', 'true', 'yes'),
+    'LOG_JSON': os.getenv('LOG_JSON', '').lower() in ('1', 'true', 'yes'),
+    'RATE_LIMIT_WINDOW': int(os.getenv('RATE_LIMIT_WINDOW', '60')),
+    'RATE_LIMIT_FETCH': int(os.getenv('RATE_LIMIT_FETCH', '30')),
+    'RATE_LIMIT_CONVERT': int(os.getenv('RATE_LIMIT_CONVERT', '10')),
 }
 
 USER_AGENTS: Dict[str, str] = {
