@@ -1,6 +1,6 @@
 import os
 import logging
-from typing import Dict, Any, Optional
+from typing import Dict, Any, Optional, Tuple
 from core.database import (
     update_task_status, update_task_filesize, add_usage,
     get_task_info, check_limit, set_full_usage
