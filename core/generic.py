@@ -1,5 +1,6 @@
 import json
 import logging
+import subprocess
 from typing import Dict, List, Optional, Tuple, Any
 from urllib.parse import urlparse
 from core.config import USER_AGENTS

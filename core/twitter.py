@@ -1,5 +1,6 @@
 import json
 import logging
+import subprocess
 from typing import Dict, Any, List, Tuple, Optional
 from core.utils import format_size, get_cookie_file, run_with_size_monitor
 
