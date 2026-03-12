@@ -16,7 +16,7 @@ def download_youtube(url: str, output_path: str, format_id: str = 'best',
 
 
     base_cmd = ['yt-dlp', '--no-check-certificate', '--no-playlist',
-                '-f', fmt, '--merge-output-format', 'mp4', '--recode-video', 'mp4', '-o', output_path, url]
+                '-f', fmt, '--merge-output-format', 'mp4', '-o', output_path, url]
 
     if cookie_file:
         base_cmd[1:1] = ['--cookies', cookie_file]

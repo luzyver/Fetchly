@@ -174,7 +174,7 @@ def _build_download_cmd(ua: str, url: str, output_path: str, referer: str, domai
 
     if direct_supported:
         fmt = f'{format_id}+bestaudio/best' if format_id and format_id != 'best' else 'bestvideo+bestaudio/best'
-        cmd.extend(['-f', fmt, '--merge-output-format', 'mp4', '--recode-video', 'mp4'])
+        cmd.extend(['-f', fmt, '--merge-output-format', 'mp4'])
     else:
         cmd.extend(['--add-header', f'Referer: {referer}', '--add-header', f'Origin: {domain}', '--concurrent-fragments', '4'])
 
