@@ -1,7 +1,15 @@
 import os
-from typing import Dict, List, Tuple
+from typing import Any, Dict, List, Tuple
 
-CONFIG: Dict[str, any] = {
+
+def _require_env(name: str) -> str:
+    value = os.getenv(name)
+    if not value:
+        raise RuntimeError(f"Missing required environment variable: {name}")
+    return value
+
+
+CONFIG: Dict[str, Any] = {
     'DOWNLOAD_FOLDER': 'downloads',
     'DB_PATH': os.path.join('downloads', 'tasks.db'),
     'COOKIE_FILE': 'cookies.txt',
@@ -9,8 +17,8 @@ CONFIG: Dict[str, any] = {
     'CLEANUP_INTERVAL': 3600,
     'RETENTION_PERIOD': 86400,
     'MAX_FILE_SIZE': 1 * 1024 * 1024 * 1024,
-    'ADMIN_PASSWORD': os.getenv('ADMIN_PASSWORD', 'admin123'),
-    'SECRET_KEY': os.getenv('SECRET_KEY', 'change-me-in-production'),
+    'ADMIN_PASSWORD': _require_env('ADMIN_PASSWORD'),
+    'SECRET_KEY': _require_env('SECRET_KEY'),
     'TURNSTILE_SITE_KEY': os.getenv('TURNSTILE_SITE_KEY', ''),
     'TURNSTILE_SECRET_KEY': os.getenv('TURNSTILE_SECRET_KEY', ''),
     'ENABLE_CLEANUP_THREAD': os.getenv('ENABLE_CLEANUP_THREAD', 'true').lower() in ('1', 'true', 'yes'),
