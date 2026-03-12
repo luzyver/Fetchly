@@ -1,6 +1,6 @@
 import os
 import logging
-from typing import Dict, Any, Optional, Tuple
+from typing import Dict, Any, Optional
 from core.database import (
     update_task_status, update_task_filesize, add_usage,
     get_task_info, check_limit, set_full_usage
@@ -29,18 +29,26 @@ def process_download(task_id: str, url: str, output_path: str,
         fingerprint, ip = get_task_info(task_id)
         limit_info = check_limit(fingerprint, ip)
         
-        max_size = None
+        if limit_info.get('whitelisted'):
+            max_size = None
+        else:
+            max_size = min(MAX_FILE_SIZE, limit_info['remaining'])
+
         result = _route_download(url, output_path, referer, cookies, format_id, max_size=max_size)
 
         if result["success"]:
             _handle_success(task_id, result.get('file', output_path))
         elif result.get('size_exceeded'):
-            downloaded_size = result.get('downloaded_size', 0)
+            downloaded_size = result.get('downloaded_size', max_size or MAX_FILE_SIZE)
             add_usage(fingerprint, ip, downloaded_size)
-            set_full_usage(fingerprint, ip)
+            if max_size is not None:
+                limit_mb = round(max_size / (1024 * 1024))
+            else:
+                limit_mb = round(MAX_FILE_SIZE / (1024 * 1024))
             charged_mb = round(downloaded_size / (1024 * 1024))
-            logger.warning(f"Task {task_id}: Size exceeded mid-download; charged {charged_mb}MB and set full usage")
-            update_task_status(task_id, 'failed', error='Download cancelled due to size limit')
+            error_msg = f'Download cancelled: exceeded {limit_mb}MB limit. Charged {charged_mb}MB.'
+            update_task_status(task_id, 'failed', error=error_msg)
+            logger.warning(f"Task {task_id}: Size exceeded, charged {charged_mb}MB to usage")
         else:
             update_task_status(task_id, 'failed', error=result.get('error', 'Unknown error'))
             logger.error(f"Task {task_id}: Download failed - {result.get('error')}")
@@ -61,36 +69,37 @@ def _handle_success(task_id: str, file_path: str) -> None:
     limit_info = check_limit(fingerprint, ip)
     is_whitelisted = limit_info.get('whitelisted', False)
 
-    exceeded = False
     if not is_whitelisted:
-        exceeded, reason = _check_size_limits(filesize, limit_info, fingerprint, ip)
-        if exceeded:
-            logger.warning(f"Task {task_id}: {reason} (download allowed, usage set to full)")
+        error_msg = _check_size_limits(filesize, limit_info, fingerprint, ip)
+        if error_msg:
+            os.remove(file_path)
+            update_task_status(task_id, 'failed', error=error_msg)
+            logger.warning(f"Task {task_id}: {error_msg}")
+            return
 
     update_task_filesize(task_id, filesize)
-    if not exceeded:
-        add_usage(fingerprint, ip, filesize)
+    add_usage(fingerprint, ip, filesize)
     update_task_status(task_id, 'completed', file=file_path)
     logger.info(f"Task {task_id}: Download successful")
 
 
 def _check_size_limits(filesize: int, limit_info: Dict[str, Any], 
-                       fingerprint: str, ip: str) -> Tuple[bool, Optional[str]]:
+                       fingerprint: str, ip: str) -> Optional[str]:
     exceeds_max = filesize > MAX_FILE_SIZE
     exceeds_remaining = filesize > limit_info['remaining']
     
     if not (exceeds_max or exceeds_remaining):
-        return False, None
+        return None
 
     set_full_usage(fingerprint, ip)
     
     filesize_mb = round(filesize / (1024 * 1024))
     
     if exceeds_max:
-        return True, f'File too large ({filesize_mb}MB). Maximum allowed is 1GB. Daily quota consumed.'
+        return f'File too large ({filesize_mb}MB). Maximum allowed is 1GB. Daily quota consumed.'
     
     remaining_mb = round(limit_info['remaining'] / (1024 * 1024))
-    return True, f'File ({filesize_mb}MB) exceeds remaining quota ({remaining_mb}MB). Daily quota consumed.'
+    return f'File ({filesize_mb}MB) exceeds remaining quota ({remaining_mb}MB). Daily quota consumed.'
 
 
 def _route_download(url: str, output_path: str, referer: Optional[str], 
