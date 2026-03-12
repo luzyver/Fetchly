@@ -3,6 +3,7 @@ import uuid
 import logging
 from typing import Tuple, Optional
 from concurrent.futures import ThreadPoolExecutor
+from urllib.parse import urlparse
 from flask import Blueprint, request, jsonify, send_file
 from core.config import CONFIG
 from core.database import get_db, check_limit
@@ -31,11 +32,11 @@ def convert():
     
     if not url:
         return jsonify({'error': 'URL is required'}), 400
-    if not url.startswith(('http://', 'https://')):
+    if not _is_valid_http_url(url):
         return jsonify({'error': 'Invalid URL format'}), 400
 
     format_id = data.get('format_id', 'best')
-    resolved_url = data.get('resolved_url')
+    resolved_url = data.get('resolved_url', '')
     cookies = data.get('cookies')
     referer = data.get('referer', url)
     fingerprint = data.get('fingerprint', '')
@@ -54,6 +55,9 @@ def convert():
         if resolved_url is None:
             return jsonify({'error': 'Could not fetch video'}), 400
 
+    if not _is_valid_http_url(resolved_url):
+        return jsonify({'error': 'Invalid resolved URL format'}), 400
+
     task_id = str(uuid.uuid4())
     ext = 'mp3' if format_id == 'tiktok_audio' else 'mp4'
     output_path = os.path.join(CONFIG['DOWNLOAD_FOLDER'], f"{task_id}.{ext}")
@@ -65,6 +69,11 @@ def convert():
     except Exception as e:
         logger.error(f"Submission error: {e}")
         return jsonify({'error': 'Server Error'}), 500
+
+
+def _is_valid_http_url(url: str) -> bool:
+    parsed = urlparse((url or '').strip())
+    return parsed.scheme in ('http', 'https') and bool(parsed.netloc)
 
 def _resolve_if_needed(url: str, referer: str) -> Tuple[Optional[str], Optional[str], str]:
     resolved_url = url
