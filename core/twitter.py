@@ -110,7 +110,7 @@ def download_twitter(url: str, output_path: str, format_id: str = 'twitter_0',
     cookie_file = get_cookie_file()
     
     cmd = ['yt-dlp', '--no-check-certificate', '--user-agent', TWITTER_USER_AGENT,
-           '-f', 'bestvideo+bestaudio/best', '--merge-output-format', 'mp4', '--recode-video', 'mp4',
+           '-f', 'bestvideo+bestaudio/best', '--merge-output-format', 'mp4',
            '--playlist-items', str(video_index + 1), '-o', output_path, url]
 
     if cookie_file:
