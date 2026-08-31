@@ -31,7 +31,7 @@ docker compose up --build -d --wait
 
 File unduhan kedaluwarsa otomatis setelah satu jam (dapat diubah dengan `DOWNLOAD_TASK_TTL_SECONDS`). Worker membersihkan file dan merekonsiliasi job macet tiap lima menit. Log berbentuk JSON, menyamarkan token/rahasia, dan dirotasi oleh Docker.
 
-MongoDB, Redis, dan file unduhan disimpan pada named volume. Backup data persisten dengan alat volume host dan `mongodump`; pulihkan MongoDB dengan `mongorestore`, lalu jalankan `docker compose up -d --wait`. File unduhan bersifat sementara dan tidak perlu dipulihkan. Uji provider live setelah update dengan satu URL publik yang legal untuk tiap provider karena perubahan situs pihak ketiga tidak dapat dicakup fixture lokal.
+Compose memakai bind mount ke folder project `data/`: `data/downloads`, `data/mongodb`, dan `data/redis`. Folder ini persisten di host, tanpa Docker named volume. Backup MongoDB dengan `mongodump`, dan file unduhan tetap diperlakukan sementara. Uji provider live setelah update dengan satu URL publik yang legal untuk tiap provider karena perubahan situs pihak ketiga tidak dapat dicakup fixture lokal.
 
 ## Pengembangan
 

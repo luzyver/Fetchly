@@ -13,7 +13,7 @@ RUN pip install --no-cache-dir uv \
 
 COPY . .
 
-RUN mkdir -p downloads staticfiles
+RUN mkdir -p staticfiles
 
 EXPOSE 5050
 

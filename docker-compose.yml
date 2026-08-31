@@ -12,12 +12,12 @@ services:
       MONGODB_URI: mongodb://mongodb:27017/fetchly
       MONGODB_NAME: fetchly
       REDIS_URL: redis://redis:6379/0
-      DOWNLOAD_ROOT: /app/downloads
+      DOWNLOAD_ROOT: /app/data/downloads
       RESOLVER_ENCRYPTION_KEYS: ${RESOLVER_ENCRYPTION_KEYS}
       IDENTITY_HMAC_KEYS: ${IDENTITY_HMAC_KEYS}
       TRUSTED_PROXY_NETWORKS: ${TRUSTED_PROXY_NETWORKS:-127.0.0.1/32,::1/128}
     volumes:
-      - ./downloads:/app/downloads
+      - ./data/downloads:/app/data/downloads
     depends_on:
       mongodb:
         condition: service_healthy
@@ -40,7 +40,7 @@ services:
     command: python -m fetchly.worker
     environment: *fetchly-environment
     volumes:
-      - ./downloads:/app/downloads
+      - ./data/downloads:/app/data/downloads
     depends_on:
       web:
         condition: service_healthy
@@ -58,7 +58,7 @@ services:
     image: mongo:8
     restart: unless-stopped
     volumes:
-      - ./mongodb:/data/db
+      - ./data/mongodb:/data/db
     healthcheck:
       test: ["CMD", "mongosh", "--quiet", "--eval", "quit(db.adminCommand('ping').ok ? 0 : 1)"]
       interval: 10s
@@ -70,7 +70,7 @@ services:
     restart: unless-stopped
     command: redis-server --appendonly yes
     volumes:
-      - ./redis:/data
+      - ./data/redis:/data
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 10s

@@ -74,7 +74,7 @@ DATABASES = {
 }
 
 REDIS_URL = os.environ.get("REDIS_URL", "redis://localhost:6379/0")
-DOWNLOAD_ROOT = Path(os.environ.get("DOWNLOAD_ROOT", BASE_DIR / "downloads"))
+DOWNLOAD_ROOT = Path(os.environ.get("DOWNLOAD_ROOT", BASE_DIR / "data" / "downloads"))
 DOWNLOAD_TASK_TTL_SECONDS = int(os.environ.get("DOWNLOAD_TASK_TTL_SECONDS", "3600"))
 DOWNLOAD_MAX_BYTES = int(os.environ.get("DOWNLOAD_MAX_BYTES", str(500 * 1024 * 1024)))
 DAILY_QUOTA_BYTES = int(os.environ.get("DAILY_QUOTA_BYTES", str(2 * 1024 * 1024 * 1024)))
