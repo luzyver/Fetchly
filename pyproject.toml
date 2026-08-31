@@ -15,8 +15,8 @@ dependencies = [
   "redis>=6,<7",
   "requests>=2.32,<3",
   "rq>=2,<3",
+  "servestatic>=4.3,<5",
   "uvicorn[standard]>=0.35,<1",
-  "whitenoise>=6.12,<7",
   "yt-dlp>=2025.8.27",
 ]
 
