@@ -19,7 +19,9 @@ services:
     volumes:
       - ./downloads:/app/downloads
     depends_on:
-      web:
+      mongodb:
+        condition: service_healthy
+      redis:
         condition: service_healthy
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:5050/health/ready', timeout=3)"]
@@ -40,6 +42,8 @@ services:
     volumes:
       - ./downloads:/app/downloads
     depends_on:
+      web:
+        condition: service_healthy
       mongodb:
         condition: service_healthy
       redis:
