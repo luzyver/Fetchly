@@ -11,11 +11,11 @@ dependencies = [
   "cryptography>=45,<47",
   "django>=6.1,<6.2",
   "django-mongodb-backend>=6.1,<6.2",
-  "gunicorn>=23,<24",
   "playwright>=1.55,<2",
   "redis>=6,<7",
   "requests>=2.32,<3",
   "rq>=2,<3",
+  "uvicorn[standard]>=0.35,<1",
   "yt-dlp>=2025.8.27",
 ]
 

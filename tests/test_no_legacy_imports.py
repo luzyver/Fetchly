@@ -1,3 +1,5 @@
+import importlib
+import importlib.util
 from pathlib import Path
 
 
@@ -13,3 +15,8 @@ def test_legacy_stack_is_gone():
     ).lower()
     assert "import flask" not in source
     assert "cloudflare-warp" not in source
+
+
+def test_asgi_application_is_available():
+    assert importlib.util.find_spec("fetchly.asgi") is not None
+    assert callable(importlib.import_module("fetchly.asgi").application)
