@@ -16,6 +16,7 @@ dependencies = [
   "requests>=2.32,<3",
   "rq>=2,<3",
   "uvicorn[standard]>=0.35,<1",
+  "whitenoise>=6.12,<7",
   "yt-dlp>=2025.8.27",
 ]
 
