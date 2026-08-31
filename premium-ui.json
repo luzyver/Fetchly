@@ -1,0 +1,20 @@
+{
+  "profile": "product-admin",
+  "sourceRoots": ["templates", "static/css", "static/js"],
+  "locale": "id-ID",
+  "canonicalMap": "UX-CONTRACT.md",
+  "requiredCapabilities": ["Select/Listbox", "Form", "Scrollbar", "Toast", "CRUD"],
+  "ownership": {
+    "Select/Listbox": "native",
+    "Date": "typed"
+  },
+  "requiredCommands": ["unit", "smoke"],
+  "commands": {
+    "unit": "uv run pytest",
+    "smoke": "powershell -File scripts/smoke.ps1"
+  },
+  "evidence": {
+    "crudFullFlow": "tests/dashboard/test_forms.py",
+    "failurePaths": "tests/downloads/test_views.py"
+  }
+}

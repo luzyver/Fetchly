@@ -4,6 +4,7 @@
   root.dataset.theme = localStorage.getItem("fetchly-theme") || "system";
 
   document.addEventListener("click", async (event) => {
+    if (event.target.closest("[data-theme-toggle], [data-paste]")) event.preventDefault();
     const themeButton = event.target.closest("[data-theme-toggle]");
     if (themeButton) {
       const next = themes[(themes.indexOf(root.dataset.theme) + 1) % themes.length];

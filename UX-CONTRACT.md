@@ -31,8 +31,9 @@
 | Capability | Canonical owner | Source of truth | Allowed variants | Verification |
 |---|---|---|---|---|
 | Form | Django form markup + shared field CSS | This contract | inspect / download | request + browser tests |
+| Select/Listbox | native `<select>` controls | This contract | status / access rule | keyboard + browser tests |
 | Scrollbar | `static/css/app.css` global rules | DESIGN.md | stable-gutter regions | computed style |
-| Toast/status | shared `aria-live` status region | This contract | success / warning / info / error | browser live-region test |
+| Toast | shared `aria-live` status region | This contract | success / warning / info / error | browser live-region test |
 | CRUD | Django service/state machine | domain tests | public task / staff rule | full-flow E2E |
 
 ## Component behavior
@@ -63,7 +64,7 @@
 ## Navigation and responsive behavior
 
 - Document titles name Fetchly and current staff screen.
-- 403/404/405 pages explain the next safe action.
+- Unauthorized or missing routes use safe Django responses without exposing internals; task errors explain the next action inline.
 - Desktop history rail becomes a normal downstream section below 56rem.
 - File/task URLs reveal no internal ID; wrong-owner and missing both return 404.
 - Focus is never hidden by sticky UI.
