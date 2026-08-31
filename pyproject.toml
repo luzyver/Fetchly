@@ -1,0 +1,46 @@
+[build-system]
+requires = ["hatchling>=1.27,<2"]
+build-backend = "hatchling.build"
+
+[project]
+name = "fetchly"
+version = "0.1.0"
+description = "Friendly, temporary media downloader"
+requires-python = ">=3.13,<3.14"
+dependencies = [
+  "cryptography>=45,<47",
+  "django>=6.1,<6.2",
+  "django-mongodb-backend>=6.1,<6.2",
+  "gunicorn>=23,<24",
+  "playwright>=1.55,<2",
+  "redis>=6,<7",
+  "requests>=2.32,<3",
+  "rq>=2,<3",
+  "yt-dlp>=2025.8.27",
+]
+
+[project.optional-dependencies]
+dev = [
+  "mongomock>=4.3,<5",
+  "pytest>=8,<10",
+  "pytest-django>=4.11,<5",
+  "ruff>=0.12,<1",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["fetchly", "downloads", "providers", "usage", "dashboard"]
+
+[tool.pytest.ini_options]
+DJANGO_SETTINGS_MODULE = "fetchly.settings"
+python_files = ["test_*.py"]
+testpaths = ["tests"]
+
+[tool.ruff]
+target-version = "py313"
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]
+
+[tool.ruff.lint.per-file-ignores]
+"**/migrations/*.py" = ["E501"]

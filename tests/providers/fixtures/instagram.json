@@ -1,0 +1,8 @@
+{
+  "title": "An Instagram caption that is intentionally longer than fifty characters for truncation",
+  "duration": 15,
+  "thumbnail": "https://img.example/instagram.jpg",
+  "formats": [
+    {"format_id": "dash", "height": 1080, "ext": "mp4", "vcodec": "avc1", "acodec": "aac", "filesize_approx": 5000000}
+  ]
+}

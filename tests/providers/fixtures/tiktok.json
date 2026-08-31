@@ -1,0 +1,12 @@
+{
+  "code": 0,
+  "data": {
+    "title": "TikTok sample",
+    "duration": 12,
+    "cover": "https://img.example/tiktok.jpg",
+    "hdplay": "https://cdn.example/no-watermark.mp4",
+    "wmplay": "https://cdn.example/watermark.mp4",
+    "music": "https://cdn.example/audio.mp3",
+    "hd_size": 4200000
+  }
+}

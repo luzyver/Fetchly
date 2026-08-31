@@ -1,0 +1,10 @@
+{
+  "title": "Sample Video",
+  "duration": 60,
+  "thumbnail": "https://img.example/sample.jpg",
+  "formats": [
+    {"format_id": "137", "height": 1080, "ext": "mp4", "vcodec": "avc1", "acodec": "none", "tbr": 2500, "filesize": 18000000},
+    {"format_id": "22", "height": 720, "ext": "mp4", "vcodec": "avc1", "acodec": "aac", "tbr": 1200, "filesize": 9000000},
+    {"format_id": "140", "ext": "m4a", "vcodec": "none", "acodec": "aac", "tbr": 128}
+  ]
+}

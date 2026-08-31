@@ -1,8 +1,13 @@
-downloads
 config
 data
 *.log
 .vscode
 .dockerignore
 .env
+.venv/
+.pytest_cache/
+.ruff_cache/
+staticfiles/
+__pycache__/
+*.py[cod]
 instagram_session

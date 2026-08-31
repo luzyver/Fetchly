@@ -1,0 +1,40 @@
+{% if task.state == "inspection_queued" or task.state == "inspecting" %}
+<section class="status-panel" role="status"
+         hx-get="{% url 'task-inspection' task.public_token %}"
+         hx-trigger="every 2s" hx-swap="outerHTML">
+  <span class="spinner" aria-hidden="true"></span>
+  <div><h2>Sedang memeriksa tautan</h2><p>Kami sedang mencari format yang paling pas.</p></div>
+</section>
+{% elif task.state == "ready" %}
+<section class="media-ticket" aria-labelledby="result-title">
+  <div class="media-summary">
+    {% if task.thumbnail_url %}<img src="{{ task.thumbnail_url }}" alt="" width="320" height="180">{% endif %}
+    <div><h2 id="result-title">{{ task.title }}</h2><p>{{ task.provider|capfirst }}{% if task.duration_seconds %} · {{ task.duration_seconds }} detik{% endif %}</p></div>
+  </div>
+  <form class="format-form" method="post" action="{% url 'task-download' task.public_token %}"
+        hx-post="{% url 'task-download' task.public_token %}" hx-target="#task-result"
+        hx-swap="innerHTML" hx-disabled-elt="button" novalidate>
+    {% csrf_token %}
+    <fieldset>
+      <legend>Pilih format</legend>
+      {% for format in task.formats %}
+      <label class="format-option">
+        <input type="radio" name="format_id" value="{{ format.format_id|default:format.id }}" {% if forloop.first %}checked{% endif %}>
+        <span class="format-name">{{ format.label }}</span>
+        <span class="format-extension">{{ format.extension|upper }}</span>
+        {% if format.estimated_bytes %}<span class="format-size">{{ format.estimated_bytes|filesizeformat }}</span>{% endif %}
+      </label>
+      {% endfor %}
+    </fieldset>
+    <button class="button button-primary prepare-button" type="submit">
+      <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M12 4v10m0 0 4-4m-4 4-4-4M5 17v2h14v-2"/></svg>
+      <span>Siapkan unduhan</span>
+    </button>
+    <p class="privacy-note">Tanpa akun <span aria-hidden="true">&bull;</span> File otomatis dihapus</p>
+  </form>
+</section>
+{% elif task.state == "blocked" %}
+<section class="status-panel status-error" role="alert"><div><h2>Tautan tidak dapat diproses</h2><p>Gunakan tautan publik yang dapat dibuka tanpa login.</p></div></section>
+{% else %}
+<section class="status-panel status-error" role="alert"><div><h2>Format belum ditemukan</h2><p>Periksa tautannya, lalu coba lagi.</p></div></section>
+{% endif %}

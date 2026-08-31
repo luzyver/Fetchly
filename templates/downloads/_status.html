@@ -1,0 +1,17 @@
+{% if task.state == "download_queued" or task.state == "downloading" %}
+<section class="status-panel" role="status"
+         hx-get="{% url 'task-status' task.public_token %}"
+         hx-trigger="every 2s" hx-swap="outerHTML">
+  <span class="spinner" aria-hidden="true"></span>
+  <div><h2>Sedang menyiapkan unduhan</h2><p>Biarkan halaman ini terbuka sebentar.</p></div>
+</section>
+{% elif task.state == "completed" %}
+<section class="status-panel status-success" role="status">
+  <div><h2>Siap diunduh</h2><p>File ini tersedia sementara untukmu.</p></div>
+  <a class="button button-primary" href="{% url 'task-file' task.public_token %}">Unduh sekarang</a>
+</section>
+{% elif task.state == "expired" %}
+<section class="status-panel status-error" role="status"><div><h2>File sudah kedaluwarsa</h2><p>Tempel tautannya lagi untuk membuat file baru.</p></div></section>
+{% else %}
+<section class="status-panel status-error" role="alert"><div><h2>Unduhan belum berhasil</h2><p>Coba format lain atau ulangi beberapa saat lagi.</p></div></section>
+{% endif %}

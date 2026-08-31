@@ -1,0 +1,13 @@
+<section class="status-panel status-error" role="alert">
+  <div>
+    {% if error_code == "identity_required" %}
+      <h2>Identitas browser belum siap</h2><p>Tunggu sebentar, lalu coba lagi.</p>
+    {% elif error_code == "rate_limited" %}
+      <h2>Terlalu banyak percobaan</h2><p>Tunggu sebentar sebelum mencari format lagi.</p>
+    {% elif error_code == "blocked" %}
+      <h2>Akses tidak tersedia</h2><p>Permintaan ini tidak dapat diproses.</p>
+    {% else %}
+      <h2>Tautan belum bisa diproses</h2><p>Gunakan tautan publik HTTP atau HTTPS, lalu coba lagi.</p>
+    {% endif %}
+  </div>
+</section>

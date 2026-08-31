@@ -1,17 +1,20 @@
-FROM python:3.11-slim
+FROM python:3.13-slim
 
-RUN apt-get update && apt-get install -y ffmpeg && rm -rf /var/lib/apt/lists/*
-RUN pip install playwright && playwright install --with-deps firefox
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PATH="/app/.venv/bin:$PATH"
 
 WORKDIR /app
 
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+COPY pyproject.toml uv.lock ./
+RUN pip install --no-cache-dir uv \
+    && uv sync --frozen --no-dev --no-install-project \
+    && .venv/bin/playwright install --with-deps chromium
 
 COPY . .
 
-RUN mkdir -p downloads logs
+RUN mkdir -p downloads staticfiles
 
 EXPOSE 5050
 
-CMD ["gunicorn", "-c", "gunicorn.conf.py", "app:app"]
+CMD ["gunicorn", "--bind", "0.0.0.0:5050", "fetchly.wsgi:application"]

@@ -1,0 +1,8 @@
+{
+  "title": "Post with two videos",
+  "duration": 20,
+  "entries": [
+    {"duration": 20, "formats": [{"format_id": "v1", "height": 720, "ext": "mp4", "vcodec": "avc1", "acodec": "aac", "tbr": 1000}]},
+    {"duration": 10, "formats": [{"format_id": "v2", "height": 1080, "ext": "mp4", "vcodec": "avc1", "acodec": "aac", "tbr": 1800}]}
+  ]
+}

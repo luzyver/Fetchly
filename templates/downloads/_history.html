@@ -1,0 +1,13 @@
+{% if history %}
+<ol class="history-list">
+  {% for item in history %}
+  <li><div><strong>{{ item.title|default:"Video" }}</strong><span>{{ item.provider|capfirst }} · {{ item.get_state_display }}</span></div>{% if item.state == "completed" %}<a href="{% url 'task-file' item.public_token %}">Unduh<span class="sr-only"> {{ item.title }}</span></a>{% endif %}</li>
+  {% endfor %}
+</ol>
+{% else %}
+<div class="history-empty">
+  <svg aria-hidden="true" viewBox="0 0 64 64"><path d="M17 24h30v18H17zM17 31h30M26 24v18M47 18v-5M51 21l4-3M17 18v-5M13 21l-4-3"/></svg>
+  <h3>Belum ada unduhan.</h3>
+  <p>Video yang kamu proses akan muncul di sini.</p>
+</div>
+{% endif %}

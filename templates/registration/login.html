@@ -1,0 +1,3 @@
+{% extends "base.html" %}
+{% block title %}Masuk staf · Fetchly{% endblock %}
+{% block body %}<main id="main" class="login-page"><form method="post" class="login-form" novalidate>{% csrf_token %}<a class="brand" href="/"><span class="brand-mark" aria-hidden="true">↓</span><span>Fetchly</span></a><h1>Masuk sebagai staf</h1><p>Gunakan akun operator Fetchly.</p>{% if form.non_field_errors %}<div class="status-panel status-error" role="alert">Nama pengguna atau kata sandi tidak cocok.</div>{% endif %}<label for="id_username">Nama pengguna</label>{{ form.username }}<label for="id_password">Kata sandi</label>{{ form.password }}<button class="button button-primary" type="submit">Masuk</button></form></main>{% endblock %}

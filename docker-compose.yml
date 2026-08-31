@@ -1,52 +1,74 @@
 services:
-  2mp4:
+  web:
     build: .
-    container_name: 2mp4
     restart: unless-stopped
-    expose:
-      - "5050"
-    environment:
-      - FLASK_ENV=production
-      - PROXY=socks5://warp:1080
-      - ADMIN_PASSWORD=${ADMIN_PASSWORD}
-      - SECRET_KEY=${SECRET_KEY}
-      - TURNSTILE_SITE_KEY=${TURNSTILE_SITE_KEY}
-      - TURNSTILE_SECRET_KEY=${TURNSTILE_SECRET_KEY}
-      - LOG_JSON=${LOG_JSON}
-      - RATE_LIMIT_WINDOW=${RATE_LIMIT_WINDOW}
-      - RATE_LIMIT_FETCH=${RATE_LIMIT_FETCH}
-      - RATE_LIMIT_CONVERT=${RATE_LIMIT_CONVERT}
+    command: sh -c "python manage.py collectstatic --noinput && python manage.py migrate --noinput && gunicorn --bind 0.0.0.0:5050 fetchly.wsgi:application"
+    ports:
+      - "${FETCHLY_PORT:-5050}:5050"
+    environment: &fetchly-environment
+      ENVIRONMENT: production
+      SECRET_KEY: ${SECRET_KEY}
+      ALLOWED_HOSTS: ${ALLOWED_HOSTS:-localhost}
+      MONGODB_URI: mongodb://mongodb:27017/fetchly
+      MONGODB_NAME: fetchly
+      REDIS_URL: redis://redis:6379/0
+      DOWNLOAD_ROOT: /app/downloads
+      RESOLVER_ENCRYPTION_KEYS: ${RESOLVER_ENCRYPTION_KEYS}
+      IDENTITY_HMAC_KEYS: ${IDENTITY_HMAC_KEYS}
+      TRUSTED_PROXY_NETWORKS: ${TRUSTED_PROXY_NETWORKS:-127.0.0.1/32,::1/128}
     volumes:
       - ./downloads:/app/downloads
-      - ./config/cookies.txt:/app/cookies.txt
-      - ./logs:/app/logs
-      - ./data:/app/data
-    logging:
-      driver: "local"
-      options:
-        max-size: "10m"
-        max-file: "3"
-    networks:
-      - nginx_default
     depends_on:
-      - warp
+      web:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:5050/health/ready', timeout=3)"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+    logging:
+      driver: local
+      options:
+        max-size: 10m
+        max-file: "3"
 
-  warp:
-    image: caomingjun/warp
-    container_name: warp
+  worker:
+    build: .
     restart: unless-stopped
-    environment:
-      - WARP_SLEEP=2
-    cap_add:
-      - NET_ADMIN
-    sysctls:
-      - net.ipv6.conf.all.disable_ipv6=0
-      - net.ipv4.conf.all.src_valid_mark=1
+    command: python -m fetchly.worker
+    environment: *fetchly-environment
     volumes:
-      - ./data/warp:/var/lib/cloudflare-warp
-    networks:
-      - nginx_default
+      - ./downloads:/app/downloads
+    depends_on:
+      mongodb:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "from django.conf import settings; from redis import Redis; raise SystemExit(0 if Redis.from_url(settings.REDIS_URL).get(settings.WORKER_HEARTBEAT_KEY) else 1)"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
 
-networks:
-  nginx_default:
-    external: true
+  mongodb:
+    image: mongo:8
+    restart: unless-stopped
+    volumes:
+      - ./mongodb:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "quit(db.adminCommand('ping').ok ? 0 : 1)"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:8-alpine
+    restart: unless-stopped
+    command: redis-server --appendonly yes
+    volumes:
+      - ./redis:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
