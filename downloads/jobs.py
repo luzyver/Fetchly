@@ -94,7 +94,7 @@ def download_task(
                 task.source_url,
                 selected,
                 output_path,
-                task.reserved_bytes,
+                settings.DOWNLOAD_MAX_BYTES,
                 context,
             )
         )
